@@ -33,9 +33,9 @@ function Clients() {
   }, [clients.data, q]);
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-5">
+    <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5">
       <div className="flex items-baseline justify-between flex-wrap gap-4">
-        <div>
+        <div className="min-w-0">
           <h1 className="font-display text-2xl text-foreground">Clients</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             Contacts in Zoho. A client may have multiple engagements across practice areas.
@@ -45,12 +45,14 @@ function Clients() {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search name, email, city…"
-          className="w-64 rounded-md border border-border bg-input px-3 py-1.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring"
+          className="w-full sm:w-64 rounded-md border border-border bg-input px-3 py-1.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring"
         />
       </div>
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[640px]">
+
           <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <Th>Name</Th>
