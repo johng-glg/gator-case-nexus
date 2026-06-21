@@ -13,14 +13,15 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
-import { Route as AuthenticatedEngagementsRouteImport } from './routes/_authenticated/engagements'
 import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConnectZohoRouteImport } from './routes/_authenticated/connect-zoho'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
+import { Route as AuthenticatedEngagementsIndexRouteImport } from './routes/_authenticated/engagements.index'
 import { Route as ApiPublicDeadlineSweepRouteImport } from './routes/api/public/deadline-sweep'
 import { Route as AuthenticatedPracticesSsdiRouteImport } from './routes/_authenticated/practices.ssdi'
 import { Route as AuthenticatedPracticesPracticeRouteImport } from './routes/_authenticated/practices.$practice'
+import { Route as AuthenticatedEngagementsEngagementIdRouteImport } from './routes/_authenticated/engagements.$engagementId'
 import { Route as AuthenticatedPracticesSsdiIndexRouteImport } from './routes/_authenticated/practices.ssdi.index'
 import { Route as ApiZohoConnectCallbackRouteImport } from './routes/api/zoho/connect/callback'
 import { Route as AuthenticatedPracticesSsdiCasesIndexRouteImport } from './routes/_authenticated/practices.ssdi.cases.index'
@@ -45,12 +46,6 @@ const AuthenticatedLeadsRoute = AuthenticatedLeadsRouteImport.update({
   path: '/leads',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedEngagementsRoute =
-  AuthenticatedEngagementsRouteImport.update({
-    id: '/engagements',
-    path: '/engagements',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedDeadlinesRoute = AuthenticatedDeadlinesRouteImport.update({
   id: '/deadlines',
   path: '/deadlines',
@@ -72,6 +67,12 @@ const AuthenticatedClientsRoute = AuthenticatedClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedEngagementsIndexRoute =
+  AuthenticatedEngagementsIndexRouteImport.update({
+    id: '/engagements/',
+    path: '/engagements/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicDeadlineSweepRoute = ApiPublicDeadlineSweepRouteImport.update({
   id: '/api/public/deadline-sweep',
   path: '/api/public/deadline-sweep',
@@ -87,6 +88,12 @@ const AuthenticatedPracticesPracticeRoute =
   AuthenticatedPracticesPracticeRouteImport.update({
     id: '/practices/$practice',
     path: '/practices/$practice',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEngagementsEngagementIdRoute =
+  AuthenticatedEngagementsEngagementIdRouteImport.update({
+    id: '/engagements/$engagementId',
+    path: '/engagements/$engagementId',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedPracticesSsdiIndexRoute =
@@ -120,11 +127,12 @@ export interface FileRoutesByFullPath {
   '/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
-  '/engagements': typeof AuthenticatedEngagementsRoute
   '/leads': typeof AuthenticatedLeadsRoute
+  '/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
+  '/engagements/': typeof AuthenticatedEngagementsIndexRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
   '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
@@ -137,10 +145,11 @@ export interface FileRoutesByTo {
   '/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
-  '/engagements': typeof AuthenticatedEngagementsRoute
   '/leads': typeof AuthenticatedLeadsRoute
+  '/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
+  '/engagements': typeof AuthenticatedEngagementsIndexRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiIndexRoute
   '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
@@ -155,11 +164,12 @@ export interface FileRoutesById {
   '/_authenticated/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
-  '/_authenticated/engagements': typeof AuthenticatedEngagementsRoute
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
+  '/_authenticated/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
   '/_authenticated/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/_authenticated/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
+  '/_authenticated/engagements/': typeof AuthenticatedEngagementsIndexRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/_authenticated/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
   '/_authenticated/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
@@ -174,11 +184,12 @@ export interface FileRouteTypes {
     | '/connect-zoho'
     | '/dashboard'
     | '/deadlines'
-    | '/engagements'
     | '/leads'
+    | '/engagements/$engagementId'
     | '/practices/$practice'
     | '/practices/ssdi'
     | '/api/public/deadline-sweep'
+    | '/engagements/'
     | '/api/zoho/connect/callback'
     | '/practices/ssdi/'
     | '/practices/ssdi/cases/$caseId'
@@ -191,10 +202,11 @@ export interface FileRouteTypes {
     | '/connect-zoho'
     | '/dashboard'
     | '/deadlines'
-    | '/engagements'
     | '/leads'
+    | '/engagements/$engagementId'
     | '/practices/$practice'
     | '/api/public/deadline-sweep'
+    | '/engagements'
     | '/api/zoho/connect/callback'
     | '/practices/ssdi'
     | '/practices/ssdi/cases/$caseId'
@@ -208,11 +220,12 @@ export interface FileRouteTypes {
     | '/_authenticated/connect-zoho'
     | '/_authenticated/dashboard'
     | '/_authenticated/deadlines'
-    | '/_authenticated/engagements'
     | '/_authenticated/leads'
+    | '/_authenticated/engagements/$engagementId'
     | '/_authenticated/practices/$practice'
     | '/_authenticated/practices/ssdi'
     | '/api/public/deadline-sweep'
+    | '/_authenticated/engagements/'
     | '/api/zoho/connect/callback'
     | '/_authenticated/practices/ssdi/'
     | '/_authenticated/practices/ssdi/cases/$caseId'
@@ -257,13 +270,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLeadsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/engagements': {
-      id: '/_authenticated/engagements'
-      path: '/engagements'
-      fullPath: '/engagements'
-      preLoaderRoute: typeof AuthenticatedEngagementsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/deadlines': {
       id: '/_authenticated/deadlines'
       path: '/deadlines'
@@ -292,6 +298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/engagements/': {
+      id: '/_authenticated/engagements/'
+      path: '/engagements'
+      fullPath: '/engagements/'
+      preLoaderRoute: typeof AuthenticatedEngagementsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/deadline-sweep': {
       id: '/api/public/deadline-sweep'
       path: '/api/public/deadline-sweep'
@@ -311,6 +324,13 @@ declare module '@tanstack/react-router' {
       path: '/practices/$practice'
       fullPath: '/practices/$practice'
       preLoaderRoute: typeof AuthenticatedPracticesPracticeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/engagements/$engagementId': {
+      id: '/_authenticated/engagements/$engagementId'
+      path: '/engagements/$engagementId'
+      fullPath: '/engagements/$engagementId'
+      preLoaderRoute: typeof AuthenticatedEngagementsEngagementIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/practices/ssdi/': {
@@ -369,10 +389,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConnectZohoRoute: typeof AuthenticatedConnectZohoRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeadlinesRoute: typeof AuthenticatedDeadlinesRoute
-  AuthenticatedEngagementsRoute: typeof AuthenticatedEngagementsRoute
   AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
+  AuthenticatedEngagementsEngagementIdRoute: typeof AuthenticatedEngagementsEngagementIdRoute
   AuthenticatedPracticesPracticeRoute: typeof AuthenticatedPracticesPracticeRoute
   AuthenticatedPracticesSsdiRoute: typeof AuthenticatedPracticesSsdiRouteWithChildren
+  AuthenticatedEngagementsIndexRoute: typeof AuthenticatedEngagementsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -380,10 +401,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConnectZohoRoute: AuthenticatedConnectZohoRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeadlinesRoute: AuthenticatedDeadlinesRoute,
-  AuthenticatedEngagementsRoute: AuthenticatedEngagementsRoute,
   AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
+  AuthenticatedEngagementsEngagementIdRoute:
+    AuthenticatedEngagementsEngagementIdRoute,
   AuthenticatedPracticesPracticeRoute: AuthenticatedPracticesPracticeRoute,
   AuthenticatedPracticesSsdiRoute: AuthenticatedPracticesSsdiRouteWithChildren,
+  AuthenticatedEngagementsIndexRoute: AuthenticatedEngagementsIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

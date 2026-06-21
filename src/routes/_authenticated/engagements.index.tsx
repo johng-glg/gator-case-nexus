@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { zohoQuery } from "@/lib/zoho.functions";
@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { PRACTICES, ALL_ENGAGEMENT_TYPES, practiceForEngagementType } from "@/practices/registry";
 
-export const Route = createFileRoute("/_authenticated/engagements")({
+export const Route = createFileRoute("/_authenticated/engagements/")({
   head: () => ({ meta: [{ title: "Engagements — Gator" }] }),
   component: Engagements,
 });
@@ -115,12 +115,13 @@ function Engagements() {
               return (
                 <tr key={id} className="hover:bg-accent/30">
                   <Td>
-                    <a
-                      href={openWorkspaceHref(practice?.slug, id)}
+                    <Link
+                      to="/engagements/$engagementId"
+                      params={{ engagementId: id }}
                       className="font-medium text-primary hover:underline"
                     >
                       {String(r.Name ?? "—")}
-                    </a>
+                    </Link>
                   </Td>
                   <Td>{client ?? <span className="text-muted-foreground">—</span>}</Td>
                   <Td>
@@ -145,11 +146,8 @@ function clientName(r: Record<string, unknown>): string | null {
   return name || null;
 }
 
-function openWorkspaceHref(slug: string | undefined, engagementId: string): string {
-  if (slug === "ssdi") return `/practices/ssdi/cases?engagementId=${engagementId}`;
-  if (slug) return `/practices/${slug}`;
-  return "/engagements";
-}
+
+
 
 function TypeBadge({ type, active }: { type: string; active: boolean }) {
   if (!type) return <span className="text-muted-foreground">—</span>;
