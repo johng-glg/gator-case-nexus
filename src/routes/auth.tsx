@@ -11,7 +11,7 @@ import { toast } from "sonner";
 const ALLOWED_DOMAIN = "gatorlawpc.com";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Sign in — Gator SSDI" }] }),
+  head: () => ({ meta: [{ title: "Sign in — Gator" }] }),
   component: AuthPage,
 });
 
@@ -53,10 +53,12 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold tracking-tight">Gator SSDI</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Case management for the firm</p>
+          <h1 className="font-display text-4xl text-primary">Gator</h1>
+          <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+            Case platform
+          </p>
         </div>
-        <div className="rounded-lg border bg-card p-6 shadow-sm">
+        <div className="rounded-lg border border-border bg-card p-6">
           <Button className="w-full" onClick={signIn} disabled={busy}>
             {busy ? "Signing in…" : "Continue with Google"}
           </Button>
