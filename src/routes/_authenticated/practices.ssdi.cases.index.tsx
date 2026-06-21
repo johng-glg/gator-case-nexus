@@ -104,7 +104,7 @@ function CasesList() {
                       {String(r.Case_Number ?? "—")}
                     </Link>
                   </Td>
-                  <Td>{String(r.Current_Stage ?? "—")}</Td>
+                  <Td>{r.Current_Stage ? normalizeStage(r.Current_Stage as string) : "—"}</Td>
                   <Td className="text-muted-foreground">{String(r.Sub_Status ?? "")}</Td>
                   <Td>{String(r.Deadline_Date ?? "—")}</Td>
                   <Td className={cn("text-right tabular-nums", atRisk && "text-destructive font-medium")}>
