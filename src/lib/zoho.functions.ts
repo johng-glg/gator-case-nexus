@@ -63,11 +63,17 @@ export const zohoQuery = createServerFn({ method: "POST" })
   .inputValidator((data) => queryInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
-    // Inject the signed-in user id as a default param so myOpenCases works without
-    // exposing it to the client.
-    const params = { userId: context.userId, ...(data.params ?? {}) };
+    const client = makeZohoClient().as(context.userId);
+    // "mine" queries filter on a Zoho user id (not the Supabase user id).
+    // Resolve it only when needed.
+    const needsZohoUser = data.name === "myOpenCases" || data.name === "myEngagements";
+    const zohoUserId = needsZohoUser ? await client.currentUserId() : undefined;
+    if (needsZohoUser && !zohoUserId) {
+      return { rows: [] as ZohoRow[] };
+    }
+    const params = { userId: zohoUserId, ...(data.params ?? {}) };
     const q = buildQuery(data.name as QueryName, params);
-    const rows = await makeZohoClient().as(context.userId).coql(q);
+    const rows = await client.coql(q);
     return { rows: toJson<ZohoRow[]>(rows) };
 
   });
