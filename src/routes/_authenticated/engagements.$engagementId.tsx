@@ -187,7 +187,7 @@ function EngagementDetail() {
                 <tr key={i}>
                   <Td>{String(c.Name ?? "—")}</Td>
                   <Td className="text-muted-foreground">{String(c.Cost_Type ?? "")}</Td>
-                  <Td className="text-muted-foreground">{String(c.Date_Incurred ?? "—")}</Td>
+                  <Td className="text-muted-foreground">{String(c.Created_Time ?? "—").slice(0, 10)}</Td>
                   <td className="px-4 py-3 text-right tabular-nums">
                     {fmtMoney(numOrNull(c.Amount))}
                   </td>
