@@ -326,6 +326,58 @@ function ConnectionCard({
           Revoke
         </Button>
       </div>
+
+      {c.key === "SIGN_FIRM" && c.connected && <SignTemplateInspector />}
+    </div>
+  );
+}
+
+function SignTemplateInspector() {
+  const [templateId, setTemplateId] = useState("520301000000081001");
+  const fetchActions = useServerFn(getSignTemplateActions);
+  const m = useMutation({
+    mutationFn: () => fetchActions({ data: { templateId: templateId.trim() } }),
+    onError: (e: any) => toast.error(e.message ?? "Failed to read template"),
+  });
+  return (
+    <div className="pt-3 border-t border-border space-y-2">
+      <div className="text-xs font-medium text-foreground">Discover template action IDs</div>
+      <div className="text-[11px] text-muted-foreground">
+        Paste your Zoho Sign template ID to find the client signer's <code>action_id</code> — set it as the
+        <code className="mx-1">ZOHO_SIGN_ACTION_ID</code> secret.
+      </div>
+      <div className="flex gap-2">
+        <Input
+          value={templateId}
+          onChange={(e) => setTemplateId(e.target.value)}
+          placeholder="Template ID"
+          className="font-mono text-xs"
+        />
+        <Button size="sm" variant="outline" onClick={() => m.mutate()} disabled={m.isPending}>
+          {m.isPending ? "Reading…" : "Read"}
+        </Button>
+      </div>
+      {m.data && (
+        <div className="rounded border border-border bg-muted/30 p-2 text-xs space-y-1">
+          {m.data.templateName && (
+            <div className="text-muted-foreground">Template: <span className="text-foreground">{m.data.templateName}</span></div>
+          )}
+          {m.data.actions.length === 0 ? (
+            <div className="text-muted-foreground">No actions returned.</div>
+          ) : (
+            <ul className="space-y-1">
+              {m.data.actions.map((a: any) => (
+                <li key={a.action_id} className="font-mono text-[11px] flex flex-wrap gap-x-2">
+                  <span className="text-primary">{a.action_type}</span>
+                  <span className="text-foreground">{a.action_id}</span>
+                  {a.role && <span className="text-muted-foreground">role: {a.role}</span>}
+                  {a.recipient_email && <span className="text-muted-foreground">{a.recipient_email}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
     </div>
   );
 }
