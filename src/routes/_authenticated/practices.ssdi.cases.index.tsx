@@ -63,8 +63,14 @@ function CasesList() {
             {stages.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           <Link
-            to="/practices/ssdi/intake"
+            to="/practices/ssdi/reports/pipeline"
             className="ml-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/40"
+          >
+            Pipeline report
+          </Link>
+          <Link
+            to="/practices/ssdi/intake"
+            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/40"
             title="Back-office: skip the Leads pipeline and create a client directly."
           >
             + Add client directly
