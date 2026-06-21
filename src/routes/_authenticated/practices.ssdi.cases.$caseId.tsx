@@ -91,6 +91,24 @@ function CaseDetail() {
       queryClient.invalidateQueries({ queryKey: ["ssdi-cases"] }),
       queryClient.invalidateQueries({ queryKey: ["deadlinesAtRisk"] }),
     ]);
+
+    // 2.3 — After a denial advance, suggest the next-tier filing stage in a toast.
+    const nextStep = DENIAL_NEXT_STEP[toStage as Stage];
+    if (nextStep) {
+      const today = new Date().toISOString().slice(0, 10);
+      toast(`Moved to "${toStage}".`, {
+        description: result.deadline
+          ? `Next: ${nextStep.label} by ${result.deadline}.`
+          : `Next: ${nextStep.label}.`,
+        action: {
+          label: nextStep.label,
+          onClick: () => openAdvance(nextStep.nextStage, { [nextStep.dateField]: today }),
+        },
+        duration: 10_000,
+      });
+      return;
+    }
+
     toast.success(
       result.deadline
         ? `Moved to "${toStage}". Deadline: ${result.deadline}.`
