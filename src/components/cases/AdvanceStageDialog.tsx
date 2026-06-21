@@ -98,16 +98,29 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentStage: string;
+  /** Optional: when set, the dialog opens with this next stage already selected. */
+  initialStage?: Stage;
+  /** Optional: prefill values keyed by field API name. */
+  initialFields?: Record<string, string>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSubmit: (toStage: Stage, fields: Record<string, any>) => Promise<void>;
 }
 
-export function AdvanceStageDialog({ open, onOpenChange, currentStage, onSubmit }: Props) {
+export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialStage, initialFields, onSubmit }: Props) {
   const nextStages = (TRANSITIONS[currentStage as Stage] ?? []) as Stage[];
-  const [selected, setSelected] = useState<Stage | "">("");
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const [selected, setSelected] = useState<Stage | "">(initialStage ?? "");
+  const [fields, setFields] = useState<Record<string, string>>(initialFields ?? {});
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // When the dialog re-opens (e.g. from a banner), re-seed selection + prefill.
+  useEffect(() => {
+    if (open) {
+      setSelected(initialStage ?? "");
+      setFields(initialFields ?? {});
+      setErr(null);
+    }
+  }, [open, initialStage, initialFields]);
 
   const requirements = selected ? STAGE_REQUIREMENTS[selected] ?? [] : [];
 
