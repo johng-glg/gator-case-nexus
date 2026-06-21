@@ -22,6 +22,7 @@ import { Route as AuthenticatedEngagementsIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedClientsIndexRouteImport } from './routes/_authenticated/clients.index'
 import { Route as ApiPublicDeadlineSweepRouteImport } from './routes/api/public/deadline-sweep'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings.users'
+import { Route as AuthenticatedSettingsTrustExportRouteImport } from './routes/_authenticated/settings.trust-export'
 import { Route as AuthenticatedSettingsStageRequirementsRouteImport } from './routes/_authenticated/settings.stage-requirements'
 import { Route as AuthenticatedSettingsDeadlineSweepRouteImport } from './routes/_authenticated/settings.deadline-sweep'
 import { Route as AuthenticatedSettingsConnectionsRouteImport } from './routes/_authenticated/settings.connections'
@@ -106,6 +107,12 @@ const AuthenticatedSettingsUsersRoute =
   AuthenticatedSettingsUsersRouteImport.update({
     id: '/users',
     path: '/users',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsTrustExportRoute =
+  AuthenticatedSettingsTrustExportRouteImport.update({
+    id: '/trust-export',
+    path: '/trust-export',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
 const AuthenticatedSettingsStageRequirementsRoute =
@@ -220,6 +227,7 @@ export interface FileRoutesByFullPath {
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/settings/deadline-sweep': typeof AuthenticatedSettingsDeadlineSweepRoute
   '/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
+  '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
@@ -248,6 +256,7 @@ export interface FileRoutesByTo {
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/settings/deadline-sweep': typeof AuthenticatedSettingsDeadlineSweepRoute
   '/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
+  '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
@@ -280,6 +289,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/_authenticated/settings/deadline-sweep': typeof AuthenticatedSettingsDeadlineSweepRoute
   '/_authenticated/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
+  '/_authenticated/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
@@ -312,6 +322,7 @@ export interface FileRouteTypes {
     | '/settings/connections'
     | '/settings/deadline-sweep'
     | '/settings/stage-requirements'
+    | '/settings/trust-export'
     | '/settings/users'
     | '/api/public/deadline-sweep'
     | '/clients/'
@@ -340,6 +351,7 @@ export interface FileRouteTypes {
     | '/settings/connections'
     | '/settings/deadline-sweep'
     | '/settings/stage-requirements'
+    | '/settings/trust-export'
     | '/settings/users'
     | '/api/public/deadline-sweep'
     | '/clients'
@@ -371,6 +383,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/connections'
     | '/_authenticated/settings/deadline-sweep'
     | '/_authenticated/settings/stage-requirements'
+    | '/_authenticated/settings/trust-export'
     | '/_authenticated/settings/users'
     | '/api/public/deadline-sweep'
     | '/_authenticated/clients/'
@@ -486,6 +499,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/settings/users'
       preLoaderRoute: typeof AuthenticatedSettingsUsersRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/trust-export': {
+      id: '/_authenticated/settings/trust-export'
+      path: '/trust-export'
+      fullPath: '/settings/trust-export'
+      preLoaderRoute: typeof AuthenticatedSettingsTrustExportRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/settings/stage-requirements': {
@@ -608,6 +628,7 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsConnectionsRoute: typeof AuthenticatedSettingsConnectionsRoute
   AuthenticatedSettingsDeadlineSweepRoute: typeof AuthenticatedSettingsDeadlineSweepRoute
   AuthenticatedSettingsStageRequirementsRoute: typeof AuthenticatedSettingsStageRequirementsRoute
+  AuthenticatedSettingsTrustExportRoute: typeof AuthenticatedSettingsTrustExportRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
@@ -619,6 +640,7 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
     AuthenticatedSettingsDeadlineSweepRoute,
   AuthenticatedSettingsStageRequirementsRoute:
     AuthenticatedSettingsStageRequirementsRoute,
+  AuthenticatedSettingsTrustExportRoute: AuthenticatedSettingsTrustExportRoute,
   AuthenticatedSettingsUsersRoute: AuthenticatedSettingsUsersRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }

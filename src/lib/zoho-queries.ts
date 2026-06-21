@@ -38,6 +38,7 @@ export type QueryName =
   | "pipelineByStage"
   | "pipelineByPractice"
   | "costsByEngagement"
+  | "allCosts"
   | "casesByEngagement"
   | "engagementById"
   | "allEngagements"
@@ -126,6 +127,14 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               where Engagement = ${safeId(params.engagementId)}
               order by Created_Time desc
               limit 200`;
+    case "allCosts":
+      return `select id, Name, Amount, Cost_Type, Created_Time,
+                     Engagement, Engagement.Name,
+                     Engagement.Client.First_Name, Engagement.Client.Last_Name
+              from Costs
+              where id is not null
+              order by Created_Time desc
+              limit 1000`;
     case "casesByEngagement":
       return `select id, Case_Number, Current_Stage, Sub_Status,
                      Deadline_Date, Days_To_Deadline, Deadline_At_Risk

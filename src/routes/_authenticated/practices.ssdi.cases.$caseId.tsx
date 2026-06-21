@@ -14,8 +14,9 @@ import { DocumentChecklist } from "@/components/cases/DocumentChecklist";
 import { CostEntryForm, DeleteCostButton } from "@/components/cases/CostEntryForm";
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
 import { useStageRequirements } from "@/hooks/use-stage-requirements";
-import { ChevronLeft, AlertTriangle } from "lucide-react";
+import { ChevronLeft, AlertTriangle, Download } from "lucide-react";
 import { toast } from "sonner";
+import { downloadCsv, toCsv } from "@/lib/csv";
 
 export const Route = createFileRoute("/_authenticated/practices/ssdi/cases/$caseId")({
   head: () => ({ meta: [{ title: "SSDI case — Gator" }] }),
@@ -268,9 +269,33 @@ function CaseDetail() {
       </div>
 
       <section>
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Costs</div>
-          {engagementId && !isClosed && <CostEntryForm engagementId={engagementId} />}
+          <div className="flex items-center gap-2">
+            {costsQ.data && costsQ.data.rows.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  const rows = (costsQ.data?.rows ?? []).map((c) => [
+                    typeof c.Created_Time === "string" ? c.Created_Time.slice(0, 10) : "",
+                    String(c.Name ?? ""),
+                    String(c.Cost_Type ?? ""),
+                    typeof c.Amount === "number" ? c.Amount.toFixed(2) : "",
+                    String(record?.Case_Number ?? caseId),
+                  ]);
+                  const csv = toCsv(
+                    ["Date", "Description", "Category", "Amount", "Case"],
+                    rows,
+                  );
+                  downloadCsv(`costs-${record?.Case_Number ?? caseId}.csv`, csv);
+                }}
+              >
+                <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
+              </Button>
+            )}
+            {engagementId && !isClosed && <CostEntryForm engagementId={engagementId} />}
+          </div>
         </div>
         <div className="rounded-lg border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">
