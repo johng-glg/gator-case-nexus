@@ -195,6 +195,20 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialSt
                       onChange={(e) => setFields((f) => ({ ...f, [r.field]: e.target.value }))}
                       className="mt-1"
                     />
+                  ) : r.type === "select" ? (
+                    <Select
+                      value={fields[r.field] ?? ""}
+                      onValueChange={(v) => setFields((f) => ({ ...f, [r.field]: v }))}
+                    >
+                      <SelectTrigger id={r.field} className="mt-1">
+                        <SelectValue placeholder="Select…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(r.options ?? []).map((opt) => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   ) : (
                     <Input
                       id={r.field}
