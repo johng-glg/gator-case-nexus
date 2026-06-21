@@ -76,28 +76,29 @@ function Leads() {
   }, [leads.data, q, practice, status]);
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-5">
+    <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5">
       <div className="flex items-baseline justify-between flex-wrap gap-4">
-        <div>
+        <div className="min-w-0">
           <h1 className="font-display text-2xl text-foreground">Leads</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             One pipeline across all practice areas. Qualify, then convert into an engagement.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full sm:w-auto items-center gap-2">
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search name, email, source…"
-            className="w-64 rounded-md border border-border bg-input px-3 py-1.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring"
+            className="flex-1 sm:w-64 rounded-md border border-border bg-input px-3 py-1.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <button
             type="button"
             onClick={() => setOpenNew(true)}
-            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
           >
-            <Plus className="h-4 w-4" /> New lead
+            <Plus className="h-4 w-4" /> <span className="hidden sm:inline">New lead</span><span className="sm:hidden">New</span>
           </button>
+
         </div>
       </div>
 
