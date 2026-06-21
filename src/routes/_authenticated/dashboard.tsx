@@ -7,6 +7,7 @@ import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { PRACTICES, practiceForEngagementType } from "@/practices/registry";
 import { AlarmClock, Briefcase, ArrowRight } from "lucide-react";
+import { DailyDigestBanner } from "@/components/dashboard/DailyDigestBanner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   validateSearch: z.object({ connected: z.string().optional() }),
@@ -62,6 +63,10 @@ function Dashboard() {
             Firm-wide view across all practice areas.
           </p>
         </div>
+      </div>
+
+      <div className="mt-6">
+        <DailyDigestBanner />
       </div>
 
       <section className="mt-8">
