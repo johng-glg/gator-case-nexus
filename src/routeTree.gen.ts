@@ -23,6 +23,7 @@ import { Route as AuthenticatedClientsIndexRouteImport } from './routes/_authent
 import { Route as ApiPublicDeadlineSweepRouteImport } from './routes/api/public/deadline-sweep'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings.users'
 import { Route as AuthenticatedSettingsConnectionsRouteImport } from './routes/_authenticated/settings.connections'
+import { Route as AuthenticatedSettingsChangelogRouteImport } from './routes/_authenticated/settings.changelog'
 import { Route as AuthenticatedPracticesSsdiRouteImport } from './routes/_authenticated/practices.ssdi'
 import { Route as AuthenticatedPracticesPracticeRouteImport } from './routes/_authenticated/practices.$practice'
 import { Route as AuthenticatedLeadsLeadIdRouteImport } from './routes/_authenticated/leads.$leadId'
@@ -110,6 +111,12 @@ const AuthenticatedSettingsConnectionsRoute =
     path: '/connections',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
+const AuthenticatedSettingsChangelogRoute =
+  AuthenticatedSettingsChangelogRouteImport.update({
+    id: '/changelog',
+    path: '/changelog',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
 const AuthenticatedPracticesSsdiRoute =
   AuthenticatedPracticesSsdiRouteImport.update({
     id: '/practices/ssdi',
@@ -188,6 +195,7 @@ export interface FileRoutesByFullPath {
   '/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
+  '/settings/changelog': typeof AuthenticatedSettingsChangelogRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
@@ -212,6 +220,7 @@ export interface FileRoutesByTo {
   '/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
   '/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
+  '/settings/changelog': typeof AuthenticatedSettingsChangelogRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
@@ -240,6 +249,7 @@ export interface FileRoutesById {
   '/_authenticated/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
   '/_authenticated/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/_authenticated/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
+  '/_authenticated/settings/changelog': typeof AuthenticatedSettingsChangelogRoute
   '/_authenticated/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/leads/$leadId'
     | '/practices/$practice'
     | '/practices/ssdi'
+    | '/settings/changelog'
     | '/settings/connections'
     | '/settings/users'
     | '/api/public/deadline-sweep'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/engagements/$engagementId'
     | '/leads/$leadId'
     | '/practices/$practice'
+    | '/settings/changelog'
     | '/settings/connections'
     | '/settings/users'
     | '/api/public/deadline-sweep'
@@ -319,6 +331,7 @@ export interface FileRouteTypes {
     | '/_authenticated/leads/$leadId'
     | '/_authenticated/practices/$practice'
     | '/_authenticated/practices/ssdi'
+    | '/_authenticated/settings/changelog'
     | '/_authenticated/settings/connections'
     | '/_authenticated/settings/users'
     | '/api/public/deadline-sweep'
@@ -443,6 +456,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsConnectionsRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
+    '/_authenticated/settings/changelog': {
+      id: '/_authenticated/settings/changelog'
+      path: '/changelog'
+      fullPath: '/settings/changelog'
+      preLoaderRoute: typeof AuthenticatedSettingsChangelogRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/practices/ssdi': {
       id: '/_authenticated/practices/ssdi'
       path: '/practices/ssdi'
@@ -524,12 +544,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedSettingsRouteChildren {
+  AuthenticatedSettingsChangelogRoute: typeof AuthenticatedSettingsChangelogRoute
   AuthenticatedSettingsConnectionsRoute: typeof AuthenticatedSettingsConnectionsRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
 
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
+  AuthenticatedSettingsChangelogRoute: AuthenticatedSettingsChangelogRoute,
   AuthenticatedSettingsConnectionsRoute: AuthenticatedSettingsConnectionsRoute,
   AuthenticatedSettingsUsersRoute: AuthenticatedSettingsUsersRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
