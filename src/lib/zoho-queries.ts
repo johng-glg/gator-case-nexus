@@ -52,13 +52,13 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
     case "openCases":
       return `select Case_Number, Current_Stage, Sub_Status, Deadline_Date, Days_To_Deadline, Engagement, Assigned_Case_Manager
               from SSDI_Cases
-              where Is_Closed = false
+              where (Is_Closed = false or Is_Closed is null)
               order by Date_Opened desc
               limit 200`;
     case "myOpenCases":
       return `select Case_Number, Current_Stage, Sub_Status, Engagement, Deadline_Date, Days_To_Deadline
               from SSDI_Cases
-              where Assigned_Case_Manager = ${safeId(params.userId)} and Is_Closed = false
+              where Assigned_Case_Manager = ${safeId(params.userId)} and (Is_Closed = false or Is_Closed is null)
               order by Date_Opened desc
               limit 200`;
     case "deadlinesAtRisk":
