@@ -140,8 +140,7 @@ function EngagementDetail() {
                       </Link>
                     </Td>
                     <Td className="text-muted-foreground">{String(c.Current_Stage ?? "—")}</Td>
-                    <Td className="text-muted-foreground">{String(c.Claim_Type ?? "—")}</Td>
-                    <Td className="text-muted-foreground">{String(c.Date_Opened ?? "—")}</Td>
+                    <Td className="text-muted-foreground">{String(c.Sub_Status ?? "—")}</Td>
                     <Td>
                       {deadline ? (
                         <div className="flex items-center gap-2">
