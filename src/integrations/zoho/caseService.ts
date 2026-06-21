@@ -35,9 +35,9 @@ const READ_FIELDS = [
 
 /** Fields the sweep/recompute read to re-derive the deadline + counts. */
 const DERIVE_FIELDS = [
-  "id", "Active_Deadline_Type", "Notice_Date", "Documented_Receipt_Date",
+  "id", "Case_Number", "Active_Deadline_Type", "Notice_Date", "Documented_Receipt_Date",
   "Deadline_Date", "Days_To_Deadline", "Deadline_At_Risk",
-  "Release_Signed_Date", "Release_Expiring_Soon",
+  "Release_Signed_Date", "Release_Expiring_Soon", "Assigned_Attorney", "Engagement",
 ];
 
 export function createCaseService(deps: CaseServiceDeps) {
