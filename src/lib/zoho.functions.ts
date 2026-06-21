@@ -37,6 +37,7 @@ const queryInput = z.object({
     "myEngagements",
     "allContacts",
     "allLeads",
+    "allReferrals",
   ]),
   params: z.record(z.string(), z.unknown()).optional(),
 });
