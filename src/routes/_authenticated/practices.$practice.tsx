@@ -43,17 +43,18 @@ function PracticeStub() {
         <p className="mt-3 text-sm text-muted-foreground">{entry.tagline}</p>
 
         <div className="mt-8 rounded-lg border border-border bg-card p-6">
-        <div className="flex items-center gap-2 text-primary">
-          <Lock className="h-4 w-4" />
-          <div className="font-medium">Coming soon</div>
+          <div className="flex items-center gap-2 text-primary">
+            <Lock className="h-4 w-4" />
+            <div className="font-medium">Coming soon</div>
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">
+            The {entry.label} workspace is scaffolded but not yet built. {entry.label} engagements
+            already appear in the firm-wide{" "}
+            <Link to="/engagements" className="text-primary hover:underline">Engagements</Link>{" "}
+            list and roll up into the dashboard. The dedicated workspace — matter detail, deadlines,
+            and stage workflow — slots in here when the practice goes live.
+          </p>
         </div>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The {entry.label} workspace is scaffolded but not yet built. {entry.label} engagements
-          already appear in the firm-wide{" "}
-          <Link to="/engagements" className="text-primary hover:underline">Engagements</Link>{" "}
-          list and roll up into the dashboard. The dedicated workspace — matter detail, deadlines,
-          and stage workflow — slots in here when the practice goes live.
-        </p>
       </div>
     </div>
   );
