@@ -96,6 +96,7 @@ function Clients() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
