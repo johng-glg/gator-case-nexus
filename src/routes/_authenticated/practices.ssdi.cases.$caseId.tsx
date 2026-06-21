@@ -150,16 +150,20 @@ function CaseDetail() {
           <Row k="Active type" v={record.Active_Deadline_Type} />
           <Row k="Deadline date" v={record.Deadline_Date} />
           <Row k="Days to deadline" v={typeof days === "number" ? `${days}` : "—"} />
-          <div className="pt-2">
+          <div className="pt-2 flex items-center justify-between gap-2">
             {atRisk ? (
               <span className="inline-flex items-center gap-1 rounded-md bg-destructive/10 border border-destructive/30 px-2 py-1 text-xs font-medium text-destructive">
                 <AlertTriangle className="h-3 w-3" /> At risk
               </span>
             ) : (
               <span className="text-xs text-muted-foreground">
-                Computed by the deadline engine — populates once a case advances or the daily sweep runs.
+                Derived from Notice Date — edit the notice, then recompute.
               </span>
             )}
+            <Button size="sm" variant="outline" onClick={onRecomputeDeadline} disabled={recomputing}>
+              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${recomputing ? "animate-spin" : ""}`} />
+              Recompute
+            </Button>
           </div>
         </Panel>
 
