@@ -62,7 +62,7 @@ export interface ConnectionStatus {
   lastVerifiedAt?: string;
 }
 
-interface TokenResponse { access_token?: string; refresh_token?: string; expires_in?: number; error?: string; }
+interface TokenResponse { access_token?: string; refresh_token?: string; expires_in?: number; error?: string; scope?: string; api_domain?: string; }
 
 export interface CredentialsDeps {
   tokenStore: ZohoTokenStore;
