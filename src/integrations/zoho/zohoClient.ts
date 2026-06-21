@@ -190,6 +190,13 @@ export function createZohoClient(cfg: ZohoConfig) {
         return r?.data?.[0] ?? null;
       },
 
+      /** Fetch a related-list (e.g. Tasks under SSDI_Cases/{id}/Tasks). */
+      async getRelated<T = ZohoRecord>(module: string, id: string, relatedList: string): Promise<T[]> {
+        const r = await request<{ data?: T[] } | undefined>(actorKey, "GET", `/${module}/${id}/${relatedList}`);
+        return r?.data ?? [];
+      },
+
+
       /** Create up to any number of records; chunked to 100/call. Attributed to this actor. */
       async createRecords(module: string, records: ZohoRecord[]): Promise<unknown[]> {
         const results: unknown[] = [];
