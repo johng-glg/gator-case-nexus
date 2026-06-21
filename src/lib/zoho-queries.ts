@@ -38,7 +38,8 @@ export type QueryName =
   | "allEngagements"
   | "engagementsByType"
   | "myEngagements"
-  | "allContacts";
+  | "allContacts"
+  | "allLeads";
 
 const ENGAGEMENT_COLS =
   "id, Engagement_Name, Engagement_Type, Engagement_Status, Retainer_Status, Client.First_Name, Client.Last_Name, Assigned_Attorney";
