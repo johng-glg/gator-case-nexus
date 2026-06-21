@@ -38,7 +38,8 @@ export type QueryName =
   | "allEngagements"
   | "engagementsByType"
   | "myEngagements"
-  | "allContacts";
+  | "allContacts"
+  | "allLeads";
 
 const ENGAGEMENT_COLS =
   "id, Engagement_Name, Engagement_Type, Engagement_Status, Retainer_Status, Client.First_Name, Client.Last_Name, Assigned_Attorney";
@@ -105,6 +106,10 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
     case "allContacts":
       return `select id, First_Name, Last_Name, Email, Phone, Mailing_City, Mailing_State
               from Contacts
+              order by Modified_Time desc`;
+    case "allLeads":
+      return `select id, First_Name, Last_Name, Email, Phone, Company, Lead_Status, Lead_Source
+              from Leads
               order by Modified_Time desc`;
   }
 }

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import {
   LayoutDashboard,
   Users,
+  UserPlus,
   Briefcase,
   AlarmClock,
   LogOut,
@@ -25,6 +26,7 @@ interface Props {
 
 const FIRM_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/leads", label: "Leads", icon: UserPlus },
   { to: "/clients", label: "Clients", icon: Users },
   { to: "/engagements", label: "Engagements", icon: Briefcase },
   { to: "/deadlines", label: "Deadlines", icon: AlarmClock },
