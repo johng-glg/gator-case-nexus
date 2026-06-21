@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { zohoQuery } from "@/lib/zoho.functions";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/clients")({
   head: () => ({ meta: [{ title: "Clients — Gator" }] }),
@@ -32,11 +33,11 @@ function Clients() {
   }, [clients.data, q]);
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-10">
+    <div className="max-w-6xl mx-auto px-8 py-5">
       <div className="flex items-baseline justify-between flex-wrap gap-4">
         <div>
-          <h1 className="font-display text-3xl text-foreground">Clients</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h1 className="font-display text-2xl text-foreground">Clients</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
             Contacts in Zoho. A client may have multiple engagements across practice areas.
           </p>
         </div>
@@ -48,7 +49,7 @@ function Clients() {
         />
       </div>
 
-      <div className="mt-6 rounded-lg border border-border bg-card overflow-hidden">
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
           <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
@@ -76,7 +77,15 @@ function Clients() {
               const loc = [r.Mailing_City, r.Mailing_State].filter(Boolean).join(", ");
               return (
                 <tr key={id} className="hover:bg-accent/30">
-                  <Td className="font-medium">{name}</Td>
+                  <Td className="font-medium">
+                    <Link
+                      to="/clients/$clientId"
+                      params={{ clientId: id }}
+                      className="text-primary hover:underline"
+                    >
+                      {name}
+                    </Link>
+                  </Td>
                   <Td className="text-muted-foreground">{String(r.Email ?? "—")}</Td>
                   <Td className="text-muted-foreground">{String(r.Phone ?? "—")}</Td>
                   <Td className="text-muted-foreground">{loc || "—"}</Td>
@@ -89,6 +98,7 @@ function Clients() {
     </div>
   );
 }
+
 
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="px-4 py-2.5 text-left font-medium">{children}</th>;

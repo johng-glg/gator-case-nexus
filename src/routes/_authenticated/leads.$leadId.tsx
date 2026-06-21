@@ -73,15 +73,15 @@ function LeadDetail() {
   const isSSDI = practice === "SSDI";
 
   return (
-    <div className="max-w-4xl mx-auto px-8 py-8 space-y-6">
+    <div className="max-w-4xl mx-auto px-8 py-5 space-y-4">
       <Link to="/leads" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
         <ChevronLeft className="h-4 w-4" /> Back to leads
       </Link>
 
       <header>
         <div className="text-xs uppercase tracking-[0.18em] text-primary/80">Lead</div>
-        <h1 className="font-display text-3xl text-foreground mt-0.5">{name}</h1>
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+        <h1 className="font-display text-2xl text-foreground mt-0.5">{name}</h1>
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
           {practice && (
             <span className={cn(
               "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium",
@@ -92,6 +92,7 @@ function LeadDetail() {
           <span className="text-muted-foreground">· Owner: {owner}</span>
         </div>
       </header>
+
 
       <section className="rounded-lg border border-border bg-card p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
         <Field label="Email" value={rec.Email} />

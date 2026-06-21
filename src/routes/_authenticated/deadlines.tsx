@@ -33,9 +33,9 @@ function Deadlines() {
     : allRows;
 
   return (
-    <div className="max-w-5xl mx-auto px-8 py-10 space-y-8">
+    <div className="max-w-5xl mx-auto px-8 py-5 space-y-8">
       <div>
-        <h1 className="font-display text-3xl text-foreground">Deadlines</h1>
+        <h1 className="font-display text-2xl text-foreground">Deadlines</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Every deadline you owe, soonest first. Urgent ones are flagged.
         </p>

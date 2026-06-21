@@ -87,7 +87,7 @@ function EngagementDetail() {
   const net = allFees !== null && totalCosts !== null ? allFees - totalCosts : null;
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-8 space-y-6">
+    <div className="max-w-6xl mx-auto px-8 py-5 space-y-4">
       <div>
         <Link to="/engagements" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-4 w-4" /> Back to engagements
@@ -96,21 +96,29 @@ function EngagementDetail() {
 
       <header>
         <div className="text-xs uppercase tracking-[0.18em] text-primary/80">Engagement</div>
-        <h1 className="font-display text-3xl text-foreground mt-0.5">{String(record.Name ?? "Engagement")}</h1>
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+        <h1 className="font-display text-2xl text-foreground mt-0.5">{String(record.Name ?? "Engagement")}</h1>
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
           <Badge>{String(record.Engagement_Type ?? "—")}</Badge>
           <span>· {String(record.Engagement_Status ?? "—")}</span>
           <span>· Retainer: {String(record.Retainer_Status ?? "—")}</span>
+          <span className="text-foreground/70">·</span>
+          <span>
+            Client:{" "}
+            {clientId ? (
+              <Link
+                to="/clients/$clientId"
+                params={{ clientId }}
+                className="text-primary hover:underline"
+              >
+                {fullClientName}
+              </Link>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )}
+          </span>
         </div>
-        <p className="mt-2 text-sm">
-          Client:{" "}
-          {clientId ? (
-            <span className="text-foreground">{fullClientName}</span>
-          ) : (
-            <span className="text-muted-foreground">—</span>
-          )}
-        </p>
       </header>
+
 
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Stat label="Total fees" value={fmtMoney(allFees)} />

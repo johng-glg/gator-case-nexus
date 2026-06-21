@@ -42,6 +42,7 @@ export type QueryName =
   | "engagementsByType"
   | "myEngagements"
   | "allContacts"
+  | "engagementsByContact"
   | "allLeads"
   | "allReferrals";
 
@@ -141,6 +142,12 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
       return `select id, First_Name, Last_Name, Email, Phone, Mailing_City, Mailing_State
               from Contacts
               where id is not null
+              order by Modified_Time desc
+              limit 200`;
+    case "engagementsByContact":
+      return `select id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Open_Date
+              from Engagements
+              where Client = ${safeId(params.contactId)}
               order by Modified_Time desc
               limit 200`;
     case "allLeads":

@@ -40,11 +40,11 @@ function CasesList() {
   }, [cases.data, stageFilter]);
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-10">
+    <div className="max-w-6xl mx-auto px-8 py-5">
       <div className="flex items-baseline justify-between flex-wrap gap-4">
         <div>
           <div className="text-xs uppercase tracking-[0.18em] text-primary/80">SSDI workspace</div>
-          <h1 className="font-display text-3xl text-foreground mt-0.5">Cases</h1>
+          <h1 className="font-display text-2xl text-foreground mt-0.5">Cases</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Social Security disability matters — appeal lifecycle from Initial through Appeals Council.
           </p>

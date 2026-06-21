@@ -54,10 +54,10 @@ function Dashboard() {
   }, [pipeline.data]);
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-10">
+    <div className="max-w-6xl mx-auto px-8 py-5">
       <div className="flex items-baseline justify-between">
         <div>
-          <h1 className="font-display text-3xl text-foreground">Dashboard</h1>
+          <h1 className="font-display text-2xl text-foreground">Dashboard</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Firm-wide view across all practice areas.
           </p>
