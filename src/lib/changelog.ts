@@ -12,6 +12,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: per-stage document checklist (Phase 3.1)",
+    summary:
+      "Case page now shows required SSA / OHO documents grouped by lifecycle phase, with per-doc status tracking.",
+    changes: [
+      "New Documents panel on the case page lists SSA-1696 / SSA-827 / Retainer (Intake), SSA-561 / SSA-3441 (Recon), HA-501 / HA-520 / pre-hearing brief (ALJ), HA-520 / AC brief (Appeals Council), and fee petition (Award).",
+      "Each doc cycles through To do → Sent → Received → Filed; status persists per case in localStorage. Phase groups appear once the case reaches that phase and stay visible thereafter.",
+      "Direct PDF links to the official SSA forms where available.",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: stage workflow completeness (Phase 2.2–2.4)",
     summary:
       "Denial stages now suggest the next-tier filing in one click, closure captures a structured disposition, and closed cases are locked to edits.",
