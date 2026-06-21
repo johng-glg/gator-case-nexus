@@ -54,6 +54,17 @@ function CaseDetail() {
     queryFn: () => runQuery({ data: { name: "costsByEngagement", params: { engagementId: engagementId! } } }),
   });
 
+  // Pull the engagement so we can show the linked Client (case has no direct Client field).
+  const engagementQ = useQuery({
+    queryKey: ["engagement", engagementId],
+    enabled: !!engagementId,
+    queryFn: () => runQuery({ data: { name: "engagementById", params: { engagementId: engagementId! } } }),
+  });
+  const engagementRow = (engagementQ.data as Array<Record<string, unknown>> | undefined)?.[0];
+  const clientRef = engagementRow?.Client as { id?: string; name?: string } | string | undefined;
+  const clientId = typeof clientRef === "string" ? clientRef : clientRef?.id;
+  const clientName = typeof clientRef === "object" ? clientRef?.name : undefined;
+
   const tasksQ = useQuery({
     queryKey: ["tasks", caseId],
     enabled: validCaseId,
