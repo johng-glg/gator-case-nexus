@@ -23,16 +23,26 @@ function CaseDetail() {
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const ID_RE = /^[A-Za-z0-9_]+$/;
+  const validCaseId = ID_RE.test(caseId);
+
   const caseQ = useQuery({
     queryKey: ["case", caseId],
+    enabled: validCaseId,
     queryFn: () => fetchCase({ data: { caseId } }),
   });
 
   const record = caseQ.data?.record;
-  const engagementId =
-    (record?.Engagement && typeof record.Engagement === "object" && "id" in (record.Engagement as object))
-      ? ((record.Engagement as { id: string }).id)
-      : undefined;
+
+  // Zoho lookup fields come back as { id, name } from getRecord, but can be a bare
+  // id string from COQL. Accept either; reject anything else.
+  let engagementId: string | undefined;
+  const eng = record?.Engagement;
+  if (typeof eng === "string" && ID_RE.test(eng)) engagementId = eng;
+  else if (eng && typeof eng === "object" && "id" in (eng as object)) {
+    const raw = (eng as { id: unknown }).id;
+    if (typeof raw === "string" && ID_RE.test(raw)) engagementId = raw;
+  }
 
   const costsQ = useQuery({
     queryKey: ["costs", engagementId],
@@ -42,8 +52,10 @@ function CaseDetail() {
 
   const tasksQ = useQuery({
     queryKey: ["tasks", caseId],
+    enabled: validCaseId,
     queryFn: () => runQuery({ data: { name: "tasksByCase", params: { caseId } } }),
   });
+
 
   async function onAdvance(toStage: string, fields: Record<string, unknown>) {
     const result = await advance({ data: { caseId, toStage, fields } });
