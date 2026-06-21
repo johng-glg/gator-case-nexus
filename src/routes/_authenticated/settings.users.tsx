@@ -73,6 +73,7 @@ function UsersPage() {
               <tr>
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Last sign-in</th>
+                <th className="px-4 py-2">Zoho OAuth</th>
                 <th className="px-4 py-2">Admin</th>
                 <th className="px-4 py-2">Staff</th>
               </tr>
@@ -85,6 +86,17 @@ function UsersPage() {
                     {u.last_sign_in_at
                       ? new Date(u.last_sign_in_at).toLocaleDateString()
                       : "never"}
+                  </td>
+                  <td className="px-4 py-3">
+                    {u.zohoConnected ? (
+                      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-primary/15 text-primary px-2 py-0.5">
+                        Connected
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-xs rounded-full bg-muted text-muted-foreground px-2 py-0.5">
+                        Not connected
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <Switch
