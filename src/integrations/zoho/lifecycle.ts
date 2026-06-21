@@ -9,8 +9,7 @@
 import { computeAppealDeadline, nextAppealTier, type AppealTier } from "./deadlines";
 
 export type Stage =
-  | "Intake"
-  | "Retainer signed"
+  | "Retained"
   | "Application filed"
   | "Initial decision - pending"
   | "Initial decision - denied"
@@ -34,10 +33,23 @@ export type Stage =
   | "Fee petition filed"
   | "Closed";
 
+/**
+ * Legacy stages still present in Zoho data. Map to current Stage so the UI / state machine
+ * keep working for cases opened before the Intake + Retainer-signed collapse.
+ */
+const LEGACY_STAGE_MAP: Record<string, Stage> = {
+  "Intake": "Retained",
+  "Retainer signed": "Retained",
+};
+
+export function normalizeStage(raw: string | null | undefined): Stage {
+  if (!raw) return "Retained";
+  return (LEGACY_STAGE_MAP[raw] ?? raw) as Stage;
+}
+
 /** Valid next stages from each stage. "Closed" is reachable from anywhere (handled separately). */
 export const TRANSITIONS: Record<Stage, Stage[]> = {
-  "Intake": ["Retainer signed", "Closed"],
-  "Retainer signed": ["Application filed", "Closed"],
+  "Retained": ["Application filed", "Closed"],
   "Application filed": ["Initial decision - pending", "Closed"],
   "Initial decision - pending": ["Initial decision - denied", "Initial decision - approved", "Closed"],
   "Initial decision - denied": ["Reconsideration filed", "Closed"],
@@ -83,7 +95,7 @@ export type DateRule = DueRule;
 
 /** What fires on entering each stage. Stages not listed have no automatic effects. */
 export const HOOKS: Partial<Record<Stage, StageEffects>> = {
-  "Retainer signed": {
+  "Retained": {
     sign: ["SSA-1696", "SSA-827", "Retainer"],
     tasks: [{ label: "File SSA application", due: { type: "fieldPlus", field: "Date_Opened", days: 14 } }],
   },
@@ -134,7 +146,7 @@ export interface Phase {
 }
 
 export const PHASES: Phase[] = [
-  { key: "intake", label: "Intake & filing", stages: ["Intake", "Retainer signed", "Application filed"] },
+  { key: "intake", label: "Intake & filing", stages: ["Retained", "Application filed"] },
   { key: "initial", label: "Initial decision", stages: ["Initial decision - pending", "Initial decision - denied", "Initial decision - approved"] },
   { key: "recon", label: "Reconsideration", stages: ["Reconsideration filed", "Recon decision - pending", "Recon decision - denied", "Recon decision - approved"] },
   { key: "alj", label: "ALJ hearing", stages: ["ALJ hearing requested", "Hearing scheduled", "Hearing prep", "Hearing held", "ALJ decision - pending", "ALJ decision - denied", "ALJ decision - approved"] },

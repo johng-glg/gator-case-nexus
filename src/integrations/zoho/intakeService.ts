@@ -225,7 +225,7 @@ export function createCaseOpener(deps: { zoho: ZohoClient; now?: () => Date }) {
     await svc.createRecords("SSDI_Cases", [clean({
       Name: name,
       Engagement: { id: engagementId },
-      Current_Stage: "Intake",
+      Current_Stage: "Retained",
       Date_Opened: today(),
     })]);
   };

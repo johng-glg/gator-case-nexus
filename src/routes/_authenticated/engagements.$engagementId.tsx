@@ -5,6 +5,7 @@ import { getContact, getEngagement, retainerSend, zohoQuery } from "@/lib/zoho.f
 import { ChevronLeft, AlertTriangle, Loader2, Check, CircleDot, Circle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { normalizeStage } from "@/integrations/zoho/lifecycle";
 
 
 export const Route = createFileRoute("/_authenticated/engagements/$engagementId")({
@@ -187,7 +188,7 @@ function EngagementDetail() {
                         {String(c.Case_Number ?? cid)}
                       </Link>
                     </Td>
-                    <Td className="text-muted-foreground">{String(c.Current_Stage ?? "—")}</Td>
+                    <Td className="text-muted-foreground">{c.Current_Stage ? normalizeStage(c.Current_Stage as string) : "—"}</Td>
                     <Td className="text-muted-foreground">{String(c.Sub_Status ?? "—")}</Td>
                     <Td>
                       {deadline ? (

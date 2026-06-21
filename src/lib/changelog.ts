@@ -12,6 +12,16 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: collapsed Intake + Retainer signed into 'Retained'",
+    summary: "Retainers are signed before the case is created, so the first SSDI stage is now 'Retained'.",
+    changes: [
+      "New starting stage 'Retained'; legacy 'Intake' and 'Retainer signed' cases display and behave as 'Retained' via in-code mapping.",
+      "Updated state machine: Retained → Application filed → … (transitions, hooks, and phase rail updated).",
+      "New case creation writes Current_Stage = 'Retained'.",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: deadlines dashboard upgrade (Phase 1.3)",
     summary:
       "The /deadlines page now triages at a glance — urgency buckets, mine-only filter, tier grouping, and a new upcoming-hearings section.",

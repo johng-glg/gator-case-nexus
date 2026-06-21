@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { zohoQuery } from "@/lib/zoho.functions";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { normalizeStage } from "@/integrations/zoho/lifecycle";
 
 export const Route = createFileRoute("/_authenticated/practices/ssdi/cases/")({
   head: () => ({ meta: [{ title: "SSDI cases — Gator" }] }),
@@ -29,14 +30,14 @@ function CasesList() {
     const set = new Set<string>();
     cases.data?.rows.forEach((r) => {
       const s = r.Current_Stage;
-      if (typeof s === "string") set.add(s);
+      if (typeof s === "string") set.add(normalizeStage(s));
     });
     return Array.from(set).sort();
   }, [cases.data]);
 
   const filteredRows = useMemo(() => {
     const rows = cases.data?.rows ?? [];
-    return stageFilter ? rows.filter((r) => r.Current_Stage === stageFilter) : rows;
+    return stageFilter ? rows.filter((r) => normalizeStage(r.Current_Stage as string | undefined) === stageFilter) : rows;
   }, [cases.data, stageFilter]);
 
   return (
@@ -103,7 +104,7 @@ function CasesList() {
                       {String(r.Case_Number ?? "—")}
                     </Link>
                   </Td>
-                  <Td>{String(r.Current_Stage ?? "—")}</Td>
+                  <Td>{r.Current_Stage ? normalizeStage(r.Current_Stage as string) : "—"}</Td>
                   <Td className="text-muted-foreground">{String(r.Sub_Status ?? "")}</Td>
                   <Td>{String(r.Deadline_Date ?? "—")}</Td>
                   <Td className={cn("text-right tabular-nums", atRisk && "text-destructive font-medium")}>

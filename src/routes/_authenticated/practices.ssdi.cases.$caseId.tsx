@@ -8,6 +8,7 @@ import { StageRail } from "@/components/cases/StageRail";
 import { AdvanceStageDialog } from "@/components/cases/AdvanceStageDialog";
 import { DeadlinePanel } from "@/components/cases/DeadlinePanel";
 import { TasksPanel } from "@/components/cases/TasksPanel";
+import { normalizeStage } from "@/integrations/zoho/lifecycle";
 import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -92,7 +93,7 @@ function CaseDetail() {
   if (caseQ.error) return <div className="p-8 text-sm text-destructive-foreground">{(caseQ.error as Error).message}</div>;
   if (!record) return <div className="p-8 text-sm text-muted-foreground">Case not found.</div>;
 
-  const stage = String(record.Current_Stage ?? "");
+  const stage = normalizeStage(record.Current_Stage as string | undefined);
   const releaseExpiringSoon = record.Release_Expiring_Soon === true;
 
   const backPay = typeof record.Back_Pay_Amount === "number" ? record.Back_Pay_Amount : null;
