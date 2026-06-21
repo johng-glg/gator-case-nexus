@@ -180,28 +180,7 @@ function CaseDetail() {
           </div>
         </Panel>
 
-        <Panel title="Tasks">
-          {tasksQ.isLoading && <p className="text-xs text-muted-foreground">Loading…</p>}
-          {tasksQ.data && tasksQ.data.rows.length === 0 && (
-            <p className="text-xs text-muted-foreground">No open tasks.</p>
-          )}
-          <ul className="space-y-2">
-            {tasksQ.data?.rows.map((t) => {
-              const id = String((t as Record<string, unknown>).id ?? "");
-              return (
-                <li key={id} className="flex items-start justify-between gap-2 border-b border-border/50 pb-2 last:border-0">
-                  <div>
-                    <div className="text-sm">{String(t.Subject ?? "—")}</div>
-                    <div className="text-xs text-muted-foreground">Due {String(t.Due_Date ?? "—")}</div>
-                  </div>
-                  <Button size="sm" variant="ghost" onClick={() => onCompleteTask(id)}>
-                    <CheckCircle2 className="h-4 w-4 mr-1" /> Done
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
-        </Panel>
+        <TasksPanel caseId={caseId} />
       </div>
 
       <section>
