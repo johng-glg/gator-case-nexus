@@ -94,6 +94,7 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
 
     // 3) First SSDI Case
     const caseRes = await api.createRecords("SSDI_Cases", [clean({
+      Name: `${p.client.lastName}, ${p.client.firstName} — SSDI`,
       Engagement: { id: engagementId }, Current_Stage: "Intake", Date_Opened: t,
       Claim_Type: p.ssdi.claimType, Alleged_Onset_Date: p.ssdi.onset,
       Date_Last_Worked: p.ssdi.lastWorked, Date_Last_Insured: p.ssdi.dli,
@@ -177,6 +178,7 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
 
     // First SSDI Case
     const caseRes = await api.createRecords("SSDI_Cases", [clean({
+      Name: `${lastName}, ${firstName || ""} — SSDI`.replace(/, —/, " —"),
       Engagement: { id: engagementId }, Current_Stage: "Intake", Date_Opened: t,
       Assigned_Case_Manager: actor,
     })]);
