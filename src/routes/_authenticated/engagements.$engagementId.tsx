@@ -272,11 +272,12 @@ function Badge({ children }: { children: React.ReactNode }) {
 }
 
 function RetainerPanel({
-  status, link, sentDate, signedDate, onSend, sending,
+  status, link, sentDate, viewedDate, signedDate, onSend, sending,
 }: {
   status: string;
   link?: string;
   sentDate?: string;
+  viewedDate?: string;
   signedDate?: string;
   onSend: () => void;
   sending: boolean;
@@ -293,6 +294,7 @@ function RetainerPanel({
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Retainer</div>
           <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
             {sentDate && <span>Sent {sentDate.slice(0, 10)}</span>}
+            {viewedDate && <span>Viewed {viewedDate.slice(0, 10)}</span>}
             {signedDate && <span>Signed {signedDate.slice(0, 10)}</span>}
             {link && (
               <a href={link} target="_blank" rel="noreferrer" className="text-primary hover:underline">
