@@ -21,6 +21,7 @@ function CaseDetail() {
   const fetchCase = useServerFn(getCase);
   const runQuery = useServerFn(zohoQuery);
   const advance = useServerFn(caseAdvance);
+  const seedTestCase = useServerFn(seedTestCaseData);
 
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
