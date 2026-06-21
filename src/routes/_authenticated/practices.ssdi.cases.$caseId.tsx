@@ -28,6 +28,14 @@ function CaseDetail() {
 
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogInitialStage, setDialogInitialStage] = useState<Stage | undefined>(undefined);
+  const [dialogInitialFields, setDialogInitialFields] = useState<Record<string, string> | undefined>(undefined);
+
+  function openAdvance(initialStage?: Stage, initialFields?: Record<string, string>) {
+    setDialogInitialStage(initialStage);
+    setDialogInitialFields(initialFields);
+    setDialogOpen(true);
+  }
 
   const ID_RE = /^[A-Za-z0-9_]+$/;
   const validCaseId = ID_RE.test(caseId);
