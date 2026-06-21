@@ -19,6 +19,18 @@ function EngagementDetail() {
   const fetchEngagement = useServerFn(getEngagement);
   const fetchContact = useServerFn(getContact);
   const runQuery = useServerFn(zohoQuery);
+  const sendRetainerFn = useServerFn(retainerSend);
+  const queryClient = useQueryClient();
+
+  const sendRetainer = useMutation({
+    mutationFn: () => sendRetainerFn({ data: { engagementId } }),
+    onSuccess: () => {
+      toast.success("Retainer sent for signature");
+      queryClient.invalidateQueries({ queryKey: ["engagement", engagementId] });
+    },
+    onError: (err: unknown) => toast.error((err as Error).message),
+  });
+
 
   const validId = ID_RE.test(engagementId);
 
