@@ -62,7 +62,7 @@ export interface ConnectionStatus {
   lastVerifiedAt?: string;
 }
 
-interface TokenResponse { access_token?: string; refresh_token?: string; expires_in?: number; error?: string; }
+interface TokenResponse { access_token?: string; refresh_token?: string; expires_in?: number; error?: string; scope?: string; api_domain?: string; }
 
 export interface CredentialsDeps {
   tokenStore: ZohoTokenStore;
@@ -123,6 +123,11 @@ export function createCredentialsService(deps: CredentialsDeps) {
       client_id: c.clientId, client_secret: c.clientSecret, refresh_token: refresh,
     }));
     if (!json.access_token) throw new Error(`Refresh failed for ${c.label}: ${json.error ?? "unknown"}`);
+    // Diagnostic: log granted scopes + api_domain. Zoho returns these on refresh.
+    console.log(`[zoho:${key}] refresh ok — scope="${json.scope ?? "(none)"}" api_domain="${json.api_domain ?? "(none)"}"`);
+    if (key === "SIGN_FIRM" && json.scope && !/ZohoSign\.documents/i.test(json.scope)) {
+      throw new Error(`Refresh token for ${c.label} is missing ZohoSign.documents scope. Granted scopes: "${json.scope}". Re-mint the refresh token from a self-client authorization that includes ZohoSign.documents.ALL.`);
+    }
     const token = json.access_token;
     cache.set(key, { token, exp: now().getTime() + (json.expires_in ?? 3600) * 1000 - 60_000 });
     return token;
