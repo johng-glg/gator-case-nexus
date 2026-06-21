@@ -19,7 +19,7 @@ export type Database = {
           action: string
           actor_email: string | null
           actor_user_id: string | null
-          case_id: string
+          case_id: string | null
           created_at: string
           engagement_id: string | null
           id: string
@@ -30,7 +30,7 @@ export type Database = {
           action: string
           actor_email?: string | null
           actor_user_id?: string | null
-          case_id: string
+          case_id?: string | null
           created_at?: string
           engagement_id?: string | null
           id?: string
@@ -41,7 +41,7 @@ export type Database = {
           action?: string
           actor_email?: string | null
           actor_user_id?: string | null
-          case_id?: string
+          case_id?: string | null
           created_at?: string
           engagement_id?: string | null
           id?: string
