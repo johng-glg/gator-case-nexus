@@ -39,6 +39,7 @@ export type QueryName =
   | "pipelineByPractice"
   | "pipelineCases"
   | "closedCases"
+  | "ssdiEngagementsWithReferral"
   | "costsByEngagement"
   | "allCosts"
   | "casesByEngagement"
@@ -136,12 +137,20 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
     case "closedCases":
       return `select id, Case_Number, Current_Stage, Closure_Reason, Final_Disposition_Date,
                      Date_Opened, ALJ_Name, Hearing_Office_ODAR,
-                     Primary_Impairment, Secondary_Impairments,
+                     Primary_Impairment, Secondary_Impairments, Back_Pay_Amount,
                      Assigned_Attorney, Assigned_Attorney.name,
-                     Engagement, Engagement.Name
+                     Engagement, Engagement.Name,
+                     Engagement.Referral_Source, Engagement.Referral_Source.Name
               from SSDI_Cases
               where Is_Closed = true
               order by Final_Disposition_Date desc
+              limit 1000`;
+    case "ssdiEngagementsWithReferral":
+      return `select id, Name, Engagement_Status, Open_Date,
+                     Referral_Source, Referral_Source.Name
+              from Engagements
+              where Engagement_Type = 'SSDI'
+              order by Open_Date desc
               limit 1000`;
     case "costsByEngagement":
       return `select id, Name, Amount, Cost_Type, Created_Time, Engagement
