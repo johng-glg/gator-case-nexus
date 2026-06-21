@@ -19,7 +19,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedConnectZohoRouteImport } from './routes/_authenticated/connect-zoho'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as ApiPublicDeadlineSweepRouteImport } from './routes/api/public/deadline-sweep'
-import { Route as ApiPublicCoqlTestRouteImport } from './routes/api/public/_coql-test'
+import { Route as ApiPublicCoqlTestRouteImport } from './routes/api/public/coql-test'
 import { Route as AuthenticatedPracticesSsdiRouteImport } from './routes/_authenticated/practices.ssdi'
 import { Route as AuthenticatedPracticesPracticeRouteImport } from './routes/_authenticated/practices.$practice'
 import { Route as AuthenticatedPracticesSsdiIndexRouteImport } from './routes/_authenticated/practices.ssdi.index'
@@ -79,8 +79,8 @@ const ApiPublicDeadlineSweepRoute = ApiPublicDeadlineSweepRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicCoqlTestRoute = ApiPublicCoqlTestRouteImport.update({
-  id: '/api/public/_coql-test',
-  path: '/api/public',
+  id: '/api/public/coql-test',
+  path: '/api/public/coql-test',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedPracticesSsdiRoute =
@@ -130,7 +130,7 @@ export interface FileRoutesByFullPath {
   '/leads': typeof AuthenticatedLeadsRoute
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
-  '/api/public': typeof ApiPublicCoqlTestRoute
+  '/api/public/coql-test': typeof ApiPublicCoqlTestRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
@@ -147,7 +147,7 @@ export interface FileRoutesByTo {
   '/engagements': typeof AuthenticatedEngagementsRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
-  '/api/public': typeof ApiPublicCoqlTestRoute
+  '/api/public/coql-test': typeof ApiPublicCoqlTestRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiIndexRoute
@@ -167,7 +167,7 @@ export interface FileRoutesById {
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/_authenticated/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
-  '/api/public/_coql-test': typeof ApiPublicCoqlTestRoute
+  '/api/public/coql-test': typeof ApiPublicCoqlTestRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/_authenticated/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
@@ -187,7 +187,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/practices/$practice'
     | '/practices/ssdi'
-    | '/api/public'
+    | '/api/public/coql-test'
     | '/api/public/deadline-sweep'
     | '/api/zoho/connect/callback'
     | '/practices/ssdi/'
@@ -204,7 +204,7 @@ export interface FileRouteTypes {
     | '/engagements'
     | '/leads'
     | '/practices/$practice'
-    | '/api/public'
+    | '/api/public/coql-test'
     | '/api/public/deadline-sweep'
     | '/api/zoho/connect/callback'
     | '/practices/ssdi'
@@ -223,7 +223,7 @@ export interface FileRouteTypes {
     | '/_authenticated/leads'
     | '/_authenticated/practices/$practice'
     | '/_authenticated/practices/ssdi'
-    | '/api/public/_coql-test'
+    | '/api/public/coql-test'
     | '/api/public/deadline-sweep'
     | '/api/zoho/connect/callback'
     | '/_authenticated/practices/ssdi/'
@@ -312,10 +312,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicDeadlineSweepRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/_coql-test': {
-      id: '/api/public/_coql-test'
-      path: '/api/public'
-      fullPath: '/api/public'
+    '/api/public/coql-test': {
+      id: '/api/public/coql-test'
+      path: '/api/public/coql-test'
+      fullPath: '/api/public/coql-test'
       preLoaderRoute: typeof ApiPublicCoqlTestRouteImport
       parentRoute: typeof rootRouteImport
     }
