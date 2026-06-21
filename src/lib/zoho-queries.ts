@@ -9,7 +9,7 @@
  */
 import { ALL_ENGAGEMENT_TYPES } from "@/practices/registry";
 
-const ID = /^[A-Za-z0-9_]+$/;
+const ID = /^[A-Za-z0-9_-]+$/;
 
 function safeId(v: unknown): string {
   if (typeof v !== "string" || !ID.test(v)) throw new Error("Invalid id parameter.");
