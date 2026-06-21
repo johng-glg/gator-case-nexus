@@ -18,6 +18,15 @@ function toJson<T extends Json>(value: unknown): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+/** Pull the actor's email out of the validated Supabase claims. */
+function actorEmail(claims: unknown): string | null {
+  if (claims && typeof claims === "object" && "email" in claims) {
+    const e = (claims as { email?: unknown }).email;
+    return typeof e === "string" ? e : null;
+  }
+  return null;
+}
+
 
 const queryInput = z.object({
   name: z.enum([
