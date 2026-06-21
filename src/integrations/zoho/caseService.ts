@@ -12,7 +12,7 @@
  */
 
 import { TRANSITIONS, canTransition, HOOKS, type Stage, type DueRule } from "./lifecycle";
-import { computeAppealDeadline, daysUntil, isAtRisk, releaseExpiration, releaseExpiringSoon, asUTCDate } from "./deadlines";
+import { computeAppealDeadline, daysUntil, isAtRisk, localToday, releaseExpiration, releaseExpiringSoon, asUTCDate } from "./deadlines";
 import type { ZohoClient, ZohoRecord } from "./zohoClient";
 import { SERVICE_ACTOR } from "./zohoClient";
 
