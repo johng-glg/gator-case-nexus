@@ -14,6 +14,7 @@ import {
   testFirmConnection,
   type FirmConnectionStatus,
 } from "@/lib/credentials.functions";
+import { getConnectionStatus, getAuthorizeUrl } from "@/lib/zoho.functions";
 import { CheckCircle2, AlertCircle, RefreshCw, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings/connections")({
