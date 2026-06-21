@@ -146,7 +146,7 @@ export interface Phase {
 }
 
 export const PHASES: Phase[] = [
-  { key: "intake", label: "Intake & filing", stages: ["Intake", "Retainer signed", "Application filed"] },
+  { key: "intake", label: "Intake & filing", stages: ["Retained", "Application filed"] },
   { key: "initial", label: "Initial decision", stages: ["Initial decision - pending", "Initial decision - denied", "Initial decision - approved"] },
   { key: "recon", label: "Reconsideration", stages: ["Reconsideration filed", "Recon decision - pending", "Recon decision - denied", "Recon decision - approved"] },
   { key: "alj", label: "ALJ hearing", stages: ["ALJ hearing requested", "Hearing scheduled", "Hearing prep", "Hearing held", "ALJ decision - pending", "ALJ decision - denied", "ALJ decision - approved"] },
