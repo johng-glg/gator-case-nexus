@@ -190,3 +190,50 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
 
   return { runConflictCheck, createIntake, convertLead };
 }
+
+/**
+ * Open the practice-specific Case for an Engagement once its retainer is Signed.
+ * Currently wired for SSDI; other practice areas log and skip until built.
+ *
+ * Runs as the SERVICE actor (called from the Sign webhook — no user session).
+ * Idempotent: if a Case already exists for the Engagement, does nothing.
+ */
+export function createCaseOpener(deps: { zoho: ZohoClient; now?: () => Date }) {
+  const today = () => iso(deps.now ? deps.now() : localToday());
+  return async function openCaseForEngagement({ engagementId }: { engagementId: string }) {
+    const { SERVICE_ACTOR } = await import("./zohoClient");
+    const svc = deps.zoho.as(SERVICE_ACTOR);
+    const eng = await svc.getRecord<ZohoRecord>("Engagements", engagementId, [
+      "Name", "Client", "Engagement_Type",
+    ]);
+    if (!eng) return;
+    const type = String(eng.Engagement_Type ?? "");
+
+    if (type !== "SSDI") {
+      console.log(`[caseOpener] skipping ${engagementId}: practice "${type}" not built yet`);
+      return;
+    }
+
+    // Idempotency: skip if a case already exists for this engagement.
+    const existing = await svc.coql<ZohoRecord>(
+      `select id from SSDI_Cases where Engagement = '${engagementId}'`,
+    );
+    if (existing[0]?.id) return;
+
+    const clientId = (eng.Client as { id?: string } | undefined)?.id;
+    let clientName = "";
+    if (clientId) {
+      const c = await svc.getRecord<ZohoRecord>("Contacts", clientId, ["First_Name", "Last_Name"]);
+      clientName = [c?.Last_Name, c?.First_Name].filter(Boolean).join(", ");
+    }
+    const name = clientName ? `${clientName} — SSDI` : (eng.Name as string) || "SSDI Case";
+
+    await svc.createRecords("SSDI_Cases", [clean({
+      Name: name,
+      Engagement: { id: engagementId },
+      Current_Stage: "Intake",
+      Date_Opened: today(),
+    })]);
+  };
+}
+
