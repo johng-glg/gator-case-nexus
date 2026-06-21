@@ -12,6 +12,20 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: deadlines dashboard upgrade (Phase 1.3)",
+    summary:
+      "The /deadlines page now triages at a glance — urgency buckets, mine-only filter, tier grouping, and a new upcoming-hearings section.",
+    changes: [
+      "Four clickable summary cards at the top: Overdue, Due ≤7 days, Due ≤14 days, Due ≤30 days. Click any card to filter the list to that bucket.",
+      "Filter bar: search by case number / client / attorney, tier filter (Reconsideration / ALJ Hearing / Appeals Council / Federal Court), and a Mine-only toggle that scopes to the signed-in attorney's cases.",
+      "Appeal deadlines now grouped by tier with the assigned attorney and client visible per row; days-left turns amber inside 14 days and red inside 7 days or past due.",
+      "New 'Upcoming ALJ hearings' section — next 60 days, soonest first, with date, hearing office, and ALJ name.",
+      "New whitelisted COQL queries: myDeadlines (filters by Assigned_Attorney = current user) and upcomingHearings.",
+      "Existing deadline queries now also return Assigned_Attorney and Engagement.Name so the dashboard can show who owns each clock.",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: tasks engine end-to-end (Phase 1.2)",
     summary:
       "Tasks panel on SSDI cases is now fully interactive — add, reassign, complete, and reopen, with proper ownership.",
