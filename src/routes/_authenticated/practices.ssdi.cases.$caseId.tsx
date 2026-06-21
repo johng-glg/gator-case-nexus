@@ -90,15 +90,18 @@ function CaseDetail() {
   async function onRecomputeDeadline() {
     setRecomputing(true);
     try {
-      const r = await recomputeDeadline({ data: { caseId } });
+      const r = (await recomputeDeadline({ data: { caseId } })) as Record<string, unknown>;
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["case", caseId] }),
         queryClient.invalidateQueries({ queryKey: ["deadlinesAtRisk"] }),
         queryClient.invalidateQueries({ queryKey: ["deadlinesAll"] }),
       ]);
-      if (!r.recomputed) toast.message(r.reason ?? "Nothing to recompute.");
-      else if (r.changed) toast.success(`Deadline recomputed: ${r.deadline} (${r.days}d).`);
-      else toast.message(`Already up to date: ${r.deadline} (${r.days}d).`);
+      const changedKeys = Object.keys(r).filter((k) => k !== "id");
+      const newDeadline = r.Deadline_Date as string | undefined;
+      const newDays = r.Days_To_Deadline as number | undefined;
+      if (changedKeys.length === 0) toast.message("Already up to date.");
+      else if (newDeadline) toast.success(`Deadline recomputed: ${newDeadline} (${newDays ?? "—"}d).`);
+      else toast.success("Deadline fields refreshed.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
