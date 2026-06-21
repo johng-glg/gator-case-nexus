@@ -71,14 +71,6 @@ function CaseDetail() {
           undefined)
       : undefined;
 
-  const tasksQ = useQuery({
-    queryKey: ["tasks", caseId],
-    enabled: validCaseId,
-    queryFn: () => fetchCaseTasks({ data: { caseId } }),
-  });
-
-
-
   async function onAdvance(toStage: string, fields: Record<string, unknown>) {
     const result = await advance({ data: { caseId, toStage, fields } });
     await Promise.all([
@@ -92,16 +84,6 @@ function CaseDetail() {
         ? `Moved to "${toStage}". Deadline: ${result.deadline}.`
         : `Moved to "${toStage}".`,
     );
-  }
-
-  async function onCompleteTask(taskId: string) {
-    try {
-      await finishTask({ data: { taskId } });
-      await queryClient.invalidateQueries({ queryKey: ["tasks", caseId] });
-      toast.success("Task marked complete.");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e));
-    }
   }
 
 
