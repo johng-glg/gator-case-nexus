@@ -115,3 +115,43 @@ export const revokeFirmConnection = createServerFn({ method: "POST" })
     await creds.revoke(data.key);
     return { ok: true };
   });
+
+/** Admin helper: read a Zoho Sign template and return its actions (id, type, role, recipient).
+ * Used to discover ZOHO_SIGN_ACTION_ID for the client signer role. */
+export const getSignTemplateActions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { templateId: string }) =>
+    z.object({ templateId: z.string().regex(/^[0-9]+$/) }).parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context as any);
+    const { getCredentialsService } = await import(
+      "@/integrations/zoho/credentialsClient.server"
+    );
+    const creds = await getCredentialsService();
+    const token = await creds.getAccessToken("SIGN_FIRM");
+    const dc = (process.env.ZOHO_DC ?? "us").toLowerCase();
+    const SIGN_HOSTS: Record<string, string> = {
+      us: "https://sign.zoho.com", eu: "https://sign.zoho.eu", in: "https://sign.zoho.in",
+      au: "https://sign.zoho.com.au", jp: "https://sign.zoho.jp", ca: "https://sign.zohocloud.ca",
+    };
+    const host = SIGN_HOSTS[dc] ?? SIGN_HOSTS.us;
+    const res = await fetch(`${host}/api/v1/templates/${data.templateId}`, {
+      headers: { Authorization: `Zoho-oauthtoken ${token}` },
+    });
+    const json: any = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(`Zoho Sign template fetch failed (${res.status}): ${JSON.stringify(json)}`);
+    }
+    const actions = json?.templates?.actions ?? json?.requests?.actions ?? [];
+    return {
+      templateName: json?.templates?.template_name ?? json?.templates?.request_name,
+      actions: actions.map((a: any) => ({
+        action_id: a.action_id,
+        action_type: a.action_type,
+        role: a.role,
+        recipient_name: a.recipient_name,
+        recipient_email: a.recipient_email,
+      })),
+    };
+  });
