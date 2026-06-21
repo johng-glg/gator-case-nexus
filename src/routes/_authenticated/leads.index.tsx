@@ -10,7 +10,7 @@ import {
 import { Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/leads")({
+export const Route = createFileRoute("/_authenticated/leads/")({
   head: () => ({ meta: [{ title: "Leads — Gator" }] }),
   component: Leads,
 });
