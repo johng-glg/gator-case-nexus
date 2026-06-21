@@ -37,6 +37,7 @@ import { Route as ApiPublicWebhooksZohoSignRouteImport } from './routes/api/publ
 import { Route as AuthenticatedPracticesSsdiIntakeRouteImport } from './routes/_authenticated/practices.ssdi.intake'
 import { Route as AuthenticatedPracticesSsdiCasesIndexRouteImport } from './routes/_authenticated/practices.ssdi.cases.index'
 import { Route as AuthenticatedPracticesSsdiCasesCaseIdRouteImport } from './routes/_authenticated/practices.ssdi.cases.$caseId'
+import { Route as AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRouteImport } from './routes/_authenticated/practices.ssdi.cases.$caseId.fee-petition'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -196,6 +197,12 @@ const AuthenticatedPracticesSsdiCasesCaseIdRoute =
     path: '/cases/$caseId',
     getParentRoute: () => AuthenticatedPracticesSsdiRoute,
   } as any)
+const AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute =
+  AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRouteImport.update({
+    id: '/fee-petition',
+    path: '/fee-petition',
+    getParentRoute: () => AuthenticatedPracticesSsdiCasesCaseIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -223,8 +230,9 @@ export interface FileRoutesByFullPath {
   '/api/public/webhooks/zoho-sign': typeof ApiPublicWebhooksZohoSignRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
-  '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
+  '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
   '/practices/ssdi/cases/': typeof AuthenticatedPracticesSsdiCasesIndexRoute
+  '/practices/ssdi/cases/$caseId/fee-petition': typeof AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -250,8 +258,9 @@ export interface FileRoutesByTo {
   '/api/public/webhooks/zoho-sign': typeof ApiPublicWebhooksZohoSignRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiIndexRoute
-  '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
+  '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
   '/practices/ssdi/cases': typeof AuthenticatedPracticesSsdiCasesIndexRoute
+  '/practices/ssdi/cases/$caseId/fee-petition': typeof AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -281,8 +290,9 @@ export interface FileRoutesById {
   '/api/public/webhooks/zoho-sign': typeof ApiPublicWebhooksZohoSignRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/_authenticated/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
-  '/_authenticated/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
+  '/_authenticated/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
   '/_authenticated/practices/ssdi/cases/': typeof AuthenticatedPracticesSsdiCasesIndexRoute
+  '/_authenticated/practices/ssdi/cases/$caseId/fee-petition': typeof AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/practices/ssdi/'
     | '/practices/ssdi/cases/$caseId'
     | '/practices/ssdi/cases/'
+    | '/practices/ssdi/cases/$caseId/fee-petition'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/practices/ssdi'
     | '/practices/ssdi/cases/$caseId'
     | '/practices/ssdi/cases'
+    | '/practices/ssdi/cases/$caseId/fee-petition'
   id:
     | '__root__'
     | '/'
@@ -371,6 +383,7 @@ export interface FileRouteTypes {
     | '/_authenticated/practices/ssdi/'
     | '/_authenticated/practices/ssdi/cases/$caseId'
     | '/_authenticated/practices/ssdi/cases/'
+    | '/_authenticated/practices/ssdi/cases/$caseId/fee-petition'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -580,6 +593,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPracticesSsdiCasesCaseIdRouteImport
       parentRoute: typeof AuthenticatedPracticesSsdiRoute
     }
+    '/_authenticated/practices/ssdi/cases/$caseId/fee-petition': {
+      id: '/_authenticated/practices/ssdi/cases/$caseId/fee-petition'
+      path: '/fee-petition'
+      fullPath: '/practices/ssdi/cases/$caseId/fee-petition'
+      preLoaderRoute: typeof AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRouteImport
+      parentRoute: typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
+    }
   }
 }
 
@@ -608,10 +628,25 @@ const AuthenticatedSettingsRouteWithChildren =
     AuthenticatedSettingsRouteChildren,
   )
 
+interface AuthenticatedPracticesSsdiCasesCaseIdRouteChildren {
+  AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute: typeof AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute
+}
+
+const AuthenticatedPracticesSsdiCasesCaseIdRouteChildren: AuthenticatedPracticesSsdiCasesCaseIdRouteChildren =
+  {
+    AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute:
+      AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute,
+  }
+
+const AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren =
+  AuthenticatedPracticesSsdiCasesCaseIdRoute._addFileChildren(
+    AuthenticatedPracticesSsdiCasesCaseIdRouteChildren,
+  )
+
 interface AuthenticatedPracticesSsdiRouteChildren {
   AuthenticatedPracticesSsdiIntakeRoute: typeof AuthenticatedPracticesSsdiIntakeRoute
   AuthenticatedPracticesSsdiIndexRoute: typeof AuthenticatedPracticesSsdiIndexRoute
-  AuthenticatedPracticesSsdiCasesCaseIdRoute: typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
+  AuthenticatedPracticesSsdiCasesCaseIdRoute: typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
   AuthenticatedPracticesSsdiCasesIndexRoute: typeof AuthenticatedPracticesSsdiCasesIndexRoute
 }
 
@@ -621,7 +656,7 @@ const AuthenticatedPracticesSsdiRouteChildren: AuthenticatedPracticesSsdiRouteCh
       AuthenticatedPracticesSsdiIntakeRoute,
     AuthenticatedPracticesSsdiIndexRoute: AuthenticatedPracticesSsdiIndexRoute,
     AuthenticatedPracticesSsdiCasesCaseIdRoute:
-      AuthenticatedPracticesSsdiCasesCaseIdRoute,
+      AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren,
     AuthenticatedPracticesSsdiCasesIndexRoute:
       AuthenticatedPracticesSsdiCasesIndexRoute,
   }
