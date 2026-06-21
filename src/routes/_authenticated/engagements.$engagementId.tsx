@@ -188,7 +188,7 @@ function EngagementDetail() {
                         {String(c.Case_Number ?? cid)}
                       </Link>
                     </Td>
-                    <Td className="text-muted-foreground">{String(c.Current_Stage ?? "—")}</Td>
+                    <Td className="text-muted-foreground">{c.Current_Stage ? normalizeStage(c.Current_Stage as string) : "—"}</Td>
                     <Td className="text-muted-foreground">{String(c.Sub_Status ?? "—")}</Td>
                     <Td>
                       {deadline ? (
