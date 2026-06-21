@@ -31,6 +31,8 @@ export type QueryName =
   | "myOpenCases"
   | "deadlinesAtRisk"
   | "deadlinesAll"
+  | "myDeadlines"
+  | "upcomingHearings"
   | "releasesExpiringSoon"
   | "releasesAll"
   | "pipelineByStage"
