@@ -142,6 +142,7 @@ function Engagements() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
