@@ -1,9 +1,14 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { zohoQuery } from "@/lib/zoho.functions";
+import { createLead, zohoQuery } from "@/lib/zoho.functions";
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
+import { Plus, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/leads")({
   head: () => ({ meta: [{ title: "Leads — Gator" }] }),
@@ -32,7 +37,10 @@ const STATUS_CHIP: Record<string, string> = {
 
 function Leads() {
   const runQuery = useServerFn(zohoQuery);
+  const qc = useQueryClient();
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
+  const [openNew, setOpenNew] = useState(false);
   const [practice, setPractice] = useState<Practice>(() =>
     (localStorage.getItem("leads.practice") as Practice) || "All",
   );
@@ -76,13 +84,33 @@ function Leads() {
             One pipeline across all practice areas. Qualify, then convert into an engagement.
           </p>
         </div>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search name, email, source…"
-          className="w-64 rounded-md border border-border bg-input px-3 py-1.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search name, email, source…"
+            className="w-64 rounded-md border border-border bg-input px-3 py-1.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <button
+            type="button"
+            onClick={() => setOpenNew(true)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" /> New lead
+          </button>
+        </div>
       </div>
+
+      <NewLeadDialog
+        open={openNew}
+        onOpenChange={setOpenNew}
+        defaultPractice={practice === "All" ? undefined : (practice as Exclude<Practice, "All">)}
+        onCreated={(id) => {
+          qc.invalidateQueries({ queryKey: ["allLeads"] });
+          setOpenNew(false);
+          navigate({ to: "/leads/$leadId", params: { leadId: id } });
+        }}
+      />
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <FilterGroup label="Practice" value={practice} options={PRACTICES} onChange={setPractice} />
@@ -185,3 +213,127 @@ function Th({ children }: { children: React.ReactNode }) {
 function Td({ children, className }: { children: React.ReactNode; className?: string }) {
   return <td className={cn("px-4 py-3", className)}>{children}</td>;
 }
+
+
+
+
+type PracticeChoice = "SSDI" | "FCRA" | "FDCPA" | "TCPA" | "Class Action";
+const PRACTICE_CHOICES: PracticeChoice[] = ["SSDI", "FCRA", "FDCPA", "TCPA", "Class Action"];
+
+function NewLeadDialog({
+  open, onOpenChange, defaultPractice, onCreated,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  defaultPractice?: PracticeChoice;
+  onCreated: (id: string) => void;
+}) {
+  const createFn = useServerFn(createLead);
+  const [form, setForm] = useState({
+    First_Name: "", Last_Name: "", Email: "", Phone: "", Mobile: "",
+    Company: "", Lead_Source: "", Description: "",
+    Practice_Area: (defaultPractice ?? "SSDI") as PracticeChoice,
+  });
+  useEffect(() => {
+    if (open) {
+      setForm((f) => ({ ...f, Practice_Area: defaultPractice ?? "SSDI" }));
+    }
+  }, [open, defaultPractice]);
+
+  const m = useMutation({
+    mutationFn: (payload: typeof form) => createFn({ data: payload }),
+    onSuccess: (res) => {
+      toast.success("Lead created");
+      onCreated(res.id);
+      setForm({
+        First_Name: "", Last_Name: "", Email: "", Phone: "", Mobile: "",
+        Company: "", Lead_Source: "", Description: "",
+        Practice_Area: defaultPractice ?? "SSDI",
+      });
+    },
+    onError: (e: Error) => toast.error(e.message ?? "Failed to create lead"),
+  });
+
+  const upd = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.Last_Name.trim()) {
+      toast.error("Last name is required");
+      return;
+    }
+    m.mutate(form);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>New lead</DialogTitle>
+          <DialogDescription>Quick capture. You can qualify and convert later.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={submit} className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <LField label="First name">
+              <input value={form.First_Name} onChange={upd("First_Name")} maxLength={100} className={inputCls} />
+            </LField>
+            <LField label="Last name *">
+              <input value={form.Last_Name} onChange={upd("Last_Name")} required maxLength={100} className={inputCls} />
+            </LField>
+            <LField label="Email">
+              <input type="email" value={form.Email} onChange={upd("Email")} maxLength={255} className={inputCls} />
+            </LField>
+            <LField label="Phone">
+              <input value={form.Phone} onChange={upd("Phone")} maxLength={40} className={inputCls} />
+            </LField>
+            <LField label="Mobile">
+              <input value={form.Mobile} onChange={upd("Mobile")} maxLength={40} className={inputCls} />
+            </LField>
+            <LField label="Source">
+              <input value={form.Lead_Source} onChange={upd("Lead_Source")} maxLength={100} placeholder="Web, Referral…" className={inputCls} />
+            </LField>
+            <LField label="Practice area">
+              <select value={form.Practice_Area} onChange={upd("Practice_Area")} className={inputCls}>
+                {PRACTICE_CHOICES.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </LField>
+            <LField label="Company">
+              <input value={form.Company} onChange={upd("Company")} maxLength={200} className={inputCls} />
+            </LField>
+          </div>
+          <LField label="Notes">
+            <textarea value={form.Description} onChange={upd("Description")} rows={3} maxLength={2000} className={cn(inputCls, "resize-none")} />
+          </LField>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="rounded-md border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted/40"
+            >Cancel</button>
+            <button
+              type="submit"
+              disabled={m.isPending || !form.Last_Name.trim()}
+              className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {m.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              {m.isPending ? "Creating…" : "Create lead"}
+            </button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+const inputCls = "w-full rounded-md border border-border bg-input px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring";
+
+function LField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</span>
+      <div className="mt-1">{children}</div>
+    </label>
+  );
+}
+
