@@ -47,6 +47,7 @@ export const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
   ],
   "Hearing scheduled": [
     { field: "ALJ_Hearing_Scheduled_Date", label: "Hearing date (scheduled)", type: "date", required: true },
+    { field: "Hearing_Type", label: "Hearing type (in-person / video / phone)", type: "text" },
     { field: "Hearing_Office_ODAR", label: "Hearing office / ODAR", type: "text" },
     { field: "ALJ_Name", label: "ALJ name", type: "text" },
   ],
