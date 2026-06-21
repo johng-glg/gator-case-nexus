@@ -59,6 +59,12 @@ function Engagements() {
         <div className="flex items-center gap-2">
           <Chip active={scope === "all"} onClick={() => setScope("all")}>All</Chip>
           <Chip active={scope === "mine"} onClick={() => setScope("mine")}>Mine</Chip>
+          <Link
+            to="/practices/ssdi/intake"
+            className="ml-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+          >
+            + New SSDI client
+          </Link>
         </div>
       </div>
 
