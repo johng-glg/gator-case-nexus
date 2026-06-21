@@ -12,6 +12,20 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: tasks engine end-to-end (Phase 1.2)",
+    summary:
+      "Tasks panel on SSDI cases is now fully interactive — add, reassign, complete, and reopen, with proper ownership.",
+    changes: [
+      "Stage-driven tasks created during an advance are now auto-assigned to the case's Assigned Attorney (instead of falling to whoever clicked the button), with Priority defaulted to High.",
+      "Redesigned Tasks panel on the case page: shows owner, priority, due date, color-coded days-to-due (amber within 3 days, red if overdue) and a strikethrough completed state.",
+      "Per-task actions: Complete, Reopen (one click to bring a closed task back), and Reassign to any active Zoho user via a popover picker.",
+      "Add Task form inline on the panel — sets Subject, Due Date, Priority, and Owner (defaults to current user). Creates the Task in Zoho linked to the case.",
+      "Toggle to show / hide completed tasks; completed count visible in the header.",
+      "New server functions: reopenTask, reassignTask, createCaseTask, listZohoUsers (active users from Zoho for the assignment pickers).",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: redesigned deadline panel (Phase 1.1)",
     summary:
       "First slice of the SSDI module build-out — make the appeal deadline trustworthy at a glance.",
