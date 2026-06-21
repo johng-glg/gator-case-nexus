@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { caseAdvance, completeTask, getCase, getCaseTasks, zohoQuery } from "@/lib/zoho.functions";
+import { caseAdvance, getCase, zohoQuery } from "@/lib/zoho.functions";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { StageRail } from "@/components/cases/StageRail";
 import { AdvanceStageDialog } from "@/components/cases/AdvanceStageDialog";
 import { DeadlinePanel } from "@/components/cases/DeadlinePanel";
-import { ChevronLeft, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { TasksPanel } from "@/components/cases/TasksPanel";
+import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/practices/ssdi/cases/$caseId")({
