@@ -12,6 +12,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: cost entry on case page (Phase 5.1)",
+    summary:
+      "Attorneys can add and remove case costs directly from the case page; writes go straight to the Zoho Costs module.",
+    changes: [
+      "New 'Add cost' inline form on the case-page Costs section: Description + Amount + Category (Medical records / Expert / Postage / Filing fee / Travel / Copies / Other).",
+      "Per-row delete button on existing costs (hidden on closed cases).",
+      "Costs are linked to the engagement (Costs.Engagement). Note: the Costs module has no Date_Incurred field, so entry date is implicit (Created_Time).",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: per-stage document checklist (Phase 3.1)",
     summary:
       "Case page now shows required SSA / OHO documents grouped by lifecycle phase, with per-doc status tracking.",
