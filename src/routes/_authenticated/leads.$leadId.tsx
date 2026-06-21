@@ -73,24 +73,28 @@ function LeadDetail() {
   const isSSDI = practice === "SSDI";
 
   return (
-    <div className="max-w-4xl mx-auto px-8 py-5 space-y-4">
-      <Link to="/leads" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-        <ChevronLeft className="h-4 w-4" /> Back to leads
-      </Link>
-
-      <header>
-        <div className="text-xs uppercase tracking-[0.18em] text-primary/80">Lead</div>
-        <h1 className="font-display text-2xl text-foreground mt-0.5">{name}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-          {practice && (
-            <span className={cn(
-              "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium",
-              PRACTICE_CHIP[practice] ?? "border-border text-muted-foreground",
-            )}>{practice}</span>
-          )}
-          <span className="text-muted-foreground">· {status || "—"}</span>
-          <span className="text-muted-foreground">· Owner: {owner}</span>
+    <div className="max-w-4xl mx-auto px-8 py-5 space-y-3">
+      <header className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-xs uppercase tracking-[0.18em] text-primary/80">Lead</div>
+          <h1 className="font-display text-2xl text-foreground mt-0.5">{name}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
+            {practice && (
+              <span className={cn(
+                "inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium",
+                PRACTICE_CHIP[practice] ?? "border-border text-muted-foreground",
+              )}>{practice}</span>
+            )}
+            <span className="text-muted-foreground">· {status || "—"}</span>
+            <span className="text-muted-foreground">· Owner: {owner}</span>
+          </div>
         </div>
+        <Link
+          to="/leads"
+          className="inline-flex shrink-0 items-center text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" /> Back to leads
+        </Link>
       </header>
 
 
