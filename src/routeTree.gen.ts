@@ -38,6 +38,7 @@ import { Route as ApiPublicWebhooksZohoSignRouteImport } from './routes/api/publ
 import { Route as AuthenticatedPracticesSsdiIntakeRouteImport } from './routes/_authenticated/practices.ssdi.intake'
 import { Route as AuthenticatedPracticesSsdiCasesIndexRouteImport } from './routes/_authenticated/practices.ssdi.cases.index'
 import { Route as AuthenticatedPracticesSsdiReportsPipelineRouteImport } from './routes/_authenticated/practices.ssdi.reports.pipeline'
+import { Route as AuthenticatedPracticesSsdiReportsOutcomesRouteImport } from './routes/_authenticated/practices.ssdi.reports.outcomes'
 import { Route as AuthenticatedPracticesSsdiCasesCaseIdRouteImport } from './routes/_authenticated/practices.ssdi.cases.$caseId'
 import { Route as AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRouteImport } from './routes/_authenticated/practices.ssdi.cases.$caseId.fee-petition'
 
@@ -205,6 +206,12 @@ const AuthenticatedPracticesSsdiReportsPipelineRoute =
     path: '/reports/pipeline',
     getParentRoute: () => AuthenticatedPracticesSsdiRoute,
   } as any)
+const AuthenticatedPracticesSsdiReportsOutcomesRoute =
+  AuthenticatedPracticesSsdiReportsOutcomesRouteImport.update({
+    id: '/reports/outcomes',
+    path: '/reports/outcomes',
+    getParentRoute: () => AuthenticatedPracticesSsdiRoute,
+  } as any)
 const AuthenticatedPracticesSsdiCasesCaseIdRoute =
   AuthenticatedPracticesSsdiCasesCaseIdRouteImport.update({
     id: '/cases/$caseId',
@@ -246,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
   '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
+  '/practices/ssdi/reports/outcomes': typeof AuthenticatedPracticesSsdiReportsOutcomesRoute
   '/practices/ssdi/reports/pipeline': typeof AuthenticatedPracticesSsdiReportsPipelineRoute
   '/practices/ssdi/cases/': typeof AuthenticatedPracticesSsdiCasesIndexRoute
   '/practices/ssdi/cases/$caseId/fee-petition': typeof AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute
@@ -276,6 +284,7 @@ export interface FileRoutesByTo {
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiIndexRoute
   '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
+  '/practices/ssdi/reports/outcomes': typeof AuthenticatedPracticesSsdiReportsOutcomesRoute
   '/practices/ssdi/reports/pipeline': typeof AuthenticatedPracticesSsdiReportsPipelineRoute
   '/practices/ssdi/cases': typeof AuthenticatedPracticesSsdiCasesIndexRoute
   '/practices/ssdi/cases/$caseId/fee-petition': typeof AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute
@@ -310,6 +319,7 @@ export interface FileRoutesById {
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/_authenticated/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
   '/_authenticated/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
+  '/_authenticated/practices/ssdi/reports/outcomes': typeof AuthenticatedPracticesSsdiReportsOutcomesRoute
   '/_authenticated/practices/ssdi/reports/pipeline': typeof AuthenticatedPracticesSsdiReportsPipelineRoute
   '/_authenticated/practices/ssdi/cases/': typeof AuthenticatedPracticesSsdiCasesIndexRoute
   '/_authenticated/practices/ssdi/cases/$caseId/fee-petition': typeof AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute
@@ -344,6 +354,7 @@ export interface FileRouteTypes {
     | '/api/zoho/connect/callback'
     | '/practices/ssdi/'
     | '/practices/ssdi/cases/$caseId'
+    | '/practices/ssdi/reports/outcomes'
     | '/practices/ssdi/reports/pipeline'
     | '/practices/ssdi/cases/'
     | '/practices/ssdi/cases/$caseId/fee-petition'
@@ -374,6 +385,7 @@ export interface FileRouteTypes {
     | '/api/zoho/connect/callback'
     | '/practices/ssdi'
     | '/practices/ssdi/cases/$caseId'
+    | '/practices/ssdi/reports/outcomes'
     | '/practices/ssdi/reports/pipeline'
     | '/practices/ssdi/cases'
     | '/practices/ssdi/cases/$caseId/fee-petition'
@@ -407,6 +419,7 @@ export interface FileRouteTypes {
     | '/api/zoho/connect/callback'
     | '/_authenticated/practices/ssdi/'
     | '/_authenticated/practices/ssdi/cases/$caseId'
+    | '/_authenticated/practices/ssdi/reports/outcomes'
     | '/_authenticated/practices/ssdi/reports/pipeline'
     | '/_authenticated/practices/ssdi/cases/'
     | '/_authenticated/practices/ssdi/cases/$caseId/fee-petition'
@@ -626,6 +639,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPracticesSsdiReportsPipelineRouteImport
       parentRoute: typeof AuthenticatedPracticesSsdiRoute
     }
+    '/_authenticated/practices/ssdi/reports/outcomes': {
+      id: '/_authenticated/practices/ssdi/reports/outcomes'
+      path: '/reports/outcomes'
+      fullPath: '/practices/ssdi/reports/outcomes'
+      preLoaderRoute: typeof AuthenticatedPracticesSsdiReportsOutcomesRouteImport
+      parentRoute: typeof AuthenticatedPracticesSsdiRoute
+    }
     '/_authenticated/practices/ssdi/cases/$caseId': {
       id: '/_authenticated/practices/ssdi/cases/$caseId'
       path: '/cases/$caseId'
@@ -689,6 +709,7 @@ interface AuthenticatedPracticesSsdiRouteChildren {
   AuthenticatedPracticesSsdiIntakeRoute: typeof AuthenticatedPracticesSsdiIntakeRoute
   AuthenticatedPracticesSsdiIndexRoute: typeof AuthenticatedPracticesSsdiIndexRoute
   AuthenticatedPracticesSsdiCasesCaseIdRoute: typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
+  AuthenticatedPracticesSsdiReportsOutcomesRoute: typeof AuthenticatedPracticesSsdiReportsOutcomesRoute
   AuthenticatedPracticesSsdiReportsPipelineRoute: typeof AuthenticatedPracticesSsdiReportsPipelineRoute
   AuthenticatedPracticesSsdiCasesIndexRoute: typeof AuthenticatedPracticesSsdiCasesIndexRoute
 }
@@ -700,6 +721,8 @@ const AuthenticatedPracticesSsdiRouteChildren: AuthenticatedPracticesSsdiRouteCh
     AuthenticatedPracticesSsdiIndexRoute: AuthenticatedPracticesSsdiIndexRoute,
     AuthenticatedPracticesSsdiCasesCaseIdRoute:
       AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren,
+    AuthenticatedPracticesSsdiReportsOutcomesRoute:
+      AuthenticatedPracticesSsdiReportsOutcomesRoute,
     AuthenticatedPracticesSsdiReportsPipelineRoute:
       AuthenticatedPracticesSsdiReportsPipelineRoute,
     AuthenticatedPracticesSsdiCasesIndexRoute:
