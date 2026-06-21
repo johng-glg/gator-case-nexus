@@ -50,66 +50,79 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
       return `select Case_Number, Current_Stage, Sub_Status, Deadline_Date, Days_To_Deadline, Engagement, Assigned_Case_Manager
               from SSDI_Cases
               where Is_Closed = false
-              order by Date_Opened desc`;
+              order by Date_Opened desc
+              limit 200`;
     case "myOpenCases":
       return `select Case_Number, Current_Stage, Sub_Status, Engagement, Deadline_Date, Days_To_Deadline
               from SSDI_Cases
               where Assigned_Case_Manager = ${safeId(params.userId)} and Is_Closed = false
-              order by Date_Opened desc`;
+              order by Date_Opened desc
+              limit 200`;
     case "deadlinesAtRisk":
       return `select Case_Number, Current_Stage, Active_Deadline_Type, Deadline_Date, Days_To_Deadline, Engagement
               from SSDI_Cases
               where Deadline_At_Risk = true and Is_Closed = false
-              order by Days_To_Deadline asc`;
+              order by Days_To_Deadline asc
+              limit 200`;
     case "releasesExpiringSoon":
       return `select Case_Number, Release_Expiration_Date, Engagement
               from SSDI_Cases
               where Release_Expiring_Soon = true and Is_Closed = false
-              order by Release_Expiration_Date asc`;
+              order by Release_Expiration_Date asc
+              limit 200`;
     case "pipelineByStage":
       return `select Current_Stage, count(id)
               from SSDI_Cases
               where Is_Closed = false
-              group by Current_Stage`;
+              group by Current_Stage
+              limit 200`;
     case "pipelineByPractice":
-      // Aggregate client-side; COQL aggregate+group_by combos are brittle across orgs
       return `select Engagement_Type, Engagement_Status
               from Engagements
-              order by Modified_Time desc`;
+              order by Modified_Time desc
+              limit 200`;
     case "costsByEngagement":
       return `select id, Name, Amount, Cost_Type, Engagement
               from Costs
-              where Engagement = ${safeId(params.engagementId)}`;
+              where Engagement = ${safeId(params.engagementId)}
+              limit 200`;
     case "casesByEngagement":
       return `select Case_Number, Current_Stage, Claim_Type, Date_Opened
               from SSDI_Cases
-              where Engagement = ${safeId(params.engagementId)}`;
+              where Engagement = ${safeId(params.engagementId)}
+              limit 200`;
     case "engagementById":
       return `select Engagement_Name, Engagement_Type, Engagement_Status, Retainer_Status,
                      Client.First_Name, Client.Last_Name, All_Fees, Total_Costs1
               from Engagements
-              where id = ${safeId(params.engagementId)}`;
+              where id = ${safeId(params.engagementId)}
+              limit 1`;
     case "allEngagements":
       return `select ${ENGAGEMENT_COLS}
               from Engagements
-              order by Modified_Time desc`;
+              order by Modified_Time desc
+              limit 200`;
     case "engagementsByType":
       return `select ${ENGAGEMENT_COLS}
               from Engagements
               where Engagement_Type = ${safeEnum(params.engagementType, ALL_ENGAGEMENT_TYPES)}
-              order by Modified_Time desc`;
+              order by Modified_Time desc
+              limit 200`;
     case "myEngagements":
       return `select ${ENGAGEMENT_COLS}
               from Engagements
               where Assigned_Attorney = ${safeId(params.userId)}
-              order by Modified_Time desc`;
+              order by Modified_Time desc
+              limit 200`;
     case "allContacts":
       return `select id, First_Name, Last_Name, Email, Phone, Mailing_City, Mailing_State
               from Contacts
-              order by Modified_Time desc`;
+              order by Modified_Time desc
+              limit 200`;
     case "allLeads":
       return `select id, First_Name, Last_Name, Email, Phone, Company, Lead_Status, Lead_Source
               from Leads
-              order by Modified_Time desc`;
+              order by Modified_Time desc
+              limit 200`;
   }
 }
