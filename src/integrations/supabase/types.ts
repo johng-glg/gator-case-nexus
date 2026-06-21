@@ -37,30 +37,36 @@ export type Database = {
       }
       zoho_firm_tokens: {
         Row: {
+          client_id: string | null
+          client_secret: string | null
           created_at: string
           key: string
           last_rotated_at: string | null
           last_verified_at: string | null
           refresh_tail: string | null
-          refresh_token: string
+          refresh_token: string | null
           updated_at: string
         }
         Insert: {
+          client_id?: string | null
+          client_secret?: string | null
           created_at?: string
           key: string
           last_rotated_at?: string | null
           last_verified_at?: string | null
           refresh_tail?: string | null
-          refresh_token: string
+          refresh_token?: string | null
           updated_at?: string
         }
         Update: {
+          client_id?: string | null
+          client_secret?: string | null
           created_at?: string
           key?: string
           last_rotated_at?: string | null
           last_verified_at?: string | null
           refresh_tail?: string | null
-          refresh_token?: string
+          refresh_token?: string | null
           updated_at?: string
         }
         Relationships: []

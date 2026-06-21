@@ -10,6 +10,7 @@ import {
   exchangeFirmGrantCode,
   listFirmConnections,
   revokeFirmConnection,
+  saveFirmClientCreds,
   testFirmConnection,
   type FirmConnectionStatus,
 } from "@/lib/credentials.functions";
@@ -39,18 +40,28 @@ function ConnectionsPage() {
     <div className="space-y-6">
       <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
         <div className="font-medium text-foreground mb-1">How rotation works</div>
-        Generate a one-time grant code in{" "}
-        <a
-          href="https://api-console.zoho.com"
-          target="_blank"
-          rel="noreferrer"
-          className="text-primary inline-flex items-center gap-1 hover:underline"
-        >
-          Zoho API Console <ExternalLink className="h-3 w-3" />
-        </a>{" "}
-        with the scopes shown on each card, then paste it here. The code is
-        single-use and is swapped server-side for a long-lived refresh token;
-        the refresh token never reaches the browser.
+        <ol className="list-decimal pl-5 space-y-1">
+          <li>
+            In{" "}
+            <a
+              href="https://api-console.zoho.com"
+              target="_blank"
+              rel="noreferrer"
+              className="text-primary inline-flex items-center gap-1 hover:underline"
+            >
+              Zoho API Console <ExternalLink className="h-3 w-3" />
+            </a>
+            , create a <strong>Self Client</strong> and copy its Client ID / Client Secret into the card below.
+          </li>
+          <li>
+            On the Self Client's "Generate Code" tab, paste the scopes from the card, generate a code,
+            and paste it into <em>Grant code</em>.
+          </li>
+          <li>
+            Click <strong>Rotate</strong>. The code is single-use and is swapped server-side for a
+            long-lived refresh token; nothing secret returns to the browser.
+          </li>
+        </ol>
       </div>
 
       {isLoading ? (
@@ -77,19 +88,35 @@ function ConnectionCard({
   c: FirmConnectionStatus;
   onChanged: () => void;
 }) {
+  const [clientId, setClientId] = useState("");
+  const [clientSecret, setClientSecret] = useState("");
   const [code, setCode] = useState("");
+
+  const save = useServerFn(saveFirmClientCreds);
   const exchange = useServerFn(exchangeFirmGrantCode);
   const test = useServerFn(testFirmConnection);
   const revoke = useServerFn(revokeFirmConnection);
 
-  const exMut = useMutation({
-    mutationFn: () => exchange({ data: { key: c.key, code: code.trim() } }),
+  const rotateMut = useMutation({
+    mutationFn: async () => {
+      // 1) Save client credentials if the user provided them
+      if (clientId.trim() && clientSecret.trim()) {
+        await save({
+          data: { key: c.key, clientId: clientId.trim(), clientSecret: clientSecret.trim() },
+        });
+      } else if (!c.configured) {
+        throw new Error("Enter Client ID and Client Secret first.");
+      }
+      // 2) Exchange the grant code for a refresh token
+      await exchange({ data: { key: c.key, code: code.trim() } });
+    },
     onSuccess: () => {
       toast.success(`${c.label} connected`);
       setCode("");
+      setClientSecret("");
       onChanged();
     },
-    onError: (e: any) => toast.error(e.message ?? "Exchange failed"),
+    onError: (e: any) => toast.error(e.message ?? "Rotation failed"),
   });
 
   const testMut = useMutation({
@@ -130,14 +157,12 @@ function ConnectionCard({
         )}
       </div>
 
-      {!c.configured && (
-        <div className="text-xs rounded border border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-1.5">
-          Client ID / secret env vars are not set for this connection.
-        </div>
-      )}
-
       <dl className="text-xs grid grid-cols-2 gap-y-1 text-muted-foreground">
-        <dt>Token tail</dt>
+        <dt>Client ID</dt>
+        <dd className="font-mono text-foreground">
+          {c.clientIdTail ? `…${c.clientIdTail}` : "not set"}
+        </dd>
+        <dt>Refresh token</dt>
         <dd className="font-mono text-foreground">
           {c.refreshTail ? `…${c.refreshTail}` : "—"}
         </dd>
@@ -147,11 +172,36 @@ function ConnectionCard({
         <dd className="text-foreground">{fmt(c.lastVerifiedAt)}</dd>
       </dl>
 
-      <div className="space-y-2">
-        <Label htmlFor={`code-${c.key}`} className="text-xs">
-          Paste grant code to rotate
-        </Label>
-        <div className="flex gap-2">
+      <div className="space-y-2 pt-1">
+        <div>
+          <Label htmlFor={`cid-${c.key}`} className="text-xs">
+            Client ID {c.configured && <span className="text-muted-foreground">(leave blank to keep)</span>}
+          </Label>
+          <Input
+            id={`cid-${c.key}`}
+            value={clientId}
+            onChange={(e) => setClientId(e.target.value)}
+            placeholder={c.configured ? "•••• stored ••••" : "1000.XXXXXXXX…"}
+            className="font-mono text-xs"
+          />
+        </div>
+        <div>
+          <Label htmlFor={`csec-${c.key}`} className="text-xs">
+            Client Secret {c.configured && <span className="text-muted-foreground">(leave blank to keep)</span>}
+          </Label>
+          <Input
+            id={`csec-${c.key}`}
+            type="password"
+            value={clientSecret}
+            onChange={(e) => setClientSecret(e.target.value)}
+            placeholder={c.configured ? "•••• stored ••••" : "client secret"}
+            className="font-mono text-xs"
+          />
+        </div>
+        <div>
+          <Label htmlFor={`code-${c.key}`} className="text-xs">
+            Grant code (from Self Client → Generate Code)
+          </Label>
           <Input
             id={`code-${c.key}`}
             value={code}
@@ -159,17 +209,22 @@ function ConnectionCard({
             placeholder="1000.xxxxxxxx…"
             className="font-mono text-xs"
           />
-          <Button
-            size="sm"
-            onClick={() => exMut.mutate()}
-            disabled={!code.trim() || exMut.isPending || !c.configured}
-          >
-            {exMut.isPending ? "…" : "Rotate"}
-          </Button>
         </div>
+        <Button
+          size="sm"
+          className="w-full"
+          onClick={() => rotateMut.mutate()}
+          disabled={
+            rotateMut.isPending ||
+            !code.trim() ||
+            (!c.configured && (!clientId.trim() || !clientSecret.trim()))
+          }
+        >
+          {rotateMut.isPending ? "Rotating…" : "Save & Rotate"}
+        </Button>
       </div>
 
-      <div className="flex gap-2 pt-1">
+      <div className="flex gap-2 pt-1 border-t border-border -mx-5 px-5 pt-3">
         <Button
           size="sm"
           variant="outline"
@@ -182,9 +237,11 @@ function ConnectionCard({
         <Button
           size="sm"
           variant="ghost"
-          className="text-destructive hover:text-destructive"
+          className="text-destructive hover:text-destructive ml-auto"
           onClick={() => {
-            if (confirm(`Revoke ${c.label}? Anything using this token will stop working.`)) {
+            if (
+              confirm(`Revoke ${c.label}? Anything using this token will stop working.`)
+            ) {
               revokeMut.mutate();
             }
           }}
