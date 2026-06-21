@@ -1,29 +1,18 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Your App" },
-      { name: "description", content: "Replace this with a one-sentence description of your app." },
-      { property: "og:title", content: "Your App" },
-      { property: "og:description", content: "Replace this with a one-sentence description of your app." },
-    ],
-  }),
+  beforeLoad: async () => {
+    // Public landing → bounce signed-in users to the app, others to auth.
+    // We can't read the session server-side (it lives in localStorage), so the
+    // bounce happens client-side via the component below; loader stays a no-op.
+  },
   component: Index,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
 function Index() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
+  if (typeof window !== "undefined") {
+    // Hard-redirect on the client. The _authenticated layout will gate further.
+    window.location.replace("/dashboard");
+  }
+  return null;
 }
