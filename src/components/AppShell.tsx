@@ -35,7 +35,7 @@ const FIRM_NAV = [
 export function AppShell({ userEmail, zohoConnected, onSignOut, signingOut, children }: Props) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return (
-    <div className="min-h-screen flex bg-background text-foreground">
+    <div className="h-screen flex bg-background text-foreground overflow-hidden">
       <aside className="w-60 shrink-0 border-r border-border bg-sidebar flex flex-col">
         <div className="h-16 flex items-center gap-2.5 px-5 border-b border-border">
           <div className="h-8 w-8 rounded-md bg-primary/15 ring-1 ring-primary/30 flex items-center justify-center">
