@@ -1,11 +1,16 @@
 /**
  * Zoho Sign webhook → flips Engagement.Retainer_Status on terminal events.
  *
- * Secured by a shared secret. Zoho Sign can pass it as a header
- * (`X-Webhook-Secret`) or as `?secret=` in the configured URL. Always returns 200
- * (even when no engagement matched) so Zoho doesn't retry-storm.
+ * Auth: prefers Zoho Sign HMAC-SHA256 (`X-ZS-WEBHOOK-SIGNATURE` over the raw
+ * body) using ZOHO_SIGN_WEBHOOK_SECRET. Falls back to a shared-secret header
+ * or `?secret=` query param so simple Zoho webhook configs still work.
+ * Always returns 200 (even when no engagement matched) so Zoho doesn't retry-storm.
  */
 import { createFileRoute } from "@tanstack/react-router";
+import {
+  verifyZohoSignSignature,
+  ZOHO_SIGN_SIGNATURE_HEADER,
+} from "@/integrations/zoho/signWebhookSecurity";
 
 export const Route = createFileRoute("/api/public/webhooks/zoho-sign")({
   server: {
@@ -16,17 +21,28 @@ export const Route = createFileRoute("/api/public/webhooks/zoho-sign")({
           return new Response("Webhook not configured", { status: 500 });
         }
 
-        const url = new URL(request.url);
-        const provided =
-          request.headers.get("x-webhook-secret") ??
-          request.headers.get("x-zoho-webhook-secret") ??
-          url.searchParams.get("secret") ??
-          "";
-        if (provided !== expected) {
+        // Read RAW body first — HMAC must be computed over the exact bytes Zoho sent.
+        const bodyText = await request.text();
+
+        const hmacHeader = request.headers.get(ZOHO_SIGN_SIGNATURE_HEADER) ?? undefined;
+        const hmacOk =
+          hmacHeader != null && verifyZohoSignSignature(bodyText, hmacHeader, expected);
+
+        let sharedOk = false;
+        if (!hmacOk) {
+          const url = new URL(request.url);
+          const provided =
+            request.headers.get("x-webhook-secret") ??
+            request.headers.get("x-zoho-webhook-secret") ??
+            url.searchParams.get("secret") ??
+            "";
+          sharedOk = provided !== "" && provided === expected;
+        }
+
+        if (!hmacOk && !sharedOk) {
           return new Response("Unauthorized", { status: 401 });
         }
 
-        const bodyText = await request.text();
         let payload: unknown = null;
         try {
           payload = bodyText ? JSON.parse(bodyText) : null;
