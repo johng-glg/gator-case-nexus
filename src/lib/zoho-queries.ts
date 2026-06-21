@@ -107,5 +107,9 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
       return `select id, First_Name, Last_Name, Email, Phone, Mailing_City, Mailing_State
               from Contacts
               order by Modified_Time desc`;
+    case "allLeads":
+      return `select id, First_Name, Last_Name, Email, Phone, Company, Lead_Status, Lead_Source
+              from Leads
+              order by Modified_Time desc`;
   }
 }
