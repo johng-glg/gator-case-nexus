@@ -30,6 +30,7 @@ export interface CaseServiceDeps {
 const READ_FIELDS = [
   "Current_Stage", "Notice_Date", "Documented_Receipt_Date", "Date_Opened",
   "ALJ_Hearing_Scheduled_Date", "Notice_of_Award_Date", "Release_Signed_Date",
+  "Assigned_Attorney",
 ];
 
 /** Fields the sweep/recompute read to re-derive the deadline + counts. */
