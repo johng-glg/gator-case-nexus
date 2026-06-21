@@ -57,6 +57,8 @@ export interface RetainerServiceDeps {
   zoho: ZohoClient;
   sign: SignAdapter;
   now?: () => Date;
+  /** Called after the Engagement flips to Signed — opens the practice-specific Case. */
+  onRetainerSigned?: (ctx: { engagementId: string }) => Promise<void>;
 }
 
 const isoDateTime = (d: Date) => d.toISOString().slice(0, 19) + "+00:00";
