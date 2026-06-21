@@ -12,6 +12,18 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: win/loss analytics (Phase 6.2)",
+    summary:
+      "Closed-case win rates and time-to-close by ALJ, hearing office, primary impairment, or attorney — with CSV export.",
+    changes: [
+      "New report at /practices/ssdi/reports/outcomes, linked from the cases list.",
+      "Toggle grouping: ALJ / Hearing office / Primary impairment / Attorney. Each row shows Closed, Won, Lost, Other, win rate, a win/loss bar, and average days from Date_Opened to Final_Disposition_Date.",
+      "Year filter on Final_Disposition_Date. Withdrawn / Transferred / Deceased / Conflict counted as Other and excluded from win-rate denominator.",
+      "New whitelisted COQL query (closedCases) pulling ALJ_Name, Hearing_Office_ODAR, Primary_Impairment, Closure_Reason, and attorney lookup.",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: pipeline report (Phase 6.1)",
     summary:
       "Open-case counts and age-in-stage distribution grouped by stage, phase, attorney, or referral source — with CSV export.",
