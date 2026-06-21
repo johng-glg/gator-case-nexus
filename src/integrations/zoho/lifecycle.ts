@@ -95,7 +95,7 @@ export type DateRule = DueRule;
 
 /** What fires on entering each stage. Stages not listed have no automatic effects. */
 export const HOOKS: Partial<Record<Stage, StageEffects>> = {
-  "Retainer signed": {
+  "Retained": {
     sign: ["SSA-1696", "SSA-827", "Retainer"],
     tasks: [{ label: "File SSA application", due: { type: "fieldPlus", field: "Date_Opened", days: 14 } }],
   },
