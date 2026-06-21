@@ -87,6 +87,25 @@ function CaseDetail() {
     }
   }
 
+  async function onRecomputeDeadline() {
+    setRecomputing(true);
+    try {
+      const r = await recomputeDeadline({ data: { caseId } });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["case", caseId] }),
+        queryClient.invalidateQueries({ queryKey: ["deadlinesAtRisk"] }),
+        queryClient.invalidateQueries({ queryKey: ["deadlinesAll"] }),
+      ]);
+      if (!r.recomputed) toast.message(r.reason ?? "Nothing to recompute.");
+      else if (r.changed) toast.success(`Deadline recomputed: ${r.deadline} (${r.days}d).`);
+      else toast.message(`Already up to date: ${r.deadline} (${r.days}d).`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setRecomputing(false);
+    }
+  }
+
   if (caseQ.isLoading) return <div className="p-8 text-sm text-muted-foreground">Loading case…</div>;
   if (caseQ.error) return <div className="p-8 text-sm text-destructive-foreground">{(caseQ.error as Error).message}</div>;
   if (!record) return <div className="p-8 text-sm text-muted-foreground">Case not found.</div>;
