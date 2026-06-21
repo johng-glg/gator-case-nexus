@@ -30,14 +30,14 @@ function CasesList() {
     const set = new Set<string>();
     cases.data?.rows.forEach((r) => {
       const s = r.Current_Stage;
-      if (typeof s === "string") set.add(s);
+      if (typeof s === "string") set.add(normalizeStage(s));
     });
     return Array.from(set).sort();
   }, [cases.data]);
 
   const filteredRows = useMemo(() => {
     const rows = cases.data?.rows ?? [];
-    return stageFilter ? rows.filter((r) => r.Current_Stage === stageFilter) : rows;
+    return stageFilter ? rows.filter((r) => normalizeStage(r.Current_Stage as string | undefined) === stageFilter) : rows;
   }, [cases.data, stageFilter]);
 
   return (
