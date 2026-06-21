@@ -125,6 +125,16 @@ export const caseAdvance = createServerFn({ method: "POST" })
     return result;
   });
 
+export const caseRecomputeDeadline = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => caseIdInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { createCaseService } = await import("@/integrations/zoho/caseService");
+    const svc = createCaseService({ zoho: makeZohoClient() });
+    return await svc.recomputeDeadline(context.userId, data.caseId);
+  });
+
 const taskIdInput = z.object({ taskId: z.string().regex(/^[A-Za-z0-9_]+$/) });
 
 export const completeTask = createServerFn({ method: "POST" })

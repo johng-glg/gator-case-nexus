@@ -112,13 +112,64 @@ export function createCaseService(deps: CaseServiceDeps) {
     return { from, to: toStage, deadline: deadline ? iso(deadline) : null };
   }
 
-  /** SERVICE cron: refresh the time-sensitive derived fields for all open cases. */
+  /**
+   * Re-derive Deadline_Date / Days_To_Deadline / Deadline_At_Risk from the case's
+   * CURRENT Notice_Date (and optional Documented_Receipt_Date). Staff click this
+   * after editing a notice date. No-ops cleanly if no appeal tier is active.
+   */
+  async function recomputeDeadline(userKey: string, caseId: string) {
+    const api = deps.zoho.as(userKey);
+    const c = await api.getRecord<ZohoRecord>(MODULE, caseId, [
+      "Notice_Date", "Documented_Receipt_Date", "Active_Deadline_Type",
+      "Deadline_Date", "Days_To_Deadline", "Deadline_At_Risk",
+    ]);
+    if (!c) throw new Error(`SSDI case ${caseId} not found`);
+
+    const tier = c.Active_Deadline_Type as string | null | undefined;
+    if (!tier || tier === "None") {
+      return { recomputed: false, reason: "No active appeal tier on this case." as const };
+    }
+    const notice = c.Notice_Date as string | undefined;
+    if (!notice) {
+      throw new Error("Notice_Date is required to compute the appeal deadline.");
+    }
+
+    const deadline = computeAppealDeadline(notice, (c.Documented_Receipt_Date as string) ?? null);
+    const t = today();
+    const update: ZohoRecord = {
+      id: caseId,
+      Deadline_Date: iso(deadline),
+      Days_To_Deadline: daysUntil(deadline, t),
+      Deadline_At_Risk: isAtRisk(deadline, 14, t),
+    };
+    await api.updateRecords(MODULE, [update]);
+    return {
+      recomputed: true,
+      deadline: update.Deadline_Date as string,
+      days: update.Days_To_Deadline as number,
+      atRisk: update.Deadline_At_Risk as boolean,
+      changed:
+        update.Deadline_Date !== c.Deadline_Date ||
+        update.Days_To_Deadline !== c.Days_To_Deadline ||
+        update.Deadline_At_Risk !== c.Deadline_At_Risk,
+    };
+  }
+
+  /**
+   * SERVICE cron: refresh time-sensitive derived fields for every open case.
+   * ALSO re-derives Deadline_Date from Notice_Date whenever an appeal tier is
+   * active, so notice-date edits self-heal overnight even without a manual
+   * Recompute click.
+   */
   async function runDailyDeadlineSweep(): Promise<{ scanned: number; updated: number }> {
     const api = deps.zoho.as(SERVICE_ACTOR);
     const rows = await api.coql<ZohoRecord>(
-      `select id, Deadline_Date, Release_Signed_Date, Days_To_Deadline, Deadline_At_Risk, Release_Expiring_Soon
+      `select id, Notice_Date, Documented_Receipt_Date, Active_Deadline_Type,
+              Deadline_Date, Days_To_Deadline, Deadline_At_Risk,
+              Release_Signed_Date, Release_Expiration_Date, Release_Expiring_Soon
        from ${MODULE}
-       where Is_Closed = false and (Deadline_Date is not null or Release_Signed_Date is not null)`,
+       where Is_Closed = false
+         and (Notice_Date is not null or Deadline_Date is not null or Release_Signed_Date is not null)`,
     );
 
     const t = today();
@@ -127,18 +178,29 @@ export function createCaseService(deps: CaseServiceDeps) {
       const u: ZohoRecord = { id: r.id as string };
       let changed = false;
 
-      if (r.Deadline_Date) {
-        const days = daysUntil(r.Deadline_Date as string, t);
-        const risk = isAtRisk(r.Deadline_Date as string, 14, t);
+      // 1) Re-derive Deadline_Date from Notice_Date when an appeal tier is active.
+      const tier = r.Active_Deadline_Type as string | null | undefined;
+      const notice = r.Notice_Date as string | null | undefined;
+      let deadlineStr = r.Deadline_Date as string | null | undefined;
+      if (tier && tier !== "None" && notice) {
+        const d = iso(computeAppealDeadline(notice, (r.Documented_Receipt_Date as string) ?? null));
+        if (d !== deadlineStr) { u.Deadline_Date = d; deadlineStr = d; changed = true; }
+      }
+
+      // 2) Days / at-risk against the (possibly refreshed) Deadline_Date.
+      if (deadlineStr) {
+        const days = daysUntil(deadlineStr, t);
+        const risk = isAtRisk(deadlineStr, 14, t);
         if (days !== r.Days_To_Deadline) { u.Days_To_Deadline = days; changed = true; }
         if (risk !== r.Deadline_At_Risk) { u.Deadline_At_Risk = risk; changed = true; }
       }
+
+      // 3) HIPAA release expiration + expiring-soon flag.
       if (r.Release_Signed_Date) {
         const exp = iso(releaseExpiration(r.Release_Signed_Date as string));
         const soon = releaseExpiringSoon(r.Release_Signed_Date as string, 30, t);
-        u.Release_Expiration_Date = exp; // cheap to always set
+        if (exp !== r.Release_Expiration_Date) { u.Release_Expiration_Date = exp; changed = true; }
         if (soon !== r.Release_Expiring_Soon) { u.Release_Expiring_Soon = soon; changed = true; }
-        changed = true;
       }
       if (changed) updates.push(u);
     }
@@ -147,5 +209,5 @@ export function createCaseService(deps: CaseServiceDeps) {
     return { scanned: rows.length, updated: updates.length };
   }
 
-  return { advanceStage, runDailyDeadlineSweep };
+  return { advanceStage, recomputeDeadline, runDailyDeadlineSweep };
 }
