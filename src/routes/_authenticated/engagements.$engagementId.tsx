@@ -248,6 +248,59 @@ function Badge({ children }: { children: React.ReactNode }) {
   );
 }
 
+function RetainerPanel({
+  status, link, sentDate, signedDate, onSend, sending,
+}: {
+  status: string;
+  link?: string;
+  sentDate?: string;
+  signedDate?: string;
+  onSend: () => void;
+  sending: boolean;
+}) {
+  const tone =
+    status === "Signed" ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-500"
+    : status === "Sent" ? "bg-amber-500/10 border-amber-500/40 text-amber-500"
+    : status === "Declined" || status === "Expired" ? "bg-destructive/10 border-destructive/40 text-destructive"
+    : "bg-muted/30 border-border text-muted-foreground";
+  const canSend = status !== "Signed" && status !== "Sent";
+  return (
+    <section className="rounded-lg border border-border bg-card p-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Retainer</div>
+          <div className="mt-1 flex items-center gap-2">
+            <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium", tone)}>
+              {status}
+            </span>
+            {link && (
+              <a href={link} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">
+                View document
+              </a>
+            )}
+          </div>
+          <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
+            {sentDate && <div>Sent: {sentDate.slice(0, 10)}</div>}
+            {signedDate && <div>Signed: {signedDate.slice(0, 10)}</div>}
+          </div>
+        </div>
+        {canSend && (
+          <button
+            type="button"
+            onClick={onSend}
+            disabled={sending}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            {sending && <Loader2 className="h-3 w-3 animate-spin" />}
+            {sending ? "Sending…" : status === "Not sent" ? "Send retainer" : "Resend retainer"}
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
+
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="px-4 py-2.5 text-left font-medium">{children}</th>;
 }
