@@ -39,8 +39,8 @@ export type QueryName =
   | "engagementsByType"
   | "myEngagements"
   | "allContacts"
-  | "allLeads"
-  | "tasksByCase";
+  | "allLeads";
+
 
 
 const ENGAGEMENT_COLS =
