@@ -12,6 +12,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: trust accounting CSV export (Phase 5.3)",
+    summary:
+      "Per-case and firm-wide cost exports as CSV, ready for the bookkeeper or Zoho Books import.",
+    changes: [
+      "Per-case 'Export CSV' button on the case page Costs section — exports Date, Description, Category, Amount, Case.",
+      "New Settings → Trust Export page lists every cost across all engagements with a date-range filter, running total, and one-click CSV download (Date, Client, Case, Description, Category, Amount).",
+      "Pulls live from Zoho via a new whitelisted COQL query (allCosts) with client + engagement lookups.",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: fee petition draft generator (Phase 5.2)",
     summary:
       "Cases in the Award phase get a one-click printable fee petition draft pulling claimant, fee math, and costs.",
