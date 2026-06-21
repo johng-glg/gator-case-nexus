@@ -286,6 +286,7 @@ function CaseDetail() {
         currentStage={stage}
         initialStage={dialogInitialStage}
         initialFields={dialogInitialFields}
+        requirementsMap={stageReqs}
         onSubmit={onAdvance}
       />
     </div>
