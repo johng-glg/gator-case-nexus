@@ -7,8 +7,8 @@
 /*
  * Gator — case platform design system.
  *
- * Brand: deep forest green canvas, warm gold accents, serif display + clean sans body.
- * The app is always rendered in this dark gold palette (no separate light mode for now).
+ * Brand: white canvas, forest green type & accents, serif display + clean sans body.
+ * Light mode is the default; .dark preserves the original deep-forest palette.
  */
 
 @theme inline {
