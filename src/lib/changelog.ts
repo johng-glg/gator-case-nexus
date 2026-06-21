@@ -12,6 +12,18 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: pipeline report (Phase 6.1)",
+    summary:
+      "Open-case counts and age-in-stage distribution grouped by stage, phase, attorney, or referral source — with CSV export.",
+    changes: [
+      "New report at /practices/ssdi/reports/pipeline, linked from the cases list.",
+      "Toggle grouping: Stage / Phase / Attorney / Referral source. Each row shows count, avg / median / oldest age (days since Date_Opened), and a 0–30 / 31–90 / 91–180 / 181–365 / >365 day distribution.",
+      "Pulls live from Zoho via a new whitelisted COQL query (pipelineCases) with attorney and referral-source lookups.",
+      "One-click CSV export for the active grouping.",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: trust accounting CSV export (Phase 5.3)",
     summary:
       "Per-case and firm-wide cost exports as CSV, ready for the bookkeeper or Zoho Books import.",

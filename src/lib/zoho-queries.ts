@@ -37,6 +37,7 @@ export type QueryName =
   | "releasesAll"
   | "pipelineByStage"
   | "pipelineByPractice"
+  | "pipelineCases"
   | "costsByEngagement"
   | "allCosts"
   | "casesByEngagement"
@@ -121,6 +122,16 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               where id is not null
               order by Modified_Time desc
               limit 200`;
+    case "pipelineCases":
+      return `select id, Case_Number, Current_Stage, Sub_Status, Date_Opened,
+                     Deadline_Date, Days_To_Deadline,
+                     Assigned_Attorney, Assigned_Attorney.name,
+                     Engagement, Engagement.Name,
+                     Engagement.Referral_Source, Engagement.Referral_Source.Name
+              from SSDI_Cases
+              where Is_Closed = false
+              order by Date_Opened desc
+              limit 1000`;
     case "costsByEngagement":
       return `select id, Name, Amount, Cost_Type, Created_Time, Engagement
               from Costs
