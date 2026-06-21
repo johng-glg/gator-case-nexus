@@ -1,74 +1,67 @@
-# Plan — compact 7-phase SSDI lifecycle stepper
+# SSDI Module Build-Out — Ordered Plan
 
-Replace the horizontal 24-chip `StageRail` on the case detail page with a 7-phase stepper that only expands the active phase. Grouping is exported from `lifecycle.ts` so the UI never hardcodes the phase list.
+## What's already in place
+- Lifecycle state machine (`src/integrations/zoho/lifecycle.ts`) — full SSA stage list from Intake → Closed with valid transitions.
+- Deadline engine (`src/integrations/zoho/deadlines.ts`) — 65-day appeal math + federal-holiday rollover.
+- Intake wizard (`/practices/ssdi/intake`) with conflict check + retainer step.
+- Case list (`/practices/ssdi/cases`) and case detail with Stage Rail, Advance dialog, tasks, costs, retainer card.
+- Zoho-backed engagements, contacts, cases, costs, referrals.
 
-## 1. Add phase grouping to `src/integrations/zoho/lifecycle.ts`
+The skeleton is done. The plan below fills in the substance, ordered so each phase unlocks the next.
 
-Append (does not touch `TRANSITIONS` or `HOOKS`):
+---
 
-```ts
-export interface Phase { key: string; label: string; stages: Stage[]; }
+## Phase 1 — Deadlines & Tasks you can trust (foundation)
+Without reliable deadlines + tasks, nothing else matters.
 
-export const PHASES: Phase[] = [
-  { key: "intake",   label: "Intake & filing",   stages: ["Intake", "Retainer signed", "Application filed"] },
-  { key: "initial",  label: "Initial decision",  stages: ["Initial decision - pending", "Initial decision - denied", "Initial decision - approved"] },
-  { key: "recon",    label: "Reconsideration",   stages: ["Reconsideration filed", "Recon decision - pending", "Recon decision - denied", "Recon decision - approved"] },
-  { key: "alj",      label: "ALJ hearing",       stages: ["ALJ hearing requested", "Hearing scheduled", "Hearing prep", "Hearing held", "ALJ decision - pending", "ALJ decision - denied", "ALJ decision - approved"] },
-  { key: "ac",       label: "Appeals Council",   stages: ["Appeals Council requested", "AC decision - pending", "AC decision - denied", "AC decision - approved"] },
-  { key: "award",    label: "Award & fees",      stages: ["Award / NOA received", "Fee petition filed"] },
-  { key: "closed",   label: "Closed",            stages: ["Closed"] },
-];
+1. **Deadline detail panel on the case page** — show notice date, computed deadline, rule used (presumed receipt vs. documented receipt), and days remaining. Override flow with required reason + audit log entry.
+2. **Tasks engine, end-to-end** — when a stage is entered, the lifecycle hooks already declare tasks; wire the runner to actually create them in Zoho, mark complete, reassign, and reopen. Today the rail advances but tasks aren't always materialized.
+3. **Deadlines dashboard** (`/deadlines`) upgrade — At-risk (≤14 days), This week, Overdue, by attorney. Already partially wired; finish filters, sort, bulk reassign.
+4. **Nightly deadline sweep** — server route at `/api/public/cron/deadline-sweep` (auth via `DEADLINE_SWEEP_SECRET`) that recomputes deadlines, flags overdue, and posts a daily digest. Stub exists — finish + schedule.
 
-export function phaseForStage(stage: Stage): Phase | undefined { ... }
-export function phaseIndex(stage: Stage): number { ... } // -1 if not found
-```
+## Phase 2 — Stage workflow completeness
+Make every stage transition do the right thing automatically.
 
-All 24 `Stage` literals are accounted for exactly once.
+1. **Per-stage required fields** — Advance dialog already accepts fields; define the schema per stage (e.g. Application filed requires `SSA_Claim_Number` + `Filed_On`; ALJ Hearing scheduled requires `Hearing_Date`, `Hearing_Type`, `ALJ_Name`, `Hearing_Office`).
+2. **Side-effect runner** — on stage entry: set deadline, generate tasks, optionally request e-sign, optionally create calendar event. Drive entirely from `StageEffects` in `lifecycle.ts`; no per-stage if/else in components.
+3. **Denial → next-tier auto-suggest** — when a "denied" stage is entered, prefill the next appeal's filing task with the computed deadline.
+4. **Closed case workflow** — closure reason (Won / Lost / Withdrawn / Transferred), final disposition fields, lock further edits.
 
-## 2. Rewrite `src/components/cases/StageRail.tsx`
+## Phase 3 — Documents & e-signature
+SSDI runs on forms. This is where the time savings live.
 
-New component contract: `<StageRail current={stage} />` (unchanged props).
+1. **Document checklist per stage** — SSA-1696 (rep appt), SSA-827 (medical release), SSA-561 (recon), HA-501 (ALJ request), HA-520 (Appeals Council). Show checklist on case page; track received/sent/signed per doc.
+2. **Zoho Sign integration** — secrets already exist (`ZOHO_SIGN_TEMPLATE_ID`, `ZOHO_SIGN_ACTION_ID`, `ZOHO_SIGN_WEBHOOK_SECRET`). Build: send-for-signature action, webhook receiver at `/api/public/webhooks/zoho-sign` that updates the case doc record on signed/declined.
+3. **Document upload & storage** — Lovable Cloud Storage bucket per case for medical records, decision letters, exhibits. Tag with stage + document type.
 
-Layout — horizontal phase stepper, active phase expands below:
+## Phase 4 — Client experience
+1. **Client portal (lightweight)** — magic-link login for the client to see case status, upcoming deadlines, and outstanding document requests. Reuses existing auth.
+2. **Status-update messaging** — templated SMS/email on stage change (e.g. "Your hearing is scheduled for…"). Use existing connectors; opt-in per client.
+3. **Document request flow** — attorney clicks "Request SSA-827 from client" → client gets link → uploads → appears on case.
 
-```text
-[✓ Intake & filing]──[✓ Initial decision]──[● Reconsideration]──[ ALJ ]──[ AC ]──[ Award ]──[ Closed ]
-                                            │
-                                            ├ ✓ Reconsideration filed
-                                            ├ ● Recon decision - pending     ← bold
-                                            ○ Recon decision - denied
-                                            ○ Recon decision - approved
-```
+## Phase 5 — Financials
+1. **Costs module** — already scaffolded (Costs table on case page). Add: cost entry form, category, vendor, reimbursable flag, totals per case.
+2. **Fee petition generator** — when "Award / NOA received" entered, pull case data + costs → produce a fee petition draft (PDF) using the existing back-pay/fee logic in `fees.ts`.
+3. **Trust accounting export** — CSV export of costs by case for the bookkeeper, ready to push to Zoho Books (connector already supported).
 
-Rules:
-- Compute `current = phaseIndex(currentStage)`, iterate `PHASES`.
-- Phase state: `i < current` → done (muted + check); `i === current` → active (primary/green); `i > current` → upcoming (dimmed, dashed border).
-- Thin connector line between chips (`h-px bg-border flex-1`), colored up through `current`.
-- Only the active phase renders a sub-list directly beneath the row (absolute/anchored under that chip, or just below the row aligned to it). Sub-stage state computed from `phase.stages.indexOf(currentStage)`:
-  - before → check
-  - equal → filled dot, bold
-  - after → hollow dot
-- Past/future phases show only label + icon, no sub-list.
-- Use existing tokens (`bg-primary`, `text-muted-foreground`, `border-border`); no hardcoded colors.
-- Lucide icons: `Check`, `Circle`, `CircleDot`.
-- No `overflow-x-auto`, no `min-w-max`. The row uses `flex w-full` so 7 chips fit at any reasonable width.
+## Phase 6 — Reporting & ops
+1. **Pipeline report** — count + aging by stage, by attorney, by referral source.
+2. **Win/loss analytics** — outcomes by ALJ, by hearing office, by impairment type.
+3. **Referral-source ROI** — cases per source, conversion rate, gross fees, cost per acquisition.
 
-## 3. Optional "Full timeline" disclosure
+---
 
-Below the stepper, a small `<button>` "Show full timeline" toggling local state. When open, render the old flat 24-stage list (same visuals as today's rail) in a `<details>`-style block. Collapsed by default. Keeps power-user access without forcing side-scroll.
+## Suggested build order
+Phase 1 → 2 → 3 is the critical path. Phase 4–6 can be reordered based on what the firm needs most. I'd recommend doing **Phase 1** first as a single push (1–2 work sessions) so the rest of the build sits on a foundation you can trust.
 
-## 4. Case detail page — no change required
+## Technical conventions to keep
+- All Zoho field references go through `mem://reference/zoho-fields` — never invent API names.
+- Never select or write 🔒 formula/rollup fields in COQL.
+- Side-effects live in `lifecycle.ts`, runner in `caseService.ts`; components stay declarative.
+- Cron / webhook routes under `/api/public/*` with signature verification.
+- All new tables in Lovable Cloud get RLS + GRANTs in the same migration.
 
-`src/routes/_authenticated/practices.ssdi.cases.$caseId.tsx` already renders `<StageRail current={stage} />` and the "Advance stage" button. Both stay exactly as is.
-
-## Out of scope (v1)
-- Branching/"skipped" phase detection from lifecycle dates — noted as future enhancement; v1 styles purely by `phaseIndex`.
-- Vertical timeline alternative — sticking with the recommended horizontal layout.
-- No changes to `lifecycle.ts` transitions, `HOOKS`, `AdvanceStageDialog`, queries, or routes.
-
-## Acceptance
-- Case detail page renders 7 phase chips on one row at standard widths, no horizontal scroll.
-- Active phase shows sub-stages; other phases collapsed.
-- Current stage is bold with a filled dot; prior sub-stages checked; later hollow.
-- "Advance stage" button works unchanged.
-- "Show full timeline" reveals the legacy 24-stage list.
+## Open questions before I start Phase 1
+1. **Documented receipt date** — do you want a dedicated `Receipt_Date` field on Cases, or keep deriving from notice + 5?
+2. **Task assignment default** — assign to case's primary attorney, or to a shared "SSDI ops" queue?
+3. **Calendar** — sync hearings to Google Calendar (connector) or just keep in-app?
