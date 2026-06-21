@@ -270,6 +270,65 @@ export const completeTask = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const reopenTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => taskIdInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    await makeZohoClient().as(context.userId).updateRecords("Tasks", [
+      { id: data.taskId, Status: "Not Started" },
+    ]);
+    return { ok: true };
+  });
+
+const reassignTaskInput = z.object({
+  taskId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  ownerId: z.string().regex(/^[A-Za-z0-9_]+$/),
+});
+
+export const reassignTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => reassignTaskInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    await makeZohoClient().as(context.userId).updateRecords("Tasks", [
+      { id: data.taskId, Owner: { id: data.ownerId } },
+    ]);
+    return { ok: true };
+  });
+
+const createCaseTaskInput = z.object({
+  caseId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  subject: z.string().trim().min(1).max(255),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  priority: z.enum(["Low", "Normal", "High", "Highest"]).optional(),
+  ownerId: z.string().regex(/^[A-Za-z0-9_]+$/).optional(),
+  description: z.string().trim().max(4000).optional(),
+});
+
+export const createCaseTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => createCaseTaskInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const payload: Record<string, unknown> = {
+      Subject: data.subject,
+      What_Id: { id: data.caseId },
+      $se_module: "SSDI_Cases",
+      Status: "Not Started",
+      Priority: data.priority ?? "Normal",
+    };
+    if (data.dueDate) payload.Due_Date = data.dueDate;
+    if (data.ownerId) payload.Owner = { id: data.ownerId };
+    if (data.description) payload.Description = data.description;
+    const res = await makeZohoClient().as(context.userId).createRecords("Tasks", [payload]);
+    const first = (res?.[0] ?? {}) as { details?: { id?: string }; code?: string; message?: string };
+    if (first.code && first.code !== "SUCCESS") {
+      throw new Error(first.message || "Failed to create task");
+    }
+    return { ok: true, id: first.details?.id };
+  });
+
 export const getCaseTasks = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => caseIdInput.parse(data))
@@ -278,9 +337,17 @@ export const getCaseTasks = createServerFn({ method: "POST" })
     const rows = await makeZohoClient()
       .as(context.userId)
       .getRelated("SSDI_Cases", data.caseId, "Tasks", [
-        "id","Subject","Status","Priority","Due_Date","Owner","Description","Created_Time","Modified_Time",
+        "id","Subject","Status","Priority","Due_Date","Owner","Description","Created_Time","Modified_Time","Closed_Time",
       ]);
     return { rows: toJson<ZohoRow[]>(rows) };
+  });
+
+export const listZohoUsers = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const users = await makeZohoClient().as(context.userId).listActiveUsers();
+    return { users };
   });
 
 
