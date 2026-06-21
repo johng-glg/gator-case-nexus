@@ -9,9 +9,12 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ClientAuthRouteImport } from './routes/client-auth'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ClientRouteRouteImport } from './routes/_client/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ClientPortalRouteImport } from './routes/_client/portal'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -43,9 +46,18 @@ import { Route as AuthenticatedPracticesSsdiReportsOutcomesRouteImport } from '.
 import { Route as AuthenticatedPracticesSsdiCasesCaseIdRouteImport } from './routes/_authenticated/practices.ssdi.cases.$caseId'
 import { Route as AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRouteImport } from './routes/_authenticated/practices.ssdi.cases.$caseId.fee-petition'
 
+const ClientAuthRoute = ClientAuthRouteImport.update({
+  id: '/client-auth',
+  path: '/client-auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientRouteRoute = ClientRouteRouteImport.update({
+  id: '/_client',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -56,6 +68,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ClientPortalRoute = ClientPortalRouteImport.update({
+  id: '/portal',
+  path: '/portal',
+  getParentRoute: () => ClientRouteRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
@@ -235,10 +252,12 @@ const AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/client-auth': typeof ClientAuthRoute
   '/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
+  '/portal': typeof ClientPortalRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
   '/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
@@ -269,9 +288,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/client-auth': typeof ClientAuthRoute
   '/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
+  '/portal': typeof ClientPortalRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
   '/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
@@ -302,11 +323,14 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/_client': typeof ClientRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/client-auth': typeof ClientAuthRoute
   '/_authenticated/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
+  '/_client/portal': typeof ClientPortalRoute
   '/_authenticated/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/_authenticated/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
   '/_authenticated/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
@@ -339,10 +363,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/client-auth'
     | '/connect-zoho'
     | '/dashboard'
     | '/deadlines'
     | '/settings'
+    | '/portal'
     | '/clients/$clientId'
     | '/engagements/$engagementId'
     | '/leads/$leadId'
@@ -373,9 +399,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/client-auth'
     | '/connect-zoho'
     | '/dashboard'
     | '/deadlines'
+    | '/portal'
     | '/clients/$clientId'
     | '/engagements/$engagementId'
     | '/leads/$leadId'
@@ -405,11 +433,14 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/_client'
     | '/auth'
+    | '/client-auth'
     | '/_authenticated/connect-zoho'
     | '/_authenticated/dashboard'
     | '/_authenticated/deadlines'
     | '/_authenticated/settings'
+    | '/_client/portal'
     | '/_authenticated/clients/$clientId'
     | '/_authenticated/engagements/$engagementId'
     | '/_authenticated/leads/$leadId'
@@ -441,7 +472,9 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  ClientRouteRoute: typeof ClientRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ClientAuthRoute: typeof ClientAuthRoute
   ApiPublicDeadlineSweepRoute: typeof ApiPublicDeadlineSweepRoute
   ApiPublicWebhooksZohoSignRoute: typeof ApiPublicWebhooksZohoSignRoute
   ApiZohoConnectCallbackRoute: typeof ApiZohoConnectCallbackRoute
@@ -449,11 +482,25 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/client-auth': {
+      id: '/client-auth'
+      path: '/client-auth'
+      fullPath: '/client-auth'
+      preLoaderRoute: typeof ClientAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_client': {
+      id: '/_client'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof ClientRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -469,6 +516,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_client/portal': {
+      id: '/_client/portal'
+      path: '/portal'
+      fullPath: '/portal'
+      preLoaderRoute: typeof ClientPortalRouteImport
+      parentRoute: typeof ClientRouteRoute
     }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
@@ -791,10 +845,24 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ClientRouteRouteChildren {
+  ClientPortalRoute: typeof ClientPortalRoute
+}
+
+const ClientRouteRouteChildren: ClientRouteRouteChildren = {
+  ClientPortalRoute: ClientPortalRoute,
+}
+
+const ClientRouteRouteWithChildren = ClientRouteRoute._addFileChildren(
+  ClientRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  ClientRouteRoute: ClientRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ClientAuthRoute: ClientAuthRoute,
   ApiPublicDeadlineSweepRoute: ApiPublicDeadlineSweepRoute,
   ApiPublicWebhooksZohoSignRoute: ApiPublicWebhooksZohoSignRoute,
   ApiZohoConnectCallbackRoute: ApiZohoConnectCallbackRoute,
@@ -802,13 +870,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

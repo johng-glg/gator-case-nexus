@@ -12,6 +12,20 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: lightweight client portal (Phase 4.1)",
+    summary:
+      "Clients can sign in with a magic-link email to see their case status, current stage, deadline, and hearing details — read-only.",
+    changes: [
+      "New /portal route at a separate /_client layout (non-firm emails only); firm staff are bounced back to /dashboard.",
+      "Staff get an 'Invite to portal' button on the case page that emails the client a magic-link sign-in and binds their auth account to the case via the new client_portal_links table (RLS: clients can only see their own row).",
+      "Re-invite works for already-registered clients (issues a fresh magic-link instead of erroring).",
+      "Returning clients can request a new link at /client-auth.",
+      "Portal view exposes case number, current stage, deadline + days remaining, ALJ hearing details, Notice of Award date, and assigned attorney — no fees, no internal notes.",
+      "Portal reads Zoho via the SERVICE actor so clients don't need a Zoho grant of their own.",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: referral-source ROI (Phase 6.3)",
     summary:
       "Engagements, win rate, and projected fees grouped by referral source — completing the Phase 6 reporting set.",
