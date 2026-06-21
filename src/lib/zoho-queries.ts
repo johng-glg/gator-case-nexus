@@ -144,10 +144,12 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               order by Modified_Time desc
               limit 200`;
     case "allLeads":
-      return `select id, First_Name, Last_Name, Email, Phone, Company, Lead_Status, Lead_Source
+      return `select id, First_Name, Last_Name, Email, Phone, Mobile, Company,
+                     Lead_Status, Lead_Source, Practice_Area, Description,
+                     Owner, Converted_Contact, Created_Time, Modified_Time
               from Leads
               where id is not null
-              order by Modified_Time desc
+              order by Created_Time desc
               limit 200`;
     case "allReferrals":
       return `select id, Name
