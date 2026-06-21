@@ -104,6 +104,19 @@ export const getEngagement = createServerFn({ method: "POST" })
     return { record: record ? toJson<ZohoRow>(record) : null };
   });
 
+const contactIdInput = z.object({ contactId: z.string().regex(/^[A-Za-z0-9_]+$/) });
+
+export const getContact = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => contactIdInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const record = await makeZohoClient()
+      .as(context.userId)
+      .getRecord("Contacts", data.contactId, ["First_Name", "Last_Name", "Email", "Phone"]);
+    return { record: record ? toJson<ZohoRow>(record) : null };
+  });
+
 
 const advanceInput = z.object({
   caseId: z.string().regex(/^[A-Za-z0-9_]+$/),
