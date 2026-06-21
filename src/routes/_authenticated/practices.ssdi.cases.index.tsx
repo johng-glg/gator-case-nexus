@@ -75,6 +75,12 @@ function CasesList() {
             Win/loss report
           </Link>
           <Link
+            to="/practices/ssdi/reports/referrals"
+            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/40"
+          >
+            Referral ROI
+          </Link>
+          <Link
             to="/practices/ssdi/intake"
             className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/40"
             title="Back-office: skip the Leads pipeline and create a client directly."

@@ -12,6 +12,19 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: referral-source ROI (Phase 6.3)",
+    summary:
+      "Engagements, win rate, and projected fees grouped by referral source — completing the Phase 6 reporting set.",
+    changes: [
+      "New report at /practices/ssdi/reports/referrals, linked from the cases list.",
+      "Columns: Engagements, Open, Won, Lost, Conversion (won ÷ engagements), Win rate (won ÷ decided), Gross fees, Net fees, Avg fee per win.",
+      "Gross fees use §406(a) cap (lesser of 25% of Back_Pay_Amount or $9,200); net fees subtract the SSA user fee per fees.ts.",
+      "New whitelisted COQL query (ssdiEngagementsWithReferral); closedCases extended with Back_Pay_Amount and Engagement.Referral_Source.Name.",
+      "CSV export of the active view. Cost-per-acquisition column intentionally deferred until marketing spend is tracked per source.",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: win/loss analytics (Phase 6.2)",
     summary:
       "Closed-case win rates and time-to-close by ALJ, hearing office, primary impairment, or attorney — with CSV export.",
