@@ -61,9 +61,17 @@ function CaseDetail() {
     queryFn: () => runQuery({ data: { name: "engagementById", params: { engagementId: engagementId! } } }),
   });
   const engagementRow = (engagementQ.data as Array<Record<string, unknown>> | undefined)?.[0];
-  const clientRef = engagementRow?.Client as { id?: string; name?: string } | string | undefined;
+  const clientRef = engagementRow?.Client as
+    | { id?: string; name?: string; First_Name?: string; Last_Name?: string }
+    | string
+    | undefined;
   const clientId = typeof clientRef === "string" ? clientRef : clientRef?.id;
-  const clientName = typeof clientRef === "object" ? clientRef?.name : undefined;
+  const clientName =
+    typeof clientRef === "object"
+      ? clientRef?.name ??
+        [clientRef?.First_Name, clientRef?.Last_Name].filter(Boolean).join(" ").trim() ||
+        undefined
+      : undefined;
 
   const tasksQ = useQuery({
     queryKey: ["tasks", caseId],
