@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getContact, getEngagement, zohoQuery } from "@/lib/zoho.functions";
-import { ChevronLeft, AlertTriangle } from "lucide-react";
+import { getContact, getEngagement, retainerSend, zohoQuery } from "@/lib/zoho.functions";
+import { ChevronLeft, AlertTriangle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+
 
 export const Route = createFileRoute("/_authenticated/engagements/$engagementId")({
   head: () => ({ meta: [{ title: "Engagement — Gator" }] }),
@@ -17,6 +19,18 @@ function EngagementDetail() {
   const fetchEngagement = useServerFn(getEngagement);
   const fetchContact = useServerFn(getContact);
   const runQuery = useServerFn(zohoQuery);
+  const sendRetainerFn = useServerFn(retainerSend);
+  const queryClient = useQueryClient();
+
+  const sendRetainer = useMutation({
+    mutationFn: () => sendRetainerFn({ data: { engagementId } }),
+    onSuccess: () => {
+      toast.success("Retainer sent for signature");
+      queryClient.invalidateQueries({ queryKey: ["engagement", engagementId] });
+    },
+    onError: (err: unknown) => toast.error((err as Error).message),
+  });
+
 
   const validId = ID_RE.test(engagementId);
 
@@ -103,6 +117,17 @@ function EngagementDetail() {
         <Stat label="Total costs" value={fmtMoney(totalCosts)} />
         <Stat label="Net" value={fmtMoney(net)} emphasis={net !== null && net < 0 ? "negative" : "positive"} />
       </section>
+
+      <RetainerPanel
+        status={String(record.Retainer_Status ?? "Not sent")}
+        link={record.Retainer_Link ? String(record.Retainer_Link) : undefined}
+        sentDate={record.Retainer_Sent_Date ? String(record.Retainer_Sent_Date) : undefined}
+        signedDate={record.Retainer_Signed_Date ? String(record.Retainer_Signed_Date) : undefined}
+        onSend={() => sendRetainer.mutate()}
+        sending={sendRetainer.isPending}
+      />
+
+
 
       <section>
         <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Cases</div>
@@ -222,6 +247,59 @@ function Badge({ children }: { children: React.ReactNode }) {
     </span>
   );
 }
+
+function RetainerPanel({
+  status, link, sentDate, signedDate, onSend, sending,
+}: {
+  status: string;
+  link?: string;
+  sentDate?: string;
+  signedDate?: string;
+  onSend: () => void;
+  sending: boolean;
+}) {
+  const tone =
+    status === "Signed" ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-500"
+    : status === "Sent" ? "bg-amber-500/10 border-amber-500/40 text-amber-500"
+    : status === "Declined" || status === "Expired" ? "bg-destructive/10 border-destructive/40 text-destructive"
+    : "bg-muted/30 border-border text-muted-foreground";
+  const canSend = status !== "Signed" && status !== "Sent";
+  return (
+    <section className="rounded-lg border border-border bg-card p-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Retainer</div>
+          <div className="mt-1 flex items-center gap-2">
+            <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium", tone)}>
+              {status}
+            </span>
+            {link && (
+              <a href={link} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">
+                View document
+              </a>
+            )}
+          </div>
+          <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
+            {sentDate && <div>Sent: {sentDate.slice(0, 10)}</div>}
+            {signedDate && <div>Signed: {signedDate.slice(0, 10)}</div>}
+          </div>
+        </div>
+        {canSend && (
+          <button
+            type="button"
+            onClick={onSend}
+            disabled={sending}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            {sending && <Loader2 className="h-3 w-3 animate-spin" />}
+            {sending ? "Sending…" : status === "Not sent" ? "Send retainer" : "Resend retainer"}
+          </button>
+        )}
+      </div>
+    </section>
+  );
+}
+
 
 function Th({ children }: { children: React.ReactNode }) {
   return <th className="px-4 py-2.5 text-left font-medium">{children}</th>;

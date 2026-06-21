@@ -24,6 +24,7 @@ import { Route as AuthenticatedPracticesPracticeRouteImport } from './routes/_au
 import { Route as AuthenticatedEngagementsEngagementIdRouteImport } from './routes/_authenticated/engagements.$engagementId'
 import { Route as AuthenticatedPracticesSsdiIndexRouteImport } from './routes/_authenticated/practices.ssdi.index'
 import { Route as ApiZohoConnectCallbackRouteImport } from './routes/api/zoho/connect/callback'
+import { Route as ApiPublicWebhooksZohoSignRouteImport } from './routes/api/public/webhooks/zoho-sign'
 import { Route as AuthenticatedPracticesSsdiIntakeRouteImport } from './routes/_authenticated/practices.ssdi.intake'
 import { Route as AuthenticatedPracticesSsdiCasesIndexRouteImport } from './routes/_authenticated/practices.ssdi.cases.index'
 import { Route as AuthenticatedPracticesSsdiCasesCaseIdRouteImport } from './routes/_authenticated/practices.ssdi.cases.$caseId'
@@ -108,6 +109,12 @@ const ApiZohoConnectCallbackRoute = ApiZohoConnectCallbackRouteImport.update({
   path: '/api/zoho/connect/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicWebhooksZohoSignRoute =
+  ApiPublicWebhooksZohoSignRouteImport.update({
+    id: '/api/public/webhooks/zoho-sign',
+    path: '/api/public/webhooks/zoho-sign',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthenticatedPracticesSsdiIntakeRoute =
   AuthenticatedPracticesSsdiIntakeRouteImport.update({
     id: '/intake',
@@ -141,6 +148,7 @@ export interface FileRoutesByFullPath {
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/engagements/': typeof AuthenticatedEngagementsIndexRoute
   '/practices/ssdi/intake': typeof AuthenticatedPracticesSsdiIntakeRoute
+  '/api/public/webhooks/zoho-sign': typeof ApiPublicWebhooksZohoSignRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
   '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
@@ -159,6 +167,7 @@ export interface FileRoutesByTo {
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/engagements': typeof AuthenticatedEngagementsIndexRoute
   '/practices/ssdi/intake': typeof AuthenticatedPracticesSsdiIntakeRoute
+  '/api/public/webhooks/zoho-sign': typeof ApiPublicWebhooksZohoSignRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiIndexRoute
   '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
@@ -180,6 +189,7 @@ export interface FileRoutesById {
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/_authenticated/engagements/': typeof AuthenticatedEngagementsIndexRoute
   '/_authenticated/practices/ssdi/intake': typeof AuthenticatedPracticesSsdiIntakeRoute
+  '/api/public/webhooks/zoho-sign': typeof ApiPublicWebhooksZohoSignRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/_authenticated/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
   '/_authenticated/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
@@ -201,6 +211,7 @@ export interface FileRouteTypes {
     | '/api/public/deadline-sweep'
     | '/engagements/'
     | '/practices/ssdi/intake'
+    | '/api/public/webhooks/zoho-sign'
     | '/api/zoho/connect/callback'
     | '/practices/ssdi/'
     | '/practices/ssdi/cases/$caseId'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/api/public/deadline-sweep'
     | '/engagements'
     | '/practices/ssdi/intake'
+    | '/api/public/webhooks/zoho-sign'
     | '/api/zoho/connect/callback'
     | '/practices/ssdi'
     | '/practices/ssdi/cases/$caseId'
@@ -239,6 +251,7 @@ export interface FileRouteTypes {
     | '/api/public/deadline-sweep'
     | '/_authenticated/engagements/'
     | '/_authenticated/practices/ssdi/intake'
+    | '/api/public/webhooks/zoho-sign'
     | '/api/zoho/connect/callback'
     | '/_authenticated/practices/ssdi/'
     | '/_authenticated/practices/ssdi/cases/$caseId'
@@ -250,6 +263,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ApiPublicDeadlineSweepRoute: typeof ApiPublicDeadlineSweepRoute
+  ApiPublicWebhooksZohoSignRoute: typeof ApiPublicWebhooksZohoSignRoute
   ApiZohoConnectCallbackRoute: typeof ApiZohoConnectCallbackRoute
 }
 
@@ -360,6 +374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiZohoConnectCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/webhooks/zoho-sign': {
+      id: '/api/public/webhooks/zoho-sign'
+      path: '/api/public/webhooks/zoho-sign'
+      fullPath: '/api/public/webhooks/zoho-sign'
+      preLoaderRoute: typeof ApiPublicWebhooksZohoSignRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/practices/ssdi/intake': {
       id: '/_authenticated/practices/ssdi/intake'
       path: '/intake'
@@ -440,6 +461,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ApiPublicDeadlineSweepRoute: ApiPublicDeadlineSweepRoute,
+  ApiPublicWebhooksZohoSignRoute: ApiPublicWebhooksZohoSignRoute,
   ApiZohoConnectCallbackRoute: ApiZohoConnectCallbackRoute,
 }
 export const routeTree = rootRouteImport
