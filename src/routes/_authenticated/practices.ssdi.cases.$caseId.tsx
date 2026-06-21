@@ -97,6 +97,7 @@ function CaseDetail() {
       queryClient.invalidateQueries({ queryKey: ["tasks", caseId] }),
       queryClient.invalidateQueries({ queryKey: ["ssdi-cases"] }),
       queryClient.invalidateQueries({ queryKey: ["deadlinesAtRisk"] }),
+      queryClient.invalidateQueries({ queryKey: ["case-activity", caseId] }),
     ]);
 
     // 2.3 — After a denial advance, suggest the next-tier filing stage in a toast.
