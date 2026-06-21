@@ -25,6 +25,8 @@ const queryInput = z.object({
     "myOpenCases",
     "deadlinesAtRisk",
     "deadlinesAll",
+    "myDeadlines",
+    "upcomingHearings",
     "releasesExpiringSoon",
     "releasesAll",
     "pipelineByStage",
@@ -70,7 +72,10 @@ export const zohoQuery = createServerFn({ method: "POST" })
     const client = makeZohoClient().as(context.userId);
     // "mine" queries filter on a Zoho user id (not the Supabase user id).
     // Resolve it only when needed.
-    const needsZohoUser = data.name === "myOpenCases" || data.name === "myEngagements";
+    const needsZohoUser =
+      data.name === "myOpenCases" ||
+      data.name === "myEngagements" ||
+      data.name === "myDeadlines";
     const zohoUserId = needsZohoUser ? await client.currentUserId() : undefined;
     if (needsZohoUser && !zohoUserId) {
       return { rows: [] as ZohoRow[] };
