@@ -48,7 +48,7 @@ function Engagements() {
   });
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-5">
+    <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5">
       <div className="flex items-baseline justify-between flex-wrap gap-4">
         <div>
           <h1 className="font-display text-2xl text-foreground">Engagements</h1>
@@ -91,7 +91,9 @@ function Engagements() {
       </div>
 
       <div className="mt-5 rounded-lg border border-border bg-card overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[720px]">
+
           <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <Th>Engagement</Th>
@@ -140,6 +142,7 @@ function Engagements() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
