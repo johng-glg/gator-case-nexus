@@ -269,6 +269,7 @@ export const updateCaseDates = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const { createCaseService } = await import("@/integrations/zoho/caseService");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     const client = makeZohoClient();
     const payload: Record<string, unknown> = { id: data.caseId };
     if (data.Notice_Date !== undefined) payload.Notice_Date = data.Notice_Date;
@@ -277,6 +278,22 @@ export const updateCaseDates = createServerFn({ method: "POST" })
     await client.as(context.userId).updateRecords("SSDI_Cases", [payload]);
     const svc = createCaseService({ zoho: client });
     const recomputed = await svc.recomputeDeadline(context.userId, data.caseId);
+    const changed: string[] = [];
+    if (data.Notice_Date !== undefined) changed.push(`Notice date → ${data.Notice_Date ?? "cleared"}`);
+    if (data.Documented_Receipt_Date !== undefined)
+      changed.push(`Documented receipt → ${data.Documented_Receipt_Date ?? "cleared"}`);
+    await logCaseActivity({
+      caseId: data.caseId,
+      actorUserId: context.userId,
+      actorEmail: actorEmail(context.claims),
+      action: "case.dates.update",
+      summary: changed.join("; "),
+      metadata: {
+        Notice_Date: data.Notice_Date,
+        Documented_Receipt_Date: data.Documented_Receipt_Date,
+        recomputedDeadline: recomputed,
+      },
+    });
     return { ok: true, changed: true, recomputed };
   });
 
