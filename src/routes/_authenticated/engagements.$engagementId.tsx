@@ -281,7 +281,7 @@ function RetainerPanel({
   const STEPS = ["Not sent", "Sent", "Signed"] as const;
   const isError = status === "Declined" || status === "Expired";
   const currentIdx = isError ? 1 : Math.max(0, STEPS.indexOf(status as (typeof STEPS)[number]));
-  const canSend = status !== "Signed" && status !== "Sent";
+  const canSend = status !== "Signed";
 
   return (
     <section className="rounded-lg border border-border bg-card p-4">
