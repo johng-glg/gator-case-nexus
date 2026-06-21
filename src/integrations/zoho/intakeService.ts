@@ -176,14 +176,6 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
     })]);
     const engagementId = idOf(engRes[0]);
 
-    // First SSDI Case
-    const caseRes = await api.createRecords("SSDI_Cases", [clean({
-      Name: `${lastName}, ${firstName || ""} — SSDI`.replace(/, —/, " —"),
-      Engagement: { id: engagementId }, Current_Stage: "Intake", Date_Opened: t,
-      Assigned_Case_Manager: actor,
-    })]);
-    const caseId = idOf(caseRes[0]);
-
     // Stamp the Lead
     await api.updateRecords("Leads", [{
       id: leadId,
@@ -191,7 +183,9 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
       Converted_Contact: { id: clientId },
     }]);
 
-    return { clientId, engagementId, caseId, leadId, conflict };
+    // NOTE: the SSDI Case is intentionally NOT created here. The case is
+    // opened when the retainer is signed (see retainerService onRetainerSigned).
+    return { clientId, engagementId, leadId, conflict };
   }
 
   return { runConflictCheck, createIntake, convertLead };
