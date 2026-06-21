@@ -5,8 +5,7 @@
  * with per-case local persistence so attorneys can track what's been
  * sent/received without waiting on a CRM round-trip.
  */
-import type { Stage } from "./lifecycle";
-import { phaseForStage } from "./lifecycle";
+import { PHASES, phaseForStage, type Stage } from "./lifecycle";
 
 export interface ChecklistDoc {
   code: string;
