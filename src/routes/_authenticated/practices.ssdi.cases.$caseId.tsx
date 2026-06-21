@@ -8,7 +8,9 @@ import { StageRail } from "@/components/cases/StageRail";
 import { AdvanceStageDialog } from "@/components/cases/AdvanceStageDialog";
 import { DeadlinePanel } from "@/components/cases/DeadlinePanel";
 import { TasksPanel } from "@/components/cases/TasksPanel";
-import { normalizeStage } from "@/integrations/zoho/lifecycle";
+import { DenialNextStepBanner } from "@/components/cases/DenialNextStepBanner";
+import { ClosedCaseBanner } from "@/components/cases/ClosedCaseBanner";
+import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
 import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
