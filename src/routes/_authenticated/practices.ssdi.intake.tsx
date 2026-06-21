@@ -96,7 +96,7 @@ function IntakeWizard() {
       });
     },
     onSuccess: (res) => {
-      navigate({ to: "/practices/ssdi/cases/$caseId", params: { caseId: res.caseId } });
+      navigate({ to: "/engagements/$engagementId", params: { engagementId: res.engagementId } });
     },
   });
 

@@ -92,19 +92,13 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
     })]);
     const engagementId = idOf(engRes[0]);
 
-    // 3) First SSDI Case
-    const caseRes = await api.createRecords("SSDI_Cases", [clean({
-      Name: `${p.client.lastName}, ${p.client.firstName} — SSDI`,
-      Engagement: { id: engagementId }, Current_Stage: "Intake", Date_Opened: t,
-      Claim_Type: p.ssdi.claimType, Alleged_Onset_Date: p.ssdi.onset,
-      Date_Last_Worked: p.ssdi.lastWorked, Date_Last_Insured: p.ssdi.dli,
-      Disability_Type: p.ssdi.disabilityType, Primary_Impairment: p.ssdi.primaryImpairment,
-      Secondary_Impairments: p.ssdi.secondaryImpairments, SSA_Claim_Number: p.ssdi.ssaClaimNumber,
-      Assigned_Case_Manager: actor,
-    })]);
-    const caseId = idOf(caseRes[0]);
+    // NOTE: the SSDI Case is intentionally NOT created here. The case is
+    // opened when the retainer is signed (see retainerService onRetainerSigned).
+    // SSDI-specific intake details captured in the wizard are stashed on the
+    // Engagement so the case opener can copy them across at signing time.
+    void p.ssdi; void actor;
 
-    return { clientId, engagementId, caseId };
+    return { clientId, engagementId };
   }
 
 
