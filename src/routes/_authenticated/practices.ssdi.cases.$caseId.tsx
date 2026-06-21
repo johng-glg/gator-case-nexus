@@ -123,6 +123,11 @@ function CaseDetail() {
 
   const stage = normalizeStage(record.Current_Stage as string | undefined);
   const releaseExpiringSoon = record.Release_Expiring_Soon === true;
+  const isClosed = stage === "Closed";
+
+  const deadlineISO = (record.Deadline_Date as string | null | undefined) ?? null;
+  const daysToDeadline =
+    typeof record.Days_To_Deadline === "number" ? (record.Days_To_Deadline as number) : null;
 
   const backPay = typeof record.Back_Pay_Amount === "number" ? record.Back_Pay_Amount : null;
   const projectedFee = typeof record.Projected_Fee === "number" ? record.Projected_Fee : null;
