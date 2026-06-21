@@ -21,7 +21,7 @@ export type ActivityAction =
   | "case.dates.update";
 
 export interface LogActivityInput {
-  caseId: string;
+  caseId?: string | null;
   engagementId?: string | null;
   actorUserId?: string | null;
   actorEmail?: string | null;
