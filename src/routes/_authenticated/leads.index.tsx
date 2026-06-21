@@ -231,7 +231,7 @@ function NewLeadDialog({
   const createFn = useServerFn(createLead);
   const [form, setForm] = useState({
     First_Name: "", Last_Name: "", Email: "", Phone: "", Mobile: "",
-    Company: "", Lead_Source: "", Description: "",
+    Lead_Source: "", Description: "",
     Practice_Area: (defaultPractice ?? "SSDI") as PracticeChoice,
   });
   useEffect(() => {
@@ -247,7 +247,7 @@ function NewLeadDialog({
       onCreated(res.id);
       setForm({
         First_Name: "", Last_Name: "", Email: "", Phone: "", Mobile: "",
-        Company: "", Lead_Source: "", Description: "",
+        Lead_Source: "", Description: "",
         Practice_Area: defaultPractice ?? "SSDI",
       });
     },

@@ -153,7 +153,6 @@ const createLeadInput = z.object({
   Email: z.string().trim().email().max(255).optional().or(z.literal("")),
   Phone: z.string().trim().max(40).optional().or(z.literal("")),
   Mobile: z.string().trim().max(40).optional().or(z.literal("")),
-  Company: z.string().trim().max(200).optional().or(z.literal("")),
   Lead_Source: z.string().trim().max(100).optional().or(z.literal("")),
   Practice_Area: z.enum(["SSDI", "FCRA", "FDCPA", "TCPA", "Class Action"]).optional(),
   Description: z.string().trim().max(2000).optional().or(z.literal("")),
