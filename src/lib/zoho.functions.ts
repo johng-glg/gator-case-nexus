@@ -194,7 +194,7 @@ export const convertLead = createServerFn({ method: "POST" })
     const svc = createIntakeService({ zoho: makeZohoClient() });
     const result = await svc.convertLead(context.userId, data.leadId);
     return toJson<{
-      clientId: string; engagementId: string; caseId: string; leadId: string;
+      clientId: string; engagementId: string; leadId: string;
       conflict: { status: "Cleared" | "Conflict found"; matches: ZohoRow[] };
     }>(result);
   });

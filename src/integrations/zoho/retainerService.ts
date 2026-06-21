@@ -57,6 +57,8 @@ export interface RetainerServiceDeps {
   zoho: ZohoClient;
   sign: SignAdapter;
   now?: () => Date;
+  /** Called after the Engagement flips to Signed — opens the practice-specific Case. */
+  onRetainerSigned?: (ctx: { engagementId: string }) => Promise<void>;
 }
 
 const isoDateTime = (d: Date) => d.toISOString().slice(0, 19) + "+00:00";
@@ -137,6 +139,15 @@ export function createRetainerService(deps: RetainerServiceDeps) {
     const update: ZohoRecord = { id: eng.id as string, Retainer_Status: evt.status };
     if (evt.status === "Signed") update.Retainer_Signed_Date = isoDateTime(now());
     await svc.updateRecords(ENGAGEMENTS, [update]);
+
+    if (evt.status === "Signed" && deps.onRetainerSigned) {
+      try {
+        await deps.onRetainerSigned({ engagementId: eng.id as string });
+      } catch (err) {
+        // Don't fail the webhook if case opening errors; log so it can be retried.
+        console.error("[retainerService] onRetainerSigned failed", err);
+      }
+    }
 
     return { engagementId: eng.id as string, status: evt.status };
   }
