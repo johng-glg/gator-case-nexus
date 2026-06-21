@@ -487,3 +487,35 @@ export const retainerSend = createServerFn({ method: "POST" })
     return result;
   });
 
+
+/**
+ * Admin-only: trigger the SSDI nightly deadline sweep on demand. Logs the result to
+ * public.ssdi_deadline_digests, same as the scheduled cron.
+ */
+export const runDeadlineSweepNow = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { data: isAdmin } = await context.supabase
+      .rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { createCaseService } = await import("@/integrations/zoho/caseService");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const result = await createCaseService({ zoho: makeZohoClient() }).runDailyDeadlineSweep();
+    await supabaseAdmin.from("ssdi_deadline_digests").insert({
+      scanned: result.scanned,
+      updated: result.updated,
+      overdue: result.overdue as never,
+      due_soon: result.dueSoon as never,
+      release_expiring: result.releaseExpiring as never,
+    });
+    return {
+      scanned: result.scanned,
+      updated: result.updated,
+      overdueCount: result.overdue.length,
+      dueSoonCount: result.dueSoon.length,
+      releaseExpiringCount: result.releaseExpiring.length,
+    };
+  });
