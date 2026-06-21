@@ -112,17 +112,16 @@ function EngagementDetail() {
               <tr>
                 <Th>Case #</Th>
                 <Th>Stage</Th>
-                <Th>Claim type</Th>
-                <Th>Opened</Th>
+                <Th>Sub-status</Th>
                 <Th>Deadline</Th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {casesQ.isLoading && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>
               )}
               {casesQ.data && casesQ.data.rows.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No cases on this engagement.</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No cases on this engagement.</td></tr>
               )}
               {casesQ.data?.rows.map((c) => {
                 const cid = String((c as Record<string, unknown>).id ?? "");
@@ -141,8 +140,7 @@ function EngagementDetail() {
                       </Link>
                     </Td>
                     <Td className="text-muted-foreground">{String(c.Current_Stage ?? "—")}</Td>
-                    <Td className="text-muted-foreground">{String(c.Claim_Type ?? "—")}</Td>
-                    <Td className="text-muted-foreground">{String(c.Date_Opened ?? "—")}</Td>
+                    <Td className="text-muted-foreground">{String(c.Sub_Status ?? "—")}</Td>
                     <Td>
                       {deadline ? (
                         <div className="flex items-center gap-2">

@@ -106,11 +106,11 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               order by Date_Incurred desc
               limit 200`;
     case "casesByEngagement":
-      return `select id, Case_Number, Current_Stage, Claim_Type, Date_Opened,
+      return `select id, Case_Number, Current_Stage, Sub_Status,
                      Deadline_Date, Days_To_Deadline, Deadline_At_Risk
               from SSDI_Cases
               where Engagement = ${safeId(params.engagementId)}
-              order by Date_Opened desc
+              order by Modified_Time desc
               limit 200`;
     case "engagementById":
       return `select Name, Engagement_Type, Engagement_Status, Retainer_Status,
