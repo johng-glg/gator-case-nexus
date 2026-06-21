@@ -32,9 +32,8 @@ async function getFirmSignAccessToken(): Promise<string> {
   // Prefer the credentials service (DB-backed refresh token) when available.
   try {
     const { getCredentialsService } = await import("./credentialsClient.server");
-    const creds = getCredentialsService();
+    const creds = await getCredentialsService();
     const token = await creds.getAccessToken("SIGN_FIRM");
-    // creds already caches; we still keep a local cache so other paths skip the import.
     cachedToken = { token, exp: Date.now() + 60 * 60 * 1000 - 60_000 };
     return token;
   } catch (e) {
