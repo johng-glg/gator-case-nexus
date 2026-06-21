@@ -191,8 +191,9 @@ export function createZohoClient(cfg: ZohoConfig) {
       },
 
       /** Fetch a related-list (e.g. Tasks under SSDI_Cases/{id}/Tasks). */
-      async getRelated<T = ZohoRecord>(module: string, id: string, relatedList: string): Promise<T[]> {
-        const r = await request<{ data?: T[] } | undefined>(actorKey, "GET", `/${module}/${id}/${relatedList}`);
+      async getRelated<T = ZohoRecord>(module: string, id: string, relatedList: string, fields?: string[]): Promise<T[]> {
+        const f = fields?.length ? `?fields=${encodeURIComponent(fields.join(","))}` : "";
+        const r = await request<{ data?: T[] } | undefined>(actorKey, "GET", `/${module}/${id}/${relatedList}${f}`);
         return r?.data ?? [];
       },
 
