@@ -140,6 +140,15 @@ export function createRetainerService(deps: RetainerServiceDeps) {
     if (evt.status === "Signed") update.Retainer_Signed_Date = isoDateTime(now());
     await svc.updateRecords(ENGAGEMENTS, [update]);
 
+    if (evt.status === "Signed" && deps.onRetainerSigned) {
+      try {
+        await deps.onRetainerSigned({ engagementId: eng.id as string });
+      } catch (err) {
+        // Don't fail the webhook if case opening errors; log so it can be retried.
+        console.error("[retainerService] onRetainerSigned failed", err);
+      }
+    }
+
     return { engagementId: eng.id as string, status: evt.status };
   }
 
