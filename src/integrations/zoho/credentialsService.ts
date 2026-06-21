@@ -134,7 +134,7 @@ export function createCredentialsService(deps: CredentialsDeps) {
     try {
       const token = await getAccessToken(key);
       const url = c.service === "sign"
-        ? `${SIGN[dc]}/api/v1/currentuser`
+        ? `${SIGN[dc]}/api/v1/requests?page_context%5Brow_count%5D=1`
         : `${API[dc]}/crm/v8/users?type=CurrentUser`;
       const res = await doFetch(url, { headers: { Authorization: `Zoho-oauthtoken ${token}` } });
       const ok = res.ok;
