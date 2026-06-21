@@ -341,6 +341,10 @@ function CaseDetail() {
         </div>
       </section>
 
+      <ActivityPanel caseId={caseId} engagementId={engagementId} />
+
+
+
       <AdvanceStageDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
