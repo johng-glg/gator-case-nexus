@@ -297,16 +297,30 @@ export const updateCaseDates = createServerFn({ method: "POST" })
     return { ok: true, changed: true, recomputed };
   });
 
-const taskIdInput = z.object({ taskId: z.string().regex(/^[A-Za-z0-9_]+$/) });
+const taskIdInput = z.object({
+  taskId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  caseId: z.string().regex(/^[A-Za-z0-9_]+$/).optional(),
+});
 
 export const completeTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => taskIdInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     await makeZohoClient().as(context.userId).updateRecords("Tasks", [
       { id: data.taskId, Status: "Completed" },
     ]);
+    if (data.caseId) {
+      await logCaseActivity({
+        caseId: data.caseId,
+        actorUserId: context.userId,
+        actorEmail: actorEmail(context.claims),
+        action: "task.complete",
+        summary: "Completed a task.",
+        metadata: { taskId: data.taskId },
+      });
+    }
     return { ok: true };
   });
 
@@ -315,15 +329,28 @@ export const reopenTask = createServerFn({ method: "POST" })
   .inputValidator((data) => taskIdInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     await makeZohoClient().as(context.userId).updateRecords("Tasks", [
       { id: data.taskId, Status: "Not Started" },
     ]);
+    if (data.caseId) {
+      await logCaseActivity({
+        caseId: data.caseId,
+        actorUserId: context.userId,
+        actorEmail: actorEmail(context.claims),
+        action: "task.reopen",
+        summary: "Re-opened a task.",
+        metadata: { taskId: data.taskId },
+      });
+    }
     return { ok: true };
   });
 
 const reassignTaskInput = z.object({
   taskId: z.string().regex(/^[A-Za-z0-9_]+$/),
   ownerId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  caseId: z.string().regex(/^[A-Za-z0-9_]+$/).optional(),
+  ownerName: z.string().trim().max(120).optional(),
 });
 
 export const reassignTask = createServerFn({ method: "POST" })
@@ -331,9 +358,20 @@ export const reassignTask = createServerFn({ method: "POST" })
   .inputValidator((data) => reassignTaskInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     await makeZohoClient().as(context.userId).updateRecords("Tasks", [
       { id: data.taskId, Owner: { id: data.ownerId } },
     ]);
+    if (data.caseId) {
+      await logCaseActivity({
+        caseId: data.caseId,
+        actorUserId: context.userId,
+        actorEmail: actorEmail(context.claims),
+        action: "task.reassign",
+        summary: data.ownerName ? `Reassigned task to ${data.ownerName}.` : "Reassigned a task.",
+        metadata: { taskId: data.taskId, ownerId: data.ownerId },
+      });
+    }
     return { ok: true };
   });
 
