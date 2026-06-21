@@ -53,7 +53,20 @@ export const Route = createFileRoute("/api/public/webhooks/zoho-sign")({
         try {
           const { makeRetainerService } = await import("@/integrations/zoho/signClient.server");
           const result = await makeRetainerService().handleSignCompleted(payload);
-          console.log("[zoho-sign webhook]", result ?? "no-op");
+          if (result) {
+            console.log("[zoho-sign webhook]", result);
+          } else {
+            // Diagnostic: surface the shape so we can see why parse/match failed.
+            const p = (payload ?? {}) as Record<string, any>;
+            const req = p.requests ?? p.request ?? p.notifications?.requests ?? {};
+            console.log("[zoho-sign webhook] no-op", {
+              topKeys: Object.keys(p),
+              notifications: p.notifications ? Object.keys(p.notifications) : null,
+              operation_type: p.notifications?.operation_type ?? p.operation_type ?? p.action_type ?? null,
+              request_id: req?.request_id ?? req?.requestId ?? p.request_id ?? null,
+              request_status: req?.request_status ?? null,
+            });
+          }
           return Response.json({ ok: true, result }, { status: 200 });
         } catch (err) {
           console.error("[zoho-sign webhook] error", err);
