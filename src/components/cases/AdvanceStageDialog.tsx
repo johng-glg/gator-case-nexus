@@ -102,11 +102,13 @@ interface Props {
   initialStage?: Stage;
   /** Optional: prefill values keyed by field API name. */
   initialFields?: Record<string, string>;
+  /** Optional: override the per-stage requirements map (e.g. with admin-edited values). */
+  requirementsMap?: Partial<Record<Stage, FieldSpec[]>>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSubmit: (toStage: Stage, fields: Record<string, any>) => Promise<void>;
 }
 
-export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialStage, initialFields, onSubmit }: Props) {
+export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialStage, initialFields, requirementsMap, onSubmit }: Props) {
   const nextStages = (TRANSITIONS[currentStage as Stage] ?? []) as Stage[];
   const [selected, setSelected] = useState<Stage | "">(initialStage ?? "");
   const [fields, setFields] = useState<Record<string, string>>(initialFields ?? {});
@@ -122,7 +124,8 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialSt
     }
   }, [open, initialStage, initialFields]);
 
-  const requirements = selected ? STAGE_REQUIREMENTS[selected] ?? [] : [];
+  const effectiveMap = requirementsMap ?? STAGE_REQUIREMENTS;
+  const requirements = selected ? effectiveMap[selected] ?? [] : [];
 
   async function submit() {
     if (!selected) return;
