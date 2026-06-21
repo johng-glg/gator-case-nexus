@@ -11,8 +11,11 @@ export const Route = createFileRoute("/api/public/deadline-sweep")({
     handlers: {
       POST: async ({ request }) => {
         const auth = request.headers.get("authorization") ?? "";
+        const apikey = request.headers.get("apikey") ?? "";
         const expected = `Bearer ${process.env.DEADLINE_SWEEP_SECRET ?? ""}`;
-        if (!process.env.DEADLINE_SWEEP_SECRET || auth !== expected) {
+        const anonKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
+        const authorized = auth === expected || (Boolean(anonKey) && apikey === anonKey);
+        if (!authorized) {
           return new Response("Unauthorized", { status: 401 });
         }
         try {
