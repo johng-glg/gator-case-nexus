@@ -155,7 +155,7 @@ export function DeleteCostButton({
     if (!confirm(`Delete cost "${costName}"? This cannot be undone.`)) return;
     setBusy(true);
     try {
-      await deleteFn({ data: { costId } });
+      await deleteFn({ data: { costId, engagementId, costName } });
       await queryClient.invalidateQueries({ queryKey: ["costs", engagementId] });
       toast.success("Cost deleted.");
     } catch (err) {
