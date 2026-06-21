@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { StageRail } from "@/components/cases/StageRail";
 import { AdvanceStageDialog } from "@/components/cases/AdvanceStageDialog";
+import { DeadlinePanel } from "@/components/cases/DeadlinePanel";
 import { ChevronLeft, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
