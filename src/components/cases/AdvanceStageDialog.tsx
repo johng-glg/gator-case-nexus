@@ -3,44 +3,91 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { TRANSITIONS, type Stage } from "@/integrations/zoho/lifecycle";
+
+type FieldType = "date" | "text" | "number" | "textarea";
+interface FieldSpec {
+  field: string;
+  label: string;
+  type: FieldType;
+  required?: boolean;
+}
 
 /**
  * Stages that need extra data captured before they can be entered.
- * Keys here map to SSDI_Cases API field names (zoho-api-contract.md).
+ * Keys map to SSDI_Cases API field names (zoho-api-contract.md).
  */
-const STAGE_REQUIREMENTS: Partial<Record<Stage, { field: string; label: string; type: "date" }[]>> = {
+const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
+  "Application filed": [
+    { field: "Application_Filed_Date", label: "Application filed date", type: "date", required: true },
+  ],
   "Initial decision - denied": [
-    { field: "Notice_Date", label: "Notice date (printed on the adverse notice)", type: "date" },
-    { field: "Initial_Decision_Date", label: "Initial decision date", type: "date" },
+    { field: "Notice_Date", label: "Notice date (printed on the adverse notice)", type: "date", required: true },
+    { field: "Initial_Decision_Date", label: "Initial decision date", type: "date", required: true },
   ],
   "Initial decision - approved": [
-    { field: "Initial_Decision_Date", label: "Initial decision date", type: "date" },
+    { field: "Initial_Decision_Date", label: "Initial decision date", type: "date", required: true },
+  ],
+  "Reconsideration filed": [
+    { field: "Recon_Filed_Date", label: "Reconsideration filed date", type: "date", required: true },
   ],
   "Recon decision - denied": [
-    { field: "Notice_Date", label: "Notice date", type: "date" },
-    { field: "Recon_Decision_Date", label: "Reconsideration decision date", type: "date" },
+    { field: "Notice_Date", label: "Notice date", type: "date", required: true },
+    { field: "Recon_Decision_Date", label: "Reconsideration decision date", type: "date", required: true },
   ],
   "Recon decision - approved": [
-    { field: "Recon_Decision_Date", label: "Reconsideration decision date", type: "date" },
+    { field: "Recon_Decision_Date", label: "Reconsideration decision date", type: "date", required: true },
   ],
-  "ALJ decision - denied": [
-    { field: "Notice_Date", label: "Notice date", type: "date" },
-    { field: "ALJ_Decision_Date", label: "ALJ decision date", type: "date" },
-  ],
-  "ALJ decision - approved": [
-    { field: "ALJ_Decision_Date", label: "ALJ decision date", type: "date" },
-  ],
-  "AC decision - denied": [
-    { field: "Notice_Date", label: "Notice date", type: "date" },
+  "ALJ hearing requested": [
+    { field: "ALJ_Hearing_Requested_Date", label: "ALJ hearing requested date", type: "date", required: true },
   ],
   "Hearing scheduled": [
-    { field: "ALJ_Hearing_Scheduled_Date", label: "Hearing date/time (scheduled)", type: "date" },
+    { field: "ALJ_Hearing_Scheduled_Date", label: "Hearing date (scheduled)", type: "date", required: true },
+    { field: "Hearing_Office_ODAR", label: "Hearing office / ODAR", type: "text" },
+    { field: "ALJ_Name", label: "ALJ name", type: "text" },
+  ],
+  "Hearing held": [
+    { field: "ALJ_Hearing_Held_Date", label: "Hearing held date", type: "date", required: true },
+  ],
+  "ALJ decision - denied": [
+    { field: "Notice_Date", label: "Notice date", type: "date", required: true },
+    { field: "ALJ_Decision_Date", label: "ALJ decision date", type: "date", required: true },
+  ],
+  "ALJ decision - approved": [
+    { field: "ALJ_Decision_Date", label: "ALJ decision date", type: "date", required: true },
+  ],
+  "Appeals Council requested": [
+    { field: "Appeals_Council_Requested_Date", label: "Appeals Council requested date", type: "date", required: true },
+  ],
+  "AC decision - denied": [
+    { field: "Notice_Date", label: "Notice date", type: "date", required: true },
+    { field: "AC_Decision_Date", label: "Appeals Council decision date", type: "date", required: true },
+  ],
+  "AC decision - approved": [
+    { field: "AC_Decision_Date", label: "Appeals Council decision date", type: "date", required: true },
   ],
   "Award / NOA received": [
-    { field: "Notice_of_Award_Date", label: "Notice of Award date", type: "date" },
+    { field: "Notice_of_Award_Date", label: "Notice of Award date", type: "date", required: true },
+    { field: "Back_Pay_Amount", label: "Back pay amount (USD)", type: "number", required: true },
+    { field: "Monthly_Benefit", label: "Monthly benefit (USD)", type: "number" },
+    { field: "Entitlement_Date", label: "Entitlement date", type: "date" },
+  ],
+  "Fee petition filed": [
+    { field: "Fee_Petition_Filed_Date", label: "Fee petition filed date", type: "date", required: true },
+  ],
+  "Closed": [
+    { field: "Closure_Reason", label: "Closure reason", type: "text", required: true },
+    { field: "Closure_Notes", label: "Closure notes", type: "textarea" },
   ],
 };
+
+const DENIED_STAGES = new Set<Stage>([
+  "Initial decision - denied",
+  "Recon decision - denied",
+  "ALJ decision - denied",
+  "AC decision - denied",
+]);
 
 interface Props {
   open: boolean;
@@ -64,7 +111,15 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, onSubmit 
     setBusy(true);
     setErr(null);
     try {
-      await onSubmit(selected, fields);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const payload: Record<string, any> = {};
+      for (const r of requirements) {
+        const raw = fields[r.field];
+        if (raw === undefined || raw === "") continue;
+        payload[r.field] = r.type === "number" ? Number(raw) : raw;
+      }
+      if (selected === "Closed") payload.Is_Closed = true;
+      await onSubmit(selected, payload);
       onOpenChange(false);
       setSelected("");
       setFields({});
@@ -112,16 +167,33 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, onSubmit 
               <div className="text-xs uppercase tracking-wide text-muted-foreground">Required information</div>
               {requirements.map((r) => (
                 <div key={r.field}>
-                  <Label htmlFor={r.field} className="text-sm">{r.label}</Label>
-                  <Input
-                    id={r.field}
-                    type={r.type}
-                    value={fields[r.field] ?? ""}
-                    onChange={(e) => setFields((f) => ({ ...f, [r.field]: e.target.value }))}
-                    className="mt-1"
-                  />
+                  <Label htmlFor={r.field} className="text-sm">
+                    {r.label}{r.required && <span className="text-destructive"> *</span>}
+                  </Label>
+                  {r.type === "textarea" ? (
+                    <Textarea
+                      id={r.field}
+                      value={fields[r.field] ?? ""}
+                      onChange={(e) => setFields((f) => ({ ...f, [r.field]: e.target.value }))}
+                      className="mt-1"
+                    />
+                  ) : (
+                    <Input
+                      id={r.field}
+                      type={r.type}
+                      step={r.type === "number" ? "0.01" : undefined}
+                      value={fields[r.field] ?? ""}
+                      onChange={(e) => setFields((f) => ({ ...f, [r.field]: e.target.value }))}
+                      className="mt-1"
+                    />
+                  )}
                 </div>
               ))}
+              {selected && DENIED_STAGES.has(selected) && (
+                <p className="text-xs text-muted-foreground pt-1">
+                  Enter the date printed on the SSA notice — the 60-day appeal deadline is computed from it.
+                </p>
+              )}
             </div>
           )}
 
@@ -135,7 +207,7 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, onSubmit 
             disabled={
               !selected ||
               busy ||
-              requirements.some((r) => !fields[r.field])
+              requirements.some((r) => r.required && !fields[r.field])
             }
           >
             {busy ? "Advancing…" : "Advance"}

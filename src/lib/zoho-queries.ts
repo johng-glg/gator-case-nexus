@@ -39,7 +39,9 @@ export type QueryName =
   | "engagementsByType"
   | "myEngagements"
   | "allContacts"
-  | "allLeads";
+  | "allLeads"
+  | "tasksByCase";
+
 
 const ENGAGEMENT_COLS =
   "id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Client.First_Name, Client.Last_Name";
@@ -127,6 +129,12 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               from Leads
               where id is not null
               order by Modified_Time desc
+              limit 200`;
+    case "tasksByCase":
+      return `select id, Subject, Due_Date, Status
+              from Tasks
+              where What_Id = ${safeId(params.caseId)} and Status != 'Completed'
+              order by Due_Date asc
               limit 200`;
   }
 }
