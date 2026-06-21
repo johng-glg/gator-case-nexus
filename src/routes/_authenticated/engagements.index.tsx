@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 import { PRACTICES, ALL_ENGAGEMENT_TYPES, practiceForEngagementType } from "@/practices/registry";
 
-export const Route = createFileRoute("/_authenticated/engagements")({
+export const Route = createFileRoute("/_authenticated/engagements/")({
   head: () => ({ meta: [{ title: "Engagements — Gator" }] }),
   component: Engagements,
 });
