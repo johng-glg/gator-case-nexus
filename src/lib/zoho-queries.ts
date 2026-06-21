@@ -100,10 +100,10 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               order by Modified_Time desc
               limit 200`;
     case "costsByEngagement":
-      return `select id, Name, Amount, Cost_Type, Date_Incurred, Engagement
+      return `select id, Name, Amount, Cost_Type, Created_Time, Engagement
               from Costs
               where Engagement = ${safeId(params.engagementId)}
-              order by Date_Incurred desc
+              order by Created_Time desc
               limit 200`;
     case "casesByEngagement":
       return `select id, Case_Number, Current_Stage, Sub_Status,
