@@ -116,7 +116,7 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               limit 200`;
     case "engagementById":
       return `select Name, Engagement_Type, Engagement_Status, Retainer_Status,
-                     Client.First_Name, Client.Last_Name
+                     Client, Client.First_Name, Client.Last_Name
               from Engagements
               where id = ${safeId(params.engagementId)}
               limit 1`;
