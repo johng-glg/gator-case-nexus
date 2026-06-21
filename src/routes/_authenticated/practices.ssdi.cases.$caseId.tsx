@@ -20,6 +20,8 @@ function CaseDetail() {
   const runQuery = useServerFn(zohoQuery);
   const advance = useServerFn(caseAdvance);
   const finishTask = useServerFn(completeTask);
+  const fetchCaseTasks = useServerFn(getCaseTasks);
+
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -53,8 +55,9 @@ function CaseDetail() {
   const tasksQ = useQuery({
     queryKey: ["tasks", caseId],
     enabled: validCaseId,
-    queryFn: () => runQuery({ data: { name: "tasksByCase", params: { caseId } } }),
+    queryFn: () => fetchCaseTasks({ data: { caseId } }),
   });
+
 
 
   async function onAdvance(toStage: string, fields: Record<string, unknown>) {
