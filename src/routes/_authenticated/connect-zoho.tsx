@@ -9,7 +9,7 @@ import { ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/connect-zoho")({
   validateSearch: z.object({ error: z.string().optional() }),
-  head: () => ({ meta: [{ title: "Connect Zoho — Gator SSDI" }] }),
+  head: () => ({ meta: [{ title: "Connect Zoho — Gator" }] }),
   component: ConnectZoho,
 });
 

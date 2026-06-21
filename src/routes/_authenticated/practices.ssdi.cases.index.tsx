@@ -5,8 +5,8 @@ import { zohoQuery } from "@/lib/zoho.functions";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/_authenticated/cases/")({
-  head: () => ({ meta: [{ title: "Cases — Gator SSDI" }] }),
+export const Route = createFileRoute("/_authenticated/practices/ssdi/cases/")({
+  head: () => ({ meta: [{ title: "SSDI cases — Gator" }] }),
   component: CasesList,
 });
 
@@ -21,7 +21,7 @@ function CasesList() {
     filter === "mine" ? "myOpenCases" : filter === "atRisk" ? "deadlinesAtRisk" : "openCases";
 
   const cases = useQuery({
-    queryKey: ["cases", queryName],
+    queryKey: ["ssdi-cases", queryName],
     queryFn: () => runQuery({ data: { name: queryName } }),
   });
 
@@ -40,17 +40,23 @@ function CasesList() {
   }, [cases.data, stageFilter]);
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold tracking-tight">Cases</h1>
-        <div className="flex items-center gap-2">
+    <div className="max-w-6xl mx-auto px-8 py-10">
+      <div className="flex items-baseline justify-between flex-wrap gap-4">
+        <div>
+          <div className="text-xs uppercase tracking-[0.18em] text-primary/80">SSDI workspace</div>
+          <h1 className="font-display text-3xl text-foreground mt-0.5">Cases</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Social Security disability matters — appeal lifecycle from Initial through Appeals Council.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
           <FilterChip active={filter === "mine"} onClick={() => setFilter("mine")}>My cases</FilterChip>
           <FilterChip active={filter === "all"} onClick={() => setFilter("all")}>All open</FilterChip>
           <FilterChip active={filter === "atRisk"} onClick={() => setFilter("atRisk")}>At risk</FilterChip>
           <select
             value={stageFilter}
             onChange={(e) => setStageFilter(e.target.value)}
-            className="ml-2 rounded-md border bg-background px-2 py-1.5 text-sm"
+            className="ml-2 rounded-md border border-border bg-input px-2 py-1.5 text-sm"
           >
             <option value="">All stages</option>
             {stages.map((s) => <option key={s} value={s}>{s}</option>)}
@@ -58,9 +64,9 @@ function CasesList() {
         </div>
       </div>
 
-      <div className="mt-5 rounded-lg border bg-card overflow-hidden">
+      <div className="mt-6 rounded-lg border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+          <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <Th>Case #</Th>
               <Th>Stage</Th>
@@ -69,12 +75,12 @@ function CasesList() {
               <Th className="text-right">Days left</Th>
             </tr>
           </thead>
-          <tbody className="divide-y">
+          <tbody className="divide-y divide-border">
             {cases.isLoading && (
               <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>
             )}
             {cases.error && (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-destructive">{(cases.error as Error).message}</td></tr>
+              <tr><td colSpan={5} className="px-4 py-8 text-center text-destructive-foreground">{(cases.error as Error).message}</td></tr>
             )}
             {cases.data && filteredRows.length === 0 && (
               <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No cases.</td></tr>
@@ -86,7 +92,7 @@ function CasesList() {
               return (
                 <tr key={id} className="hover:bg-accent/30">
                   <Td>
-                    <Link to="/cases/$caseId" params={{ caseId: id }} className="font-medium hover:underline">
+                    <Link to="/practices/ssdi/cases/$caseId" params={{ caseId: id }} className="font-medium text-primary hover:underline">
                       {String(r.Case_Number ?? "—")}
                     </Link>
                   </Td>
@@ -112,7 +118,9 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
       onClick={onClick}
       className={cn(
         "rounded-full border px-3 py-1 text-xs transition-colors",
-        active ? "bg-foreground text-background border-foreground" : "bg-background text-foreground hover:bg-accent",
+        active
+          ? "bg-primary text-primary-foreground border-primary"
+          : "border-border bg-background/40 text-foreground hover:bg-accent/60",
       )}
     >
       {children}
@@ -121,8 +129,8 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
 }
 
 function Th({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <th className={cn("px-4 py-2 text-left font-medium", className)}>{children}</th>;
+  return <th className={cn("px-4 py-2.5 text-left font-medium", className)}>{children}</th>;
 }
 function Td({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <td className={cn("px-4 py-2.5", className)}>{children}</td>;
+  return <td className={cn("px-4 py-3", className)}>{children}</td>;
 }

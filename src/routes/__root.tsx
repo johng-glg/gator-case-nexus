@@ -79,23 +79,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "SSDI Navigator is a web application for managing Social Security Disability cases." },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "SSDI Navigator is a web application for managing Social Security Disability cases." },
+      { title: "Gator — Case platform" },
+      { name: "description", content: "Gator: firm-wide case platform for SSDI, FCRA, FDCPA, TCPA, and class action matters." },
+      { property: "og:title", content: "Gator — Case platform" },
+      { property: "og:description", content: "Firm-wide case platform for Gator Law: SSDI, FCRA, FDCPA, TCPA, and class actions." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
-      { name: "twitter:title", content: "Lovable App" },
-      { name: "twitter:description", content: "SSDI Navigator is a web application for managing Social Security Disability cases." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/06db0133-7dbe-4542-9f7b-55c6c27ef77f/id-preview-f36a5a54--8b3bc77b-451a-41f6-ae91-2ec0fba6062c.lovable.app-1782009978838.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/06db0133-7dbe-4542-9f7b-55c6c27ef77f/id-preview-f36a5a54--8b3bc77b-451a-41f6-ae91-2ec0fba6062c.lovable.app-1782009978838.png" },
+      { name: "twitter:title", content: "Gator — Case platform" },
+      { name: "twitter:description", content: "Firm-wide case platform for Gator Law." },
     ],
     links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: appCss,
+        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@400;500;600;700&display=swap",
       },
     ],
   }),
@@ -107,7 +106,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
         <HeadContent />
       </head>
