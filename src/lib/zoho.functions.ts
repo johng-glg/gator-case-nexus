@@ -130,3 +130,16 @@ export const completeTask = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+export const getCaseTasks = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => caseIdInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const rows = await makeZohoClient()
+      .as(context.userId)
+      .getRelated("SSDI_Cases", data.caseId, "Tasks");
+    return { rows: toJson<ZohoRow[]>(rows) };
+  });
+
+  });
+
