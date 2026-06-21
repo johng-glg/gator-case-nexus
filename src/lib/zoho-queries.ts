@@ -42,7 +42,7 @@ export type QueryName =
   | "allLeads";
 
 const ENGAGEMENT_COLS =
-  "id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Client.First_Name, Client.Last_Name, Assigned_Attorney";
+  "id, Name, Engagement_Type, Engagement_Status, Retainer_Status";
 
 export function buildQuery(name: QueryName, params: Record<string, unknown> = {}): string {
   switch (name) {
