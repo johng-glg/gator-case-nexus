@@ -125,3 +125,28 @@ export function deadlineForStage(stage: Stage, noticeDate?: string, documentedRe
   if (tier === "None" || !noticeDate) return { tier, deadline: null as Date | null };
   return { tier, deadline: computeAppealDeadline(noticeDate, documentedReceipt) };
 }
+
+/** 7-phase grouping for the lifecycle UI. Every Stage appears in exactly one phase. */
+export interface Phase {
+  key: string;
+  label: string;
+  stages: Stage[];
+}
+
+export const PHASES: Phase[] = [
+  { key: "intake", label: "Intake & filing", stages: ["Intake", "Retainer signed", "Application filed"] },
+  { key: "initial", label: "Initial decision", stages: ["Initial decision - pending", "Initial decision - denied", "Initial decision - approved"] },
+  { key: "recon", label: "Reconsideration", stages: ["Reconsideration filed", "Recon decision - pending", "Recon decision - denied", "Recon decision - approved"] },
+  { key: "alj", label: "ALJ hearing", stages: ["ALJ hearing requested", "Hearing scheduled", "Hearing prep", "Hearing held", "ALJ decision - pending", "ALJ decision - denied", "ALJ decision - approved"] },
+  { key: "ac", label: "Appeals Council", stages: ["Appeals Council requested", "AC decision - pending", "AC decision - denied", "AC decision - approved"] },
+  { key: "award", label: "Award & fees", stages: ["Award / NOA received", "Fee petition filed"] },
+  { key: "closed", label: "Closed", stages: ["Closed"] },
+];
+
+export function phaseForStage(stage: Stage): Phase | undefined {
+  return PHASES.find((p) => (p.stages as readonly string[]).includes(stage));
+}
+
+export function phaseIndex(stage: Stage | string): number {
+  return PHASES.findIndex((p) => (p.stages as readonly string[]).includes(stage));
+}
