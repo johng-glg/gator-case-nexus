@@ -111,8 +111,6 @@ function CaseDetail() {
   if (!record) return <div className="p-8 text-sm text-muted-foreground">Case not found.</div>;
 
   const stage = String(record.Current_Stage ?? "");
-  const days = record.Days_To_Deadline;
-  const atRisk = record.Deadline_At_Risk === true;
   const releaseExpiringSoon = record.Release_Expiring_Soon === true;
 
   const backPay = typeof record.Back_Pay_Amount === "number" ? record.Back_Pay_Amount : null;
