@@ -143,7 +143,9 @@ export const getCaseTasks = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const rows = await makeZohoClient()
       .as(context.userId)
-      .getRelated("SSDI_Cases", data.caseId, "Tasks");
+      .getRelated("SSDI_Cases", data.caseId, "Tasks", [
+        "id","Subject","Status","Priority","Due_Date","Owner","Description","Created_Time","Modified_Time",
+      ]);
     return { rows: toJson<ZohoRow[]>(rows) };
   });
 
