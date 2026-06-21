@@ -114,9 +114,9 @@ function IntakeWizard() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto px-8 py-10">
+    <div className="max-w-3xl mx-auto px-8 py-5">
       <div className="text-xs uppercase tracking-[0.18em] text-primary/80">SSDI intake</div>
-      <h1 className="font-display text-3xl text-foreground mt-0.5">New SSDI client</h1>
+      <h1 className="font-display text-2xl text-foreground mt-0.5">New SSDI client</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Creates the client contact, an SSDI engagement, and the first case — attributed to you.
       </p>

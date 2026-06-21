@@ -76,10 +76,10 @@ function Leads() {
   }, [leads.data, q, practice, status]);
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-10">
+    <div className="max-w-6xl mx-auto px-8 py-5">
       <div className="flex items-baseline justify-between flex-wrap gap-4">
         <div>
-          <h1 className="font-display text-3xl text-foreground">Leads</h1>
+          <h1 className="font-display text-2xl text-foreground">Leads</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             One pipeline across all practice areas. Qualify, then convert into an engagement.
           </p>

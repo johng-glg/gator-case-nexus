@@ -123,7 +123,7 @@ function CaseDetail() {
   const userFee = typeof record.User_Fee_Withheld === "number" ? record.User_Fee_Withheld : null;
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-8 space-y-6">
+    <div className="max-w-6xl mx-auto px-8 py-5 space-y-4">
       <div>
         <Link to="/practices/ssdi/cases" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
           <ChevronLeft className="h-4 w-4" /> Back to SSDI cases
@@ -133,7 +133,7 @@ function CaseDetail() {
       <header className="flex items-start justify-between gap-4">
         <div>
           <div className="text-xs uppercase tracking-[0.18em] text-primary/80">SSDI case</div>
-          <h1 className="font-display text-3xl text-foreground mt-0.5">
+          <h1 className="font-display text-2xl text-foreground mt-0.5">
             {String(record.Case_Number ?? "Case")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
