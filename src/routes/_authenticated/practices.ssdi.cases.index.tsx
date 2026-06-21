@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { zohoQuery } from "@/lib/zoho.functions";
 import { useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import { normalizeStage } from "@/integrations/zoho/lifecycle";
 
 export const Route = createFileRoute("/_authenticated/practices/ssdi/cases/")({
   head: () => ({ meta: [{ title: "SSDI cases — Gator" }] }),
