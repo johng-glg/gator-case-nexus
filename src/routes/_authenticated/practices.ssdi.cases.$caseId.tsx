@@ -179,7 +179,7 @@ function CaseDetail() {
             >
               Seed test data
             </Button>
-            <Button onClick={() => setDialogOpen(true)}>Advance stage</Button>
+            {!isClosed && <Button onClick={() => openAdvance()}>Advance stage</Button>}
           </div>
         </div>
       </header>
