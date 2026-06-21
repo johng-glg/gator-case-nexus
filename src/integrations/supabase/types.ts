@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_portal_links: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          updated_at: string
+          user_id: string
+          zoho_case_id: string
+          zoho_engagement_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          updated_at?: string
+          user_id: string
+          zoho_case_id: string
+          zoho_engagement_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          updated_at?: string
+          user_id?: string
+          zoho_case_id?: string
+          zoho_engagement_id?: string | null
+        }
+        Relationships: []
+      }
       ssdi_deadline_digests: {
         Row: {
           created_at: string
