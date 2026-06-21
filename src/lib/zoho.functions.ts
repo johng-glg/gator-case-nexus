@@ -36,6 +36,7 @@ const queryInput = z.object({
     "engagementsByType",
     "myEngagements",
     "allContacts",
+    "engagementsByContact",
     "allLeads",
     "allReferrals",
   ]),
@@ -114,7 +115,12 @@ export const getContact = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const record = await makeZohoClient()
       .as(context.userId)
-      .getRecord("Contacts", data.contactId, ["First_Name", "Last_Name", "Email", "Phone"]);
+      .getRecord("Contacts", data.contactId, [
+        "First_Name", "Last_Name", "Email", "Phone", "Mobile", "Home_Phone",
+        "Contact_Type", "Lead_Source", "DOB",
+        "Mailing_Street", "Mailing_City", "Mailing_State", "Mailing_Zip",
+        "Owner", "Created_Time",
+      ]);
     return { record: record ? toJson<ZohoRow>(record) : null };
   });
 
