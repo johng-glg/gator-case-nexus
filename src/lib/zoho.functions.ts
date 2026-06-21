@@ -601,6 +601,7 @@ export const createCost = createServerFn({ method: "POST" })
   .inputValidator((data) => createCostInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     const payload: Record<string, unknown> = {
       Name: data.name,
       Amount: data.amount,
@@ -612,17 +613,40 @@ export const createCost = createServerFn({ method: "POST" })
     if (first.code && first.code !== "SUCCESS") {
       throw new Error(first.message || "Failed to create cost");
     }
+    await logCaseActivity({
+      engagementId: data.engagementId,
+      actorUserId: context.userId,
+      actorEmail: actorEmail(context.claims),
+      action: "cost.create",
+      summary: `Added cost "${data.name}" — $${data.amount.toFixed(2)} (${data.costType}).`,
+      metadata: { name: data.name, amount: data.amount, costType: data.costType, costId: first.details?.id },
+    });
     return { ok: true, id: first.details?.id };
   });
 
-const deleteCostInput = z.object({ costId: z.string().regex(/^[A-Za-z0-9_]+$/) });
+const deleteCostInput = z.object({
+  costId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  engagementId: z.string().regex(/^[A-Za-z0-9_]+$/).optional(),
+  costName: z.string().trim().max(200).optional(),
+});
 
 export const deleteCost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => deleteCostInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     await makeZohoClient().as(context.userId).deleteRecords("Costs", [data.costId]);
+    if (data.engagementId) {
+      await logCaseActivity({
+        engagementId: data.engagementId,
+        actorUserId: context.userId,
+        actorEmail: actorEmail(context.claims),
+        action: "cost.delete",
+        summary: data.costName ? `Deleted cost "${data.costName}".` : "Deleted a cost.",
+        metadata: { costId: data.costId },
+      });
+    }
     return { ok: true };
   });
 
