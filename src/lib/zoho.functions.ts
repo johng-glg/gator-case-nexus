@@ -488,6 +488,64 @@ export const retainerSend = createServerFn({ method: "POST" })
   });
 
 
+// ---------- Costs ----------
+
+/**
+ * Cost categories surfaced in the case-page entry form. These are the
+ * common SSDI matter expenses; firms can extend the picklist in Zoho later
+ * without breaking the form (Zoho will store any string in Cost_Type).
+ *
+ * NOTE: The Costs module has NO Date_Incurred field — do not add one here.
+ */
+export const COST_CATEGORIES = [
+  "Medical records",
+  "Expert / consultative exam",
+  "Postage / shipping",
+  "Filing fee",
+  "Travel",
+  "Copies / printing",
+  "Other",
+] as const;
+
+const createCostInput = z.object({
+  engagementId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  name: z.string().trim().min(1, "Description is required").max(200),
+  amount: z.number().finite().min(0).max(1_000_000),
+  costType: z.enum(COST_CATEGORIES),
+});
+
+export const createCost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => createCostInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const payload: Record<string, unknown> = {
+      Name: data.name,
+      Amount: data.amount,
+      Cost_Type: data.costType,
+      Engagement: { id: data.engagementId },
+    };
+    const res = await makeZohoClient().as(context.userId).createRecords("Costs", [payload]);
+    const first = (res?.[0] ?? {}) as { details?: { id?: string }; code?: string; message?: string };
+    if (first.code && first.code !== "SUCCESS") {
+      throw new Error(first.message || "Failed to create cost");
+    }
+    return { ok: true, id: first.details?.id };
+  });
+
+const deleteCostInput = z.object({ costId: z.string().regex(/^[A-Za-z0-9_]+$/) });
+
+export const deleteCost = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => deleteCostInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    await makeZohoClient().as(context.userId).deleteRecords("Costs", [data.costId]);
+    return { ok: true };
+  });
+
+
+
 /**
  * Admin-only: trigger the SSDI nightly deadline sweep on demand. Logs the result to
  * public.ssdi_deadline_digests, same as the scheduled cron.
