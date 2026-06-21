@@ -119,7 +119,7 @@ function Engagements() {
                       href={openWorkspaceHref(practice?.slug, id)}
                       className="font-medium text-primary hover:underline"
                     >
-                      {String(r.Engagement_Name ?? "—")}
+                      {String(r.Name ?? "—")}
                     </a>
                   </Td>
                   <Td>{client ?? <span className="text-muted-foreground">—</span>}</Td>

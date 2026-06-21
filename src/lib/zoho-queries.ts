@@ -42,7 +42,7 @@ export type QueryName =
   | "allLeads";
 
 const ENGAGEMENT_COLS =
-  "id, Engagement_Name, Engagement_Type, Engagement_Status, Retainer_Status, Client.First_Name, Client.Last_Name, Assigned_Attorney";
+  "id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Client.First_Name, Client.Last_Name, Assigned_Attorney";
 
 export function buildQuery(name: QueryName, params: Record<string, unknown> = {}): string {
   switch (name) {
@@ -93,7 +93,7 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               where Engagement = ${safeId(params.engagementId)}
               limit 200`;
     case "engagementById":
-      return `select Engagement_Name, Engagement_Type, Engagement_Status, Retainer_Status,
+      return `select Name, Engagement_Type, Engagement_Status, Retainer_Status,
                      Client.First_Name, Client.Last_Name, All_Fees, Total_Costs1
               from Engagements
               where id = ${safeId(params.engagementId)}
