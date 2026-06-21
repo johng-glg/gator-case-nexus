@@ -207,9 +207,10 @@ function Chip({ children, cls }: { children: React.ReactNode; cls: string }) {
   );
 }
 
-function Th({ children }: { children: React.ReactNode }) {
-  return <th className="px-4 py-2.5 text-left font-medium">{children}</th>;
+function Td({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <td className={cn("px-4 py-3", className)}>{children}</td>;
 }
+
 
 
 type PracticeChoice = "SSDI" | "FCRA" | "FDCPA" | "TCPA" | "Class Action";
