@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ssdi_deadline_digests: {
+        Row: {
+          created_at: string
+          due_soon: Json
+          error: string | null
+          id: string
+          overdue: Json
+          ran_at: string
+          release_expiring: Json
+          scanned: number
+          updated: number
+        }
+        Insert: {
+          created_at?: string
+          due_soon?: Json
+          error?: string | null
+          id?: string
+          overdue?: Json
+          ran_at?: string
+          release_expiring?: Json
+          scanned?: number
+          updated?: number
+        }
+        Update: {
+          created_at?: string
+          due_soon?: Json
+          error?: string | null
+          id?: string
+          overdue?: Json
+          ran_at?: string
+          release_expiring?: Json
+          scanned?: number
+          updated?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
