@@ -103,6 +103,11 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
     })]);
     const caseId = idOf(caseRes[0]);
 
+    return { clientId, engagementId, caseId };
+  }
+
+
+
   /**
    * Convert a Zoho Lead into Client + SSDI Engagement + first SSDI Case (linked) and
    * stamp the Lead with Lead_Status="Converted" + Converted_Contact. Only SSDI is wired
