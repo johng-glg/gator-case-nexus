@@ -21,6 +21,8 @@ function CaseDetail() {
   const advance = useServerFn(caseAdvance);
   const finishTask = useServerFn(completeTask);
   const fetchCaseTasks = useServerFn(getCaseTasks);
+  const recomputeDeadline = useServerFn(caseRecomputeDeadline);
+  const [recomputing, setRecomputing] = useState(false);
 
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
