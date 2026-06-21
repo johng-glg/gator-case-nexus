@@ -48,6 +48,31 @@ export const zohoTokenStore: ZohoTokenStore = {
       );
     if (error) throw error;
   },
+
+  // Shared access-token cache. Skipped for SERVICE (which "borrows" any user row
+  // and would write to an ambiguous user_id); firmTokenStore handles SERVICE.
+  async getCachedAccessToken(actorKey: string) {
+    if (actorKey === "SERVICE") return null;
+    const { data, error } = await supabaseAdmin
+      .from("zoho_tokens")
+      .select("access_token, access_token_expires_at")
+      .eq("user_id", actorKey)
+      .maybeSingle();
+    if (error || !data?.access_token || !data?.access_token_expires_at) return null;
+    return { token: data.access_token, expiresAt: new Date(data.access_token_expires_at).getTime() };
+  },
+
+  async setCachedAccessToken(actorKey: string, token: string, expiresAt: number) {
+    if (actorKey === "SERVICE") return;
+    const { error } = await supabaseAdmin
+      .from("zoho_tokens")
+      .update({
+        access_token: token,
+        access_token_expires_at: new Date(expiresAt).toISOString(),
+      })
+      .eq("user_id", actorKey);
+    if (error) throw error;
+  },
 };
 
 export async function hasZohoConnection(userId: string): Promise<boolean> {
