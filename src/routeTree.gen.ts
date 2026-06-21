@@ -22,6 +22,7 @@ import { Route as AuthenticatedEngagementsIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedClientsIndexRouteImport } from './routes/_authenticated/clients.index'
 import { Route as ApiPublicDeadlineSweepRouteImport } from './routes/api/public/deadline-sweep'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings.users'
+import { Route as AuthenticatedSettingsDeadlineSweepRouteImport } from './routes/_authenticated/settings.deadline-sweep'
 import { Route as AuthenticatedSettingsConnectionsRouteImport } from './routes/_authenticated/settings.connections'
 import { Route as AuthenticatedSettingsChangelogRouteImport } from './routes/_authenticated/settings.changelog'
 import { Route as AuthenticatedPracticesSsdiRouteImport } from './routes/_authenticated/practices.ssdi'
@@ -103,6 +104,12 @@ const AuthenticatedSettingsUsersRoute =
   AuthenticatedSettingsUsersRouteImport.update({
     id: '/users',
     path: '/users',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsDeadlineSweepRoute =
+  AuthenticatedSettingsDeadlineSweepRouteImport.update({
+    id: '/deadline-sweep',
+    path: '/deadline-sweep',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
 const AuthenticatedSettingsConnectionsRoute =
@@ -197,6 +204,7 @@ export interface FileRoutesByFullPath {
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
   '/settings/changelog': typeof AuthenticatedSettingsChangelogRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
+  '/settings/deadline-sweep': typeof AuthenticatedSettingsDeadlineSweepRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
@@ -222,6 +230,7 @@ export interface FileRoutesByTo {
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/settings/changelog': typeof AuthenticatedSettingsChangelogRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
+  '/settings/deadline-sweep': typeof AuthenticatedSettingsDeadlineSweepRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
@@ -251,6 +260,7 @@ export interface FileRoutesById {
   '/_authenticated/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
   '/_authenticated/settings/changelog': typeof AuthenticatedSettingsChangelogRoute
   '/_authenticated/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
+  '/_authenticated/settings/deadline-sweep': typeof AuthenticatedSettingsDeadlineSweepRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
@@ -280,6 +290,7 @@ export interface FileRouteTypes {
     | '/practices/ssdi'
     | '/settings/changelog'
     | '/settings/connections'
+    | '/settings/deadline-sweep'
     | '/settings/users'
     | '/api/public/deadline-sweep'
     | '/clients/'
@@ -305,6 +316,7 @@ export interface FileRouteTypes {
     | '/practices/$practice'
     | '/settings/changelog'
     | '/settings/connections'
+    | '/settings/deadline-sweep'
     | '/settings/users'
     | '/api/public/deadline-sweep'
     | '/clients'
@@ -333,6 +345,7 @@ export interface FileRouteTypes {
     | '/_authenticated/practices/ssdi'
     | '/_authenticated/settings/changelog'
     | '/_authenticated/settings/connections'
+    | '/_authenticated/settings/deadline-sweep'
     | '/_authenticated/settings/users'
     | '/api/public/deadline-sweep'
     | '/_authenticated/clients/'
@@ -449,6 +462,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsUsersRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
+    '/_authenticated/settings/deadline-sweep': {
+      id: '/_authenticated/settings/deadline-sweep'
+      path: '/deadline-sweep'
+      fullPath: '/settings/deadline-sweep'
+      preLoaderRoute: typeof AuthenticatedSettingsDeadlineSweepRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/settings/connections': {
       id: '/_authenticated/settings/connections'
       path: '/connections'
@@ -546,6 +566,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsChangelogRoute: typeof AuthenticatedSettingsChangelogRoute
   AuthenticatedSettingsConnectionsRoute: typeof AuthenticatedSettingsConnectionsRoute
+  AuthenticatedSettingsDeadlineSweepRoute: typeof AuthenticatedSettingsDeadlineSweepRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
@@ -553,6 +574,8 @@ interface AuthenticatedSettingsRouteChildren {
 const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
   AuthenticatedSettingsChangelogRoute: AuthenticatedSettingsChangelogRoute,
   AuthenticatedSettingsConnectionsRoute: AuthenticatedSettingsConnectionsRoute,
+  AuthenticatedSettingsDeadlineSweepRoute:
+    AuthenticatedSettingsDeadlineSweepRoute,
   AuthenticatedSettingsUsersRoute: AuthenticatedSettingsUsersRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
