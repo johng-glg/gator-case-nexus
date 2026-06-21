@@ -280,7 +280,7 @@ function RetainerPanel({
   onSend: () => void;
   sending: boolean;
 }) {
-  const STEPS = ["Not sent", "Sent", "Signed"] as const;
+  const STEPS = ["Not sent", "Sent", "Viewed", "Signed"] as const;
   const isError = status === "Declined" || status === "Expired";
   const currentIdx = isError ? 1 : Math.max(0, STEPS.indexOf(status as (typeof STEPS)[number]));
   const canSend = status !== "Signed";
