@@ -35,9 +35,9 @@ const READ_FIELDS = [
 
 /** Fields the sweep/recompute read to re-derive the deadline + counts. */
 const DERIVE_FIELDS = [
-  "id", "Active_Deadline_Type", "Notice_Date", "Documented_Receipt_Date",
+  "id", "Case_Number", "Active_Deadline_Type", "Notice_Date", "Documented_Receipt_Date",
   "Deadline_Date", "Days_To_Deadline", "Deadline_At_Risk",
-  "Release_Signed_Date", "Release_Expiring_Soon",
+  "Release_Signed_Date", "Release_Expiring_Soon", "Assigned_Attorney", "Engagement",
 ];
 
 export function createCaseService(deps: CaseServiceDeps) {
@@ -154,8 +154,14 @@ export function createCaseService(deps: CaseServiceDeps) {
     return { id: caseId, ...u };
   }
 
-  /** SERVICE cron: re-derive deadlines from Notice_Date + refresh counts/flags for all open cases. */
-  async function runDailyDeadlineSweep(): Promise<{ scanned: number; updated: number }> {
+  /** SERVICE cron: re-derive deadlines + return a digest of overdue / due-soon / release-expiring cases. */
+  async function runDailyDeadlineSweep(): Promise<{
+    scanned: number;
+    updated: number;
+    overdue: DigestRow[];
+    dueSoon: DigestRow[];
+    releaseExpiring: DigestRow[];
+  }> {
     const api = deps.zoho.as(SERVICE_ACTOR);
     const rows = await api.coql<ZohoRecord>(
       `select ${DERIVE_FIELDS.join(", ")}
@@ -165,6 +171,10 @@ export function createCaseService(deps: CaseServiceDeps) {
 
     const t = today();
     const updates: ZohoRecord[] = [];
+    const overdue: DigestRow[] = [];
+    const dueSoon: DigestRow[] = [];
+    const releaseExpiring: DigestRow[] = [];
+
     for (const r of rows) {
       const u = deadlineFieldUpdates(r, t);
       if (r.Release_Signed_Date) {
@@ -172,13 +182,53 @@ export function createCaseService(deps: CaseServiceDeps) {
         const soon = releaseExpiringSoon(r.Release_Signed_Date as string, 30, t);
         u.Release_Expiration_Date = exp;
         if (soon !== r.Release_Expiring_Soon) u.Release_Expiring_Soon = soon;
+        if (soon) releaseExpiring.push(toDigestRow(r, { kind: "release", date: exp }));
       }
       if (Object.keys(u).length) updates.push({ id: r.id as string, ...u });
+
+      const dl = (u.Deadline_Date ?? r.Deadline_Date) as string | undefined;
+      const days = typeof u.Days_To_Deadline === "number" ? u.Days_To_Deadline
+        : typeof r.Days_To_Deadline === "number" ? r.Days_To_Deadline as number
+        : null;
+      if (dl && typeof days === "number") {
+        if (days < 0) overdue.push(toDigestRow(r, { kind: "overdue", date: dl, days }));
+        else if (days <= 7) dueSoon.push(toDigestRow(r, { kind: "due_soon", date: dl, days }));
+      }
     }
 
     if (updates.length) await api.updateRecords(MODULE, updates);
-    return { scanned: rows.length, updated: updates.length };
+    overdue.sort((a, b) => (a.days ?? 0) - (b.days ?? 0));
+    dueSoon.sort((a, b) => (a.days ?? 0) - (b.days ?? 0));
+    return { scanned: rows.length, updated: updates.length, overdue, dueSoon, releaseExpiring };
   }
 
   return { advanceStage, recomputeDeadline, runDailyDeadlineSweep };
+}
+
+export interface DigestRow {
+  id: string;
+  caseNumber: string | null;
+  engagementId: string | null;
+  attorneyId: string | null;
+  attorneyName: string | null;
+  tier: string | null;
+  date: string;
+  days?: number;
+  kind: "overdue" | "due_soon" | "release";
+}
+
+function toDigestRow(r: ZohoRecord, x: { kind: DigestRow["kind"]; date: string; days?: number }): DigestRow {
+  const aa = r.Assigned_Attorney as { id?: string; name?: string } | string | undefined;
+  const eng = r.Engagement as { id?: string } | string | undefined;
+  return {
+    id: r.id as string,
+    caseNumber: (r.Case_Number as string) ?? null,
+    engagementId: typeof eng === "string" ? eng : eng?.id ?? null,
+    attorneyId: typeof aa === "string" ? aa : aa?.id ?? null,
+    attorneyName: typeof aa === "object" ? aa?.name ?? null : null,
+    tier: (r.Active_Deadline_Type as string) ?? null,
+    date: x.date,
+    days: x.days,
+    kind: x.kind,
+  };
 }

@@ -1,7 +1,11 @@
 /**
- * Daily deadline sweep — recompute Days_To_Deadline / At_Risk / release fields.
+ * Daily SSDI deadline sweep.
  *
- * External cron hits this with Authorization: Bearer <DEADLINE_SWEEP_SECRET>.
+ * Recomputes Deadline_Date / Days_To_Deadline / Deadline_At_Risk + Release_Expiring_Soon for
+ * every open SSDI case, then writes a digest row (overdue / due-soon / release-expiring) to
+ * public.ssdi_deadline_digests for the in-app Admin view.
+ *
+ * Authorized via Authorization: Bearer <DEADLINE_SWEEP_SECRET> or Supabase apikey header.
  * Runs as the SERVICE actor (refresh token in ZOHO_SERVICE_REFRESH_TOKEN env).
  */
 import { createFileRoute } from "@tanstack/react-router";
@@ -13,19 +17,44 @@ export const Route = createFileRoute("/api/public/deadline-sweep")({
         const auth = request.headers.get("authorization") ?? "";
         const apikey = request.headers.get("apikey") ?? "";
         const expected = `Bearer ${process.env.DEADLINE_SWEEP_SECRET ?? ""}`;
-        const anonKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
-        const authorized = auth === expected || (Boolean(anonKey) && apikey === anonKey);
-        if (!authorized) {
-          return new Response("Unauthorized", { status: 401 });
-        }
+        const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
+        const authorized =
+          (process.env.DEADLINE_SWEEP_SECRET && auth === expected) ||
+          (Boolean(anonKey) && apikey === anonKey);
+        if (!authorized) return new Response("Unauthorized", { status: 401 });
+
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
         try {
           const { makeZohoClient } = await import("@/integrations/zoho/client.server");
           const { createCaseService } = await import("@/integrations/zoho/caseService");
           const result = await createCaseService({ zoho: makeZohoClient() }).runDailyDeadlineSweep();
-          return Response.json({ ok: true, ...result });
+
+          await supabaseAdmin.from("ssdi_deadline_digests").insert({
+            scanned: result.scanned,
+            updated: result.updated,
+            overdue: result.overdue as unknown as never,
+            due_soon: result.dueSoon as unknown as never,
+            release_expiring: result.releaseExpiring as unknown as never,
+          });
+
+          return Response.json({
+            ok: true,
+            scanned: result.scanned,
+            updated: result.updated,
+            overdueCount: result.overdue.length,
+            dueSoonCount: result.dueSoon.length,
+            releaseExpiringCount: result.releaseExpiring.length,
+          });
         } catch (e) {
           console.error("Deadline sweep failed:", e);
-          return Response.json({ ok: false, error: String(e) }, { status: 500 });
+          const message = e instanceof Error ? e.message : String(e);
+          try {
+            await supabaseAdmin.from("ssdi_deadline_digests").insert({ error: message });
+          } catch (logErr) {
+            console.error("Failed to log digest error:", logErr);
+          }
+          return Response.json({ ok: false, error: message }, { status: 500 });
         }
       },
     },
