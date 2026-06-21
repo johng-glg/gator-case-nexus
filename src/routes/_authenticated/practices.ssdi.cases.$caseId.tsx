@@ -11,6 +11,7 @@ import { TasksPanel } from "@/components/cases/TasksPanel";
 import { DenialNextStepBanner } from "@/components/cases/DenialNextStepBanner";
 import { ClosedCaseBanner } from "@/components/cases/ClosedCaseBanner";
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
+import { useStageRequirements } from "@/hooks/use-stage-requirements";
 import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -28,6 +29,7 @@ function CaseDetail() {
 
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { requirements: stageReqs } = useStageRequirements();
   const [dialogInitialStage, setDialogInitialStage] = useState<Stage | undefined>(undefined);
   const [dialogInitialFields, setDialogInitialFields] = useState<Record<string, string> | undefined>(undefined);
 
