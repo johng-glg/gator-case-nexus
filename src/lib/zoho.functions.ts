@@ -389,6 +389,7 @@ export const createCaseTask = createServerFn({ method: "POST" })
   .inputValidator((data) => createCaseTaskInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     const payload: Record<string, unknown> = {
       Subject: data.subject,
       What_Id: { id: data.caseId },
@@ -404,6 +405,14 @@ export const createCaseTask = createServerFn({ method: "POST" })
     if (first.code && first.code !== "SUCCESS") {
       throw new Error(first.message || "Failed to create task");
     }
+    await logCaseActivity({
+      caseId: data.caseId,
+      actorUserId: context.userId,
+      actorEmail: actorEmail(context.claims),
+      action: "task.create",
+      summary: `Created task "${data.subject}"${data.dueDate ? ` (due ${data.dueDate})` : ""}.`,
+      metadata: { subject: data.subject, dueDate: data.dueDate, priority: data.priority, ownerId: data.ownerId },
+    });
     return { ok: true, id: first.details?.id };
   });
 
