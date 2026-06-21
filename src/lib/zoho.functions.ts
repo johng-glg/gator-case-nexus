@@ -30,6 +30,11 @@ const queryInput = z.object({
     "costsByEngagement",
     "casesByEngagement",
     "engagementById",
+    "allEngagements",
+    "engagementsByType",
+    "myEngagements",
+    "allContacts",
+    "allLeads",
   ]),
   params: z.record(z.string(), z.unknown()).optional(),
 });
