@@ -35,10 +35,10 @@ const queryInput = z.object({
     "myEngagements",
     "allContacts",
     "allLeads",
-    "tasksByCase",
   ]),
   params: z.record(z.string(), z.unknown()).optional(),
 });
+
 
 
 export const getConnectionStatus = createServerFn({ method: "GET" })

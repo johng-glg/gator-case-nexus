@@ -130,11 +130,6 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               where id is not null
               order by Modified_Time desc
               limit 200`;
-    case "tasksByCase":
-      return `select id, Subject, Due_Date, Status
-              from Tasks
-              where What_Id = ${safeId(params.caseId)} and Status != 'Completed'
-              order by Due_Date asc
-              limit 200`;
   }
 }
+
