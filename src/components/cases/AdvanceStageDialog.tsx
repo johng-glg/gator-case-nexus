@@ -20,9 +20,10 @@ export interface FieldSpec {
  * Stages that need extra data captured before they can be entered.
  * Keys map to SSDI_Cases API field names (zoho-api-contract.md).
  */
-const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
+export const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
   "Application filed": [
     { field: "Application_Filed_Date", label: "Application filed date", type: "date", required: true },
+    { field: "SSA_Claim_Number", label: "SSA claim number", type: "text" },
   ],
   "Initial decision - denied": [
     { field: "Notice_Date", label: "Notice date (printed on the adverse notice)", type: "date", required: true },
