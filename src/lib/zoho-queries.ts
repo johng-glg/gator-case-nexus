@@ -119,11 +119,13 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
     case "allContacts":
       return `select id, First_Name, Last_Name, Email, Phone, Mailing_City, Mailing_State
               from Contacts
+              where id is not null
               order by Modified_Time desc
               limit 200`;
     case "allLeads":
       return `select id, First_Name, Last_Name, Email, Phone, Company, Lead_Status, Lead_Source
               from Leads
+              where id is not null
               order by Modified_Time desc
               limit 200`;
   }
