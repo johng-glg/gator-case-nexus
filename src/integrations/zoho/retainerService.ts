@@ -155,15 +155,20 @@ export function parseSignWebhook(payload: unknown): { requestId?: string; status
   const req = p.requests ?? p.request ?? p.notifications?.requests ?? p;
   const requestId =
     req?.request_id ?? req?.requestId ?? p.request_id ?? undefined;
+  // Only trust the notification event name. request_status / per-action fields
+  // fire on "viewed" / per-signer events and would prematurely mark Signed.
   const raw: string | undefined =
-    p.action_type ?? p.operation_type ?? req?.request_status ?? req?.status ?? undefined;
+    p.notifications?.operation_type ?? p.operation_type ?? p.action_type ?? undefined;
   if (!requestId || !raw) return null;
 
-  const key = String(raw).toLowerCase();
-  // terminal statuses we care about; everything else (viewed/sent/inprogress) is ignored
-  if (key.includes("complete") || key === "signed") return { requestId, status: "Signed" };
-  if (key.includes("declin"))                        return { requestId, status: "Declined" };
-  if (key.includes("expire"))                        return { requestId, status: "Expired" };
-  if (key.includes("recall") || key.includes("withdraw")) return { requestId, status: "Not sent" as RetainerStatus };
+  const key = String(raw).toLowerCase().replace(/[_\s-]/g, "");
+  // Terminal events only. "RequestSigned" fires per-signer and is NOT terminal for
+  // multi-signer requests — wait for "RequestCompleted". Single-signer retainers
+  // still emit RequestCompleted, so this is safe.
+  if (key === "requestcompleted" || key === "completed")       return { requestId, status: "Signed" };
+  if (key === "requestdeclined"  || key === "declined")        return { requestId, status: "Declined" };
+  if (key === "requestexpired"   || key === "expired")         return { requestId, status: "Expired" };
+  if (key === "requestrecalled"  || key === "recalled" ||
+      key === "requestwithdrawn" || key === "withdrawn")       return { requestId, status: "Not sent" as RetainerStatus };
   return { requestId, status: undefined };
 }
