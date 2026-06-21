@@ -37,7 +37,7 @@ const READ_FIELDS = [
 ];
 
 export function createCaseService(deps: CaseServiceDeps) {
-  const today = () => (deps.now ? deps.now() : new Date());
+  const today = () => (deps.now ? deps.now() : localToday());
 
   /** Resolve a hook's DueRule against the (merged) case fields + computed deadline. */
   function resolveDate(rule: DueRule, ctx: { deadline: Date | null; fields: Record<string, unknown> }): string | null {
