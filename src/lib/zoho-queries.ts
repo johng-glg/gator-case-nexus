@@ -42,7 +42,8 @@ export type QueryName =
   | "engagementsByType"
   | "myEngagements"
   | "allContacts"
-  | "allLeads";
+  | "allLeads"
+  | "allReferrals";
 
 
 
