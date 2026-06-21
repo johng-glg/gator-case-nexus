@@ -172,6 +172,7 @@ function Leads() {
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
