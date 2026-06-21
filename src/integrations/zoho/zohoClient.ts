@@ -37,10 +37,16 @@ export const DEFAULT_SCOPES = [
   // add "ZohoSign.documents.ALL" when wiring e-sign
 ];
 
-/** Persisted refresh tokens, keyed by actor (user id, or SERVICE). App supplies the impl. */
+/** Persisted refresh tokens, keyed by actor (user id, or SERVICE). App supplies the impl.
+ *  Optional access-token cache methods let multiple stateless worker isolates share one
+ *  short-lived access token per actor, avoiding Zoho's refresh-token rate limit
+ *  (~10 access-token mints per refresh token per 10 minutes).
+ */
 export interface ZohoTokenStore {
   getRefreshToken(actorKey: string): Promise<string | null>;
   setRefreshToken(actorKey: string, refreshToken: string): Promise<void>;
+  getCachedAccessToken?(actorKey: string): Promise<{ token: string; expiresAt: number } | null>;
+  setCachedAccessToken?(actorKey: string, token: string, expiresAt: number): Promise<void>;
 }
 
 export interface ZohoConfig {
