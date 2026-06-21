@@ -12,6 +12,16 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: nightly deadline sweep + digest (Phase 1.4)",
+    summary: "Automatic nightly recompute of SSDI deadlines with an admin-visible digest of overdue / due-soon / expiring releases.",
+    changes: [
+      "Scheduled pg_cron job 'ssdi-deadline-sweep-nightly' POSTs /api/public/deadline-sweep every day at 6:00 AM ET.",
+      "Sweep persists results (scanned, updated, overdue, due ≤7d, release ≤30d) to ssdi_deadline_digests.",
+      "New Admin → Deadline Sweep page shows the latest run, urgent case lists, run history, and a 'Run sweep now' button (admins only).",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: collapsed Intake + Retainer signed into 'Retained'",
     summary: "Retainers are signed before the case is created, so the first SSDI stage is now 'Retained'.",
     changes: [
