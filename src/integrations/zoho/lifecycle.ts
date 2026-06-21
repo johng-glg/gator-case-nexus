@@ -138,6 +138,18 @@ export function deadlineForStage(stage: Stage, noticeDate?: string, documentedRe
   return { tier, deadline: computeAppealDeadline(noticeDate, documentedReceipt) };
 }
 
+/** Denial stages auto-suggest the next-tier filing stage + which date field to prefill. */
+export const DENIAL_NEXT_STEP: Partial<Record<Stage, { nextStage: Stage; dateField: string; label: string }>> = {
+  "Initial decision - denied": { nextStage: "Reconsideration filed", dateField: "Recon_Filed_Date", label: "File reconsideration" },
+  "Recon decision - denied":   { nextStage: "ALJ hearing requested", dateField: "ALJ_Hearing_Requested_Date", label: "Request ALJ hearing" },
+  "ALJ decision - denied":     { nextStage: "Appeals Council requested", dateField: "Appeals_Council_Requested_Date", label: "Request Appeals Council review" },
+  // AC denial → federal court complaint, handled outside the SSDI lifecycle.
+};
+
+/** Closure reason picklist for stage Closed. */
+export const CLOSURE_REASONS = ["Won", "Lost", "Withdrawn", "Transferred", "Client deceased", "Conflict"] as const;
+export type ClosureReason = typeof CLOSURE_REASONS[number];
+
 /** 7-phase grouping for the lifecycle UI. Every Stage appears in exactly one phase. */
 export interface Phase {
   key: string;
