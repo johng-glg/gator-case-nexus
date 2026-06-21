@@ -37,7 +37,7 @@ function Leads() {
     (localStorage.getItem("leads.practice") as Practice) || "All",
   );
   const [status, setStatus] = useState<Status>(() =>
-    (localStorage.getItem("leads.status") as Status) || "Default",
+    (localStorage.getItem("leads.status") as Status) || "All",
   );
   useEffect(() => { localStorage.setItem("leads.practice", practice); }, [practice]);
   useEffect(() => { localStorage.setItem("leads.status", status); }, [status]);
