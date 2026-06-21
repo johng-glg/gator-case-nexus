@@ -32,6 +32,8 @@ export const firmTokenStore: ZohoTokenStore = {
           key,
           refresh_token: refreshToken,
           refresh_tail: refreshToken.slice(-4),
+          access_token: null,
+          access_token_expires_at: null,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "key" },
