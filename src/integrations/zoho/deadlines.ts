@@ -71,15 +71,30 @@ export function computeAppealDeadline(
   return rollForward(raw); // only the final endpoint rolls
 }
 
-/** Whole days from today (UTC) until the deadline. Negative = past due. */
-export function daysUntil(deadline: Date | string, today: Date = new Date()): number {
+/**
+ * Firm-local "today" as a UTC-midnight Date.
+ *
+ * The server runs in UTC. After ~4-5pm Pacific the UTC date has already rolled to
+ * "tomorrow", which would make a deadline tool read one day short. We anchor "today"
+ * to America/Los_Angeles so the countdown matches the firm's wall clock.
+ */
+export function localToday(zone = "America/Los_Angeles"): Date {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+  return new Date(Date.UTC(get("year"), get("month") - 1, get("day")));
+}
+
+/** Whole days from today (firm-local) until the deadline. Negative = past due. */
+export function daysUntil(deadline: Date | string, today: Date = localToday()): number {
   const t = asUTCDate(today);
   const d = asUTCDate(deadline);
   return Math.round((d.getTime() - t.getTime()) / DAY_MS);
 }
 
 /** At risk when the deadline is within `thresholdDays` (default 14) and not past. */
-export function isAtRisk(deadline: Date | string, thresholdDays = 14, today: Date = new Date()): boolean {
+export function isAtRisk(deadline: Date | string, thresholdDays = 14, today: Date = localToday()): boolean {
   const n = daysUntil(deadline, today);
   return n >= 0 && n <= thresholdDays;
 }
@@ -91,7 +106,7 @@ export function releaseExpiration(signedDate: Date | string): Date {
 }
 
 /** Release expiring soon (default within 30 days). */
-export function releaseExpiringSoon(signedDate: Date | string, withinDays = 30, today: Date = new Date()): boolean {
+export function releaseExpiringSoon(signedDate: Date | string, withinDays = 30, today: Date = localToday()): boolean {
   const n = daysUntil(releaseExpiration(signedDate), today);
   return n >= 0 && n <= withinDays;
 }
