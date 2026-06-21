@@ -112,8 +112,7 @@ function EngagementDetail() {
               <tr>
                 <Th>Case #</Th>
                 <Th>Stage</Th>
-                <Th>Claim type</Th>
-                <Th>Opened</Th>
+                <Th>Sub-status</Th>
                 <Th>Deadline</Th>
               </tr>
             </thead>
