@@ -37,7 +37,10 @@ const STATUS_CHIP: Record<string, string> = {
 
 function Leads() {
   const runQuery = useServerFn(zohoQuery);
+  const qc = useQueryClient();
+  const navigate = useNavigate();
   const [q, setQ] = useState("");
+  const [openNew, setOpenNew] = useState(false);
   const [practice, setPractice] = useState<Practice>(() =>
     (localStorage.getItem("leads.practice") as Practice) || "All",
   );
