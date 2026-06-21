@@ -92,7 +92,7 @@ export function createCaseService(deps: CaseServiceDeps) {
     const c = await api.getRecord<ZohoRecord>(MODULE, caseId, READ_FIELDS);
     if (!c) throw new Error(`SSDI case ${caseId} not found`);
 
-    const from = c.Current_Stage as Stage;
+    const from = normalizeStage(c.Current_Stage as string | undefined);
     if (!canTransition(from, toStage)) {
       throw new Error(`Invalid transition: "${from}" → "${toStage}". Allowed: ${TRANSITIONS[from]?.join(", ")}`);
     }
