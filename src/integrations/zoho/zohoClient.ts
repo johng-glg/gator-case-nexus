@@ -186,8 +186,8 @@ export function createZohoClient(cfg: ZohoConfig) {
 
       async getRecord<T = ZohoRecord>(module: string, id: string, fields?: string[]): Promise<T | null> {
         const f = fields?.length ? `?fields=${encodeURIComponent(fields.join(","))}` : "";
-        const r = await request<{ data?: T[] }>(actorKey, "GET", `/${module}/${id}${f}`);
-        return r.data?.[0] ?? null;
+        const r = await request<{ data?: T[] } | undefined>(actorKey, "GET", `/${module}/${id}${f}`);
+        return r?.data?.[0] ?? null;
       },
 
       /** Create up to any number of records; chunked to 100/call. Attributed to this actor. */
