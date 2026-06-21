@@ -147,6 +147,39 @@ export const updateLeadStatus = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+const createLeadInput = z.object({
+  First_Name: z.string().trim().max(100).optional(),
+  Last_Name: z.string().trim().min(1, "Last name is required").max(100),
+  Email: z.string().trim().email().max(255).optional().or(z.literal("")),
+  Phone: z.string().trim().max(40).optional().or(z.literal("")),
+  Mobile: z.string().trim().max(40).optional().or(z.literal("")),
+  Company: z.string().trim().max(200).optional().or(z.literal("")),
+  Lead_Source: z.string().trim().max(100).optional().or(z.literal("")),
+  Practice_Area: z.enum(["SSDI", "FCRA", "FDCPA", "TCPA", "Class Action"]).optional(),
+  Description: z.string().trim().max(2000).optional().or(z.literal("")),
+});
+
+export const createLead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => createLeadInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const payload: Record<string, unknown> = { Lead_Status: "New" };
+    for (const [k, v] of Object.entries(data)) {
+      if (v !== undefined && v !== "") payload[k] = v;
+    }
+    const res = await makeZohoClient()
+      .as(context.userId)
+      .createRecords("Leads", [payload]);
+    const first = (res?.[0] ?? {}) as { details?: { id?: string }; code?: string; message?: string };
+    if (first.code && first.code !== "SUCCESS") {
+      throw new Error(first.message || "Failed to create lead");
+    }
+    const id = first.details?.id;
+    if (!id) throw new Error("Lead created but no id returned");
+    return { id };
+  });
+
 export const convertLead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => leadIdInput.parse(data))
