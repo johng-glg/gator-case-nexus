@@ -61,6 +61,12 @@ function CasesList() {
             <option value="">All stages</option>
             {stages.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
+          <Link
+            to="/practices/ssdi/intake"
+            className="ml-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+          >
+            + New SSDI client
+          </Link>
         </div>
       </div>
 

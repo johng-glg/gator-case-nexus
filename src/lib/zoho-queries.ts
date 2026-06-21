@@ -42,7 +42,8 @@ export type QueryName =
   | "engagementsByType"
   | "myEngagements"
   | "allContacts"
-  | "allLeads";
+  | "allLeads"
+  | "allReferrals";
 
 
 
@@ -148,6 +149,13 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               where id is not null
               order by Modified_Time desc
               limit 200`;
+    case "allReferrals":
+      return `select id, Name
+              from Referrals
+              where id is not null
+              order by Name asc
+              limit 200`;
   }
 }
+
 

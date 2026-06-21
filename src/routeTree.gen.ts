@@ -24,6 +24,7 @@ import { Route as AuthenticatedPracticesPracticeRouteImport } from './routes/_au
 import { Route as AuthenticatedEngagementsEngagementIdRouteImport } from './routes/_authenticated/engagements.$engagementId'
 import { Route as AuthenticatedPracticesSsdiIndexRouteImport } from './routes/_authenticated/practices.ssdi.index'
 import { Route as ApiZohoConnectCallbackRouteImport } from './routes/api/zoho/connect/callback'
+import { Route as AuthenticatedPracticesSsdiIntakeRouteImport } from './routes/_authenticated/practices.ssdi.intake'
 import { Route as AuthenticatedPracticesSsdiCasesIndexRouteImport } from './routes/_authenticated/practices.ssdi.cases.index'
 import { Route as AuthenticatedPracticesSsdiCasesCaseIdRouteImport } from './routes/_authenticated/practices.ssdi.cases.$caseId'
 
@@ -107,6 +108,12 @@ const ApiZohoConnectCallbackRoute = ApiZohoConnectCallbackRouteImport.update({
   path: '/api/zoho/connect/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedPracticesSsdiIntakeRoute =
+  AuthenticatedPracticesSsdiIntakeRouteImport.update({
+    id: '/intake',
+    path: '/intake',
+    getParentRoute: () => AuthenticatedPracticesSsdiRoute,
+  } as any)
 const AuthenticatedPracticesSsdiCasesIndexRoute =
   AuthenticatedPracticesSsdiCasesIndexRouteImport.update({
     id: '/cases/',
@@ -133,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/engagements/': typeof AuthenticatedEngagementsIndexRoute
+  '/practices/ssdi/intake': typeof AuthenticatedPracticesSsdiIntakeRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
   '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
@@ -150,6 +158,7 @@ export interface FileRoutesByTo {
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/engagements': typeof AuthenticatedEngagementsIndexRoute
+  '/practices/ssdi/intake': typeof AuthenticatedPracticesSsdiIntakeRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiIndexRoute
   '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
@@ -170,6 +179,7 @@ export interface FileRoutesById {
   '/_authenticated/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/_authenticated/engagements/': typeof AuthenticatedEngagementsIndexRoute
+  '/_authenticated/practices/ssdi/intake': typeof AuthenticatedPracticesSsdiIntakeRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/_authenticated/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
   '/_authenticated/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/practices/ssdi'
     | '/api/public/deadline-sweep'
     | '/engagements/'
+    | '/practices/ssdi/intake'
     | '/api/zoho/connect/callback'
     | '/practices/ssdi/'
     | '/practices/ssdi/cases/$caseId'
@@ -207,6 +218,7 @@ export interface FileRouteTypes {
     | '/practices/$practice'
     | '/api/public/deadline-sweep'
     | '/engagements'
+    | '/practices/ssdi/intake'
     | '/api/zoho/connect/callback'
     | '/practices/ssdi'
     | '/practices/ssdi/cases/$caseId'
@@ -226,6 +238,7 @@ export interface FileRouteTypes {
     | '/_authenticated/practices/ssdi'
     | '/api/public/deadline-sweep'
     | '/_authenticated/engagements/'
+    | '/_authenticated/practices/ssdi/intake'
     | '/api/zoho/connect/callback'
     | '/_authenticated/practices/ssdi/'
     | '/_authenticated/practices/ssdi/cases/$caseId'
@@ -347,6 +360,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiZohoConnectCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/practices/ssdi/intake': {
+      id: '/_authenticated/practices/ssdi/intake'
+      path: '/intake'
+      fullPath: '/practices/ssdi/intake'
+      preLoaderRoute: typeof AuthenticatedPracticesSsdiIntakeRouteImport
+      parentRoute: typeof AuthenticatedPracticesSsdiRoute
+    }
     '/_authenticated/practices/ssdi/cases/': {
       id: '/_authenticated/practices/ssdi/cases/'
       path: '/cases'
@@ -365,6 +385,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedPracticesSsdiRouteChildren {
+  AuthenticatedPracticesSsdiIntakeRoute: typeof AuthenticatedPracticesSsdiIntakeRoute
   AuthenticatedPracticesSsdiIndexRoute: typeof AuthenticatedPracticesSsdiIndexRoute
   AuthenticatedPracticesSsdiCasesCaseIdRoute: typeof AuthenticatedPracticesSsdiCasesCaseIdRoute
   AuthenticatedPracticesSsdiCasesIndexRoute: typeof AuthenticatedPracticesSsdiCasesIndexRoute
@@ -372,6 +393,8 @@ interface AuthenticatedPracticesSsdiRouteChildren {
 
 const AuthenticatedPracticesSsdiRouteChildren: AuthenticatedPracticesSsdiRouteChildren =
   {
+    AuthenticatedPracticesSsdiIntakeRoute:
+      AuthenticatedPracticesSsdiIntakeRoute,
     AuthenticatedPracticesSsdiIndexRoute: AuthenticatedPracticesSsdiIndexRoute,
     AuthenticatedPracticesSsdiCasesCaseIdRoute:
       AuthenticatedPracticesSsdiCasesCaseIdRoute,

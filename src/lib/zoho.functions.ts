@@ -37,6 +37,7 @@ const queryInput = z.object({
     "myEngagements",
     "allContacts",
     "allLeads",
+    "allReferrals",
   ]),
   params: z.record(z.string(), z.unknown()).optional(),
 });
@@ -175,3 +176,67 @@ export const getCaseTasks = createServerFn({ method: "POST" })
   });
 
 
+
+// ---------- Intake (new SSDI client wizard) ----------
+
+const conflictInput = z.object({
+  lastName: z.string().trim().max(200).optional(),
+  email: z.string().trim().max(320).optional(),
+});
+
+export const intakeConflictCheck = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => conflictInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { createIntakeService } = await import("@/integrations/zoho/intakeService");
+    const svc = createIntakeService({ zoho: makeZohoClient() });
+    const result = await svc.runConflictCheck(context.userId, data);
+    return toJson<{ status: "Cleared" | "Conflict found"; matches: ZohoRow[] }>(result);
+  });
+
+const intakeInput = z.object({
+  clientId: z.string().regex(/^[A-Za-z0-9_]+$/).optional(),
+  client: z.object({
+    firstName: z.string().trim().min(1).max(100),
+    lastName: z.string().trim().min(1).max(100),
+    email: z.string().trim().max(320).optional(),
+    mobile: z.string().trim().max(40).optional(),
+    homePhone: z.string().trim().max(40).optional(),
+    dob: z.string().optional(),
+    ssn: z.string().trim().max(20).optional(),
+    referralSourceId: z.string().regex(/^[A-Za-z0-9_]+$/).optional(),
+    leadSource: z.string().trim().max(100).optional(),
+    mailingStreet: z.string().trim().max(250).optional(),
+    mailingCity: z.string().trim().max(100).optional(),
+    mailingState: z.string().trim().max(100).optional(),
+    mailingZip: z.string().trim().max(20).optional(),
+  }),
+  conflict: z.object({
+    status: z.enum(["Cleared", "Conflict found"]),
+    note: z.string().trim().max(2000).optional(),
+  }),
+  ssdi: z.object({
+    claimType: z.enum(["DIB (Title II)", "SSI (Title XVI)", "Concurrent"]).optional(),
+    onset: z.string().optional(),
+    lastWorked: z.string().optional(),
+    dli: z.string().optional(),
+    disabilityType: z.enum(["Physical", "Mental", "Both"]).optional(),
+    primaryImpairment: z.string().trim().max(500).optional(),
+    secondaryImpairments: z.string().trim().max(2000).optional(),
+    ssaClaimNumber: z.string().trim().max(50).optional(),
+  }),
+});
+
+export const intakeCreate = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => intakeInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { createIntakeService } = await import("@/integrations/zoho/intakeService");
+    const client = makeZohoClient();
+    const actorZohoUserId = (await client.as(context.userId).currentUserId()) ?? undefined;
+    const svc = createIntakeService({ zoho: client });
+    const result = await svc.createIntake(context.userId, { ...data, actorZohoUserId });
+    return result;
+  });
