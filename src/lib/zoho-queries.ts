@@ -13,7 +13,8 @@ const ID = /^[A-Za-z0-9_-]+$/;
 
 function safeId(v: unknown): string {
   if (typeof v !== "string" || !ID.test(v)) throw new Error("Invalid id parameter.");
-  return v;
+  // COQL requires id comparisons to be single-quoted string literals.
+  return `'${v}'`;
 }
 
 /** Quote a string for COQL only if it is in the provided whitelist. */
