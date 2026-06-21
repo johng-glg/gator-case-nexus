@@ -8,6 +8,7 @@ import { StageRail } from "@/components/cases/StageRail";
 import { AdvanceStageDialog } from "@/components/cases/AdvanceStageDialog";
 import { DeadlinePanel } from "@/components/cases/DeadlinePanel";
 import { TasksPanel } from "@/components/cases/TasksPanel";
+import { normalizeStage } from "@/integrations/zoho/lifecycle";
 import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
