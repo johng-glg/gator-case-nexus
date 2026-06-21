@@ -184,6 +184,22 @@ function CaseDetail() {
         </div>
       </header>
 
+      {isClosed && (
+        <ClosedCaseBanner
+          closureReason={(record.Closure_Reason as string) ?? null}
+          closureDate={(record.Final_Disposition_Date as string) ?? null}
+        />
+      )}
+
+      {!isClosed && (
+        <DenialNextStepBanner
+          stage={stage}
+          deadline={deadlineISO}
+          daysRemaining={daysToDeadline}
+          onAct={(nextStage, prefill) => openAdvance(nextStage, prefill)}
+        />
+      )}
+
       <section className="rounded-lg border border-border bg-card p-4">
         <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Lifecycle</div>
         <StageRail current={stage} />
