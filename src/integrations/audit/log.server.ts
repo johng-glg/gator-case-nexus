@@ -31,9 +31,13 @@ export interface LogActivityInput {
 }
 
 export async function logCaseActivity(input: LogActivityInput): Promise<void> {
+  if (!input.caseId && !input.engagementId) {
+    console.error("[audit] refusing to log activity without case or engagement scope", input.action);
+    return;
+  }
   try {
     await supabaseAdmin.from("case_activity_log").insert({
-      case_id: input.caseId,
+      case_id: input.caseId ?? null,
       engagement_id: input.engagementId ?? null,
       actor_user_id: input.actorUserId ?? null,
       actor_email: input.actorEmail ?? null,
