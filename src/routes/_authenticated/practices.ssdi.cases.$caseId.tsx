@@ -96,9 +96,10 @@ function CaseDetail() {
         queryClient.invalidateQueries({ queryKey: ["deadlinesAtRisk"] }),
         queryClient.invalidateQueries({ queryKey: ["deadlinesAll"] }),
       ]);
-      if (!r.recomputed) toast.message(r.reason ?? "Nothing to recompute.");
-      else if (r.changed) toast.success(`Deadline recomputed: ${r.deadline} (${r.days}d).`);
-      else toast.message(`Already up to date: ${r.deadline} (${r.days}d).`);
+      const changedKeys = Object.keys(r).filter((k) => k !== "id");
+      if (changedKeys.length === 0) toast.message("Already up to date.");
+      else if (r.Deadline_Date) toast.success(`Deadline recomputed: ${r.Deadline_Date} (${r.Days_To_Deadline ?? "—"}d).`);
+      else toast.success("Deadline fields refreshed.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
