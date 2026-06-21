@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -12,6 +12,8 @@ import {
   Scale,
   Lock,
   Settings,
+  Menu,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -36,79 +38,131 @@ const FIRM_NAV = [
 
 export function AppShell({ userEmail, zohoConnected, onSignOut, signingOut, children }: Props) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  return (
-    <div className="h-screen flex bg-background text-foreground overflow-hidden">
-      <aside className="w-60 shrink-0 border-r border-border bg-sidebar flex flex-col">
-        <div className="h-16 flex items-center gap-2.5 px-5 border-b border-border">
-          <div className="h-8 w-8 rounded-md bg-primary/15 ring-1 ring-primary/30 flex items-center justify-center">
+  const [navOpen, setNavOpen] = useState(false);
+
+  // Close mobile nav on route change
+  useEffect(() => { setNavOpen(false); }, [pathname]);
+
+  // Lock body scroll while mobile nav is open
+  useEffect(() => {
+    if (!navOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = prev; };
+  }, [navOpen]);
+
+  const sidebar = (
+    <>
+      <div className="h-16 flex items-center justify-between gap-2.5 px-5 border-b border-border">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="h-8 w-8 shrink-0 rounded-md bg-primary/15 ring-1 ring-primary/30 flex items-center justify-center">
             <Scale className="h-4 w-4 text-primary" />
           </div>
-          <div className="leading-tight">
-            <div className="font-display text-lg text-primary">Gator</div>
-            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+          <div className="leading-tight min-w-0">
+            <div className="font-display text-lg text-primary truncate">Gator</div>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground truncate">
               Case platform
             </div>
           </div>
         </div>
+        <button
+          type="button"
+          className="md:hidden -mr-2 p-2 rounded-md text-muted-foreground hover:text-foreground"
+          onClick={() => setNavOpen(false)}
+          aria-label="Close navigation"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      </div>
 
-        <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-5">
-          <NavGroup label="Firm-wide">
-            {FIRM_NAV.map((n) => {
-              const active = pathname === n.to || pathname.startsWith(n.to + "/");
-              const Icon = n.icon;
+      <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-5">
+        <NavGroup label="Firm-wide">
+          {FIRM_NAV.map((n) => {
+            const active = pathname === n.to || pathname.startsWith(n.to + "/");
+            const Icon = n.icon;
+            return (
+              <NavLink key={n.to} to={n.to} active={active}>
+                <Icon className="h-4 w-4" />
+                {n.label}
+              </NavLink>
+            );
+          })}
+        </NavGroup>
+
+        <NavGroup label="Practice areas">
+          {PRACTICES.map((p) => {
+            const to = `/practices/${p.slug}`;
+            const active = pathname === to || pathname.startsWith(to + "/");
+            if (!p.active) {
               return (
-                <NavLink key={n.to} to={n.to} active={active}>
-                  <Icon className="h-4 w-4" />
-                  {n.label}
-                </NavLink>
+                <div
+                  key={p.slug}
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground/60 cursor-not-allowed"
+                  title="Coming soon"
+                >
+                  <Lock className="h-3.5 w-3.5" />
+                  <span className="flex-1">{p.label}</span>
+                  <span className="text-[9px] uppercase tracking-wider">soon</span>
+                </div>
               );
-            })}
-          </NavGroup>
+            }
+            return (
+              <NavLink key={p.slug} to={to} active={active}>
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
+                {p.label}
+              </NavLink>
+            );
+          })}
+        </NavGroup>
+      </nav>
 
-          <NavGroup label="Practice areas">
-            {PRACTICES.map((p) => {
-              const to = `/practices/${p.slug}`;
-              const active = pathname === to || pathname.startsWith(to + "/");
-              if (!p.active) {
-                return (
-                  <div
-                    key={p.slug}
-                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground/60 cursor-not-allowed"
-                    title="Coming soon"
-                  >
-                    <Lock className="h-3.5 w-3.5" />
-                    <span className="flex-1">{p.label}</span>
-                    <span className="text-[9px] uppercase tracking-wider">soon</span>
-                  </div>
-                );
-              }
-              return (
-                <NavLink key={p.slug} to={to} active={active}>
-                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" />
-                  {p.label}
-                </NavLink>
-              );
-            })}
-          </NavGroup>
-        </nav>
+      <div className="p-2 border-t border-border">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start text-muted-foreground hover:text-foreground"
+          onClick={onSignOut}
+          disabled={signingOut}
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          Sign out
+        </Button>
+      </div>
+    </>
+  );
 
-        <div className="p-2 border-t border-border">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full justify-start text-muted-foreground hover:text-foreground"
-            onClick={onSignOut}
-            disabled={signingOut}
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign out
-          </Button>
-        </div>
+  return (
+    <div className="h-screen flex bg-background text-foreground overflow-hidden">
+      {/* Desktop sidebar */}
+      <aside className="hidden md:flex w-60 shrink-0 border-r border-border bg-sidebar flex-col">
+        {sidebar}
       </aside>
 
+      {/* Mobile drawer */}
+      {navOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setNavOpen(false)}
+            aria-hidden="true"
+          />
+          <aside className="relative w-72 max-w-[85vw] bg-sidebar border-r border-border flex flex-col shadow-xl">
+            {sidebar}
+          </aside>
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 border-b border-border bg-card/40 backdrop-blur flex items-center justify-between px-6">
-          <div className="text-sm text-muted-foreground truncate">{userEmail}</div>
+        <header className="h-14 md:h-16 border-b border-border bg-card/40 backdrop-blur flex items-center gap-3 px-3 md:px-6">
+          <button
+            type="button"
+            className="md:hidden -ml-1 p-2 rounded-md text-muted-foreground hover:text-foreground"
+            onClick={() => setNavOpen(true)}
+            aria-label="Open navigation"
+          >
+            <Menu className="h-5 w-5" />
+          </button>
+          <div className="text-sm text-muted-foreground truncate flex-1 min-w-0">{userEmail}</div>
           <ZohoStatusPill connected={zohoConnected} />
         </header>
         <main className="flex-1 overflow-auto">{children}</main>
@@ -147,19 +201,21 @@ function NavLink({ to, active, children }: { to: string; active: boolean; childr
 function ZohoStatusPill({ connected }: { connected: boolean }) {
   if (connected) {
     return (
-      <div className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-xs text-muted-foreground">
+      <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-xs text-muted-foreground">
         <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-        Zoho connected
+        <span className="hidden sm:inline">Zoho connected</span>
+        <span className="sm:hidden">Zoho</span>
       </div>
     );
   }
   return (
     <Link
       to="/connect-zoho"
-      className="inline-flex items-center gap-1.5 rounded-full border border-destructive/50 bg-destructive/10 px-2.5 py-1 text-xs text-destructive-foreground hover:bg-destructive/20"
+      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-destructive/50 bg-destructive/10 px-2.5 py-1 text-xs text-destructive-foreground hover:bg-destructive/20"
     >
       <AlertTriangle className="h-3.5 w-3.5" />
-      Connect Zoho
+      <span className="hidden sm:inline">Connect Zoho</span>
+      <span className="sm:hidden">Connect</span>
     </Link>
   );
 }
