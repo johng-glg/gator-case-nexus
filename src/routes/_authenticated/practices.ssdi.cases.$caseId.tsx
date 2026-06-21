@@ -128,7 +128,24 @@ function CaseDetail() {
           >
             <ChevronLeft className="h-4 w-4" /> Back to SSDI cases
           </Link>
-          <Button onClick={() => setDialogOpen(true)}>Advance stage</Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                try {
+                  await seedTestCase({ data: { caseId } });
+                  await queryClient.invalidateQueries({ queryKey: ["case", caseId] });
+                  toast.success("Test data populated.");
+                } catch (e) {
+                  toast.error(e instanceof Error ? e.message : String(e));
+                }
+              }}
+            >
+              Seed test data
+            </Button>
+            <Button onClick={() => setDialogOpen(true)}>Advance stage</Button>
+          </div>
         </div>
       </header>
 
