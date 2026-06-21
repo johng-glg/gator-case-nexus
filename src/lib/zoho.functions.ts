@@ -141,5 +141,4 @@ export const getCaseTasks = createServerFn({ method: "POST" })
     return { rows: toJson<ZohoRow[]>(rows) };
   });
 
-  });
 

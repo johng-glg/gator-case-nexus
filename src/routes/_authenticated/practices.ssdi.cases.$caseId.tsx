@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { caseAdvance, completeTask, getCase, zohoQuery } from "@/lib/zoho.functions";
+import { caseAdvance, completeTask, getCase, getCaseTasks, zohoQuery } from "@/lib/zoho.functions";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { StageRail } from "@/components/cases/StageRail";
