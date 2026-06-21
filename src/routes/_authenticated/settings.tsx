@@ -24,6 +24,7 @@ function SettingsLayout() {
           { to: "/settings/users", label: "Users & Roles", exact: false },
           { to: "/settings/connections", label: "Connections", exact: false },
           { to: "/settings/deadline-sweep", label: "Deadline Sweep", exact: false },
+          { to: "/settings/stage-requirements", label: "Stage Requirements", exact: false },
           { to: "/settings/changelog", label: "Change Log", exact: false },
         ]
       : []),
