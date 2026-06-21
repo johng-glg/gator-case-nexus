@@ -298,9 +298,6 @@ function NewLeadDialog({
                 {PRACTICE_CHOICES.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
             </LField>
-            <LField label="Company">
-              <input value={form.Company} onChange={upd("Company")} maxLength={200} className={inputCls} />
-            </LField>
           </div>
           <LField label="Notes">
             <textarea value={form.Description} onChange={upd("Description")} rows={3} maxLength={2000} className={cn(inputCls, "resize-none")} />
