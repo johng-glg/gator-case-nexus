@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ClientAuthRouteImport } from './routes/client-auth'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
@@ -43,6 +44,11 @@ import { Route as AuthenticatedPracticesSsdiReportsOutcomesRouteImport } from '.
 import { Route as AuthenticatedPracticesSsdiCasesCaseIdRouteImport } from './routes/_authenticated/practices.ssdi.cases.$caseId'
 import { Route as AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRouteImport } from './routes/_authenticated/practices.ssdi.cases.$caseId.fee-petition'
 
+const ClientAuthRoute = ClientAuthRouteImport.update({
+  id: '/client-auth',
+  path: '/client-auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -235,6 +241,7 @@ const AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/client-auth': typeof ClientAuthRoute
   '/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -269,6 +276,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/client-auth': typeof ClientAuthRoute
   '/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -303,6 +311,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/client-auth': typeof ClientAuthRoute
   '/_authenticated/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -339,6 +348,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/client-auth'
     | '/connect-zoho'
     | '/dashboard'
     | '/deadlines'
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/client-auth'
     | '/connect-zoho'
     | '/dashboard'
     | '/deadlines'
@@ -406,6 +417,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/client-auth'
     | '/_authenticated/connect-zoho'
     | '/_authenticated/dashboard'
     | '/_authenticated/deadlines'
@@ -442,6 +454,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ClientAuthRoute: typeof ClientAuthRoute
   ApiPublicDeadlineSweepRoute: typeof ApiPublicDeadlineSweepRoute
   ApiPublicWebhooksZohoSignRoute: typeof ApiPublicWebhooksZohoSignRoute
   ApiZohoConnectCallbackRoute: typeof ApiZohoConnectCallbackRoute
@@ -449,6 +462,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/client-auth': {
+      id: '/client-auth'
+      path: '/client-auth'
+      fullPath: '/client-auth'
+      preLoaderRoute: typeof ClientAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -795,6 +815,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ClientAuthRoute: ClientAuthRoute,
   ApiPublicDeadlineSweepRoute: ApiPublicDeadlineSweepRoute,
   ApiPublicWebhooksZohoSignRoute: ApiPublicWebhooksZohoSignRoute,
   ApiZohoConnectCallbackRoute: ApiZohoConnectCallbackRoute,
