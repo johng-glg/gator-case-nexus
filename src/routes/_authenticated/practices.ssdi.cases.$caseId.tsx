@@ -10,6 +10,7 @@ import { DeadlinePanel } from "@/components/cases/DeadlinePanel";
 import { TasksPanel } from "@/components/cases/TasksPanel";
 import { DenialNextStepBanner } from "@/components/cases/DenialNextStepBanner";
 import { ClosedCaseBanner } from "@/components/cases/ClosedCaseBanner";
+import { DocumentChecklist } from "@/components/cases/DocumentChecklist";
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
 import { useStageRequirements } from "@/hooks/use-stage-requirements";
 import { ChevronLeft, AlertTriangle } from "lucide-react";
@@ -251,6 +252,10 @@ function CaseDetail() {
         </Panel>
 
         <TasksPanel caseId={caseId} />
+
+        <div className="md:col-span-2">
+          <DocumentChecklist caseId={caseId} stage={stage} />
+        </div>
       </div>
 
       <section>
