@@ -71,9 +71,10 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               where Is_Closed = false
               group by Current_Stage`;
     case "pipelineByPractice":
-      return `select Engagement_Type, Engagement_Status, count(id)
+      // Aggregate client-side; COQL aggregate+group_by combos are brittle across orgs
+      return `select Engagement_Type, Engagement_Status
               from Engagements
-              group by Engagement_Type, Engagement_Status`;
+              order by Modified_Time desc`;
     case "costsByEngagement":
       return `select id, Name, Amount, Cost_Type, Engagement
               from Costs
