@@ -234,6 +234,16 @@ export function createZohoClient(cfg: ZohoConfig) {
         return r?.users?.[0]?.id ?? null;
       },
 
+      /** List active Zoho users (for task assignment, etc.). */
+      async listActiveUsers(): Promise<Array<{ id: string; full_name: string; email: string }>> {
+        const r = await request<{ users?: Array<{ id?: string; full_name?: string; email?: string }> }>(
+          actorKey, "GET", "/users?type=ActiveUsers",
+        );
+        return (r?.users ?? [])
+          .filter((u) => !!u.id)
+          .map((u) => ({ id: u.id!, full_name: u.full_name ?? u.email ?? u.id!, email: u.email ?? "" }));
+      },
+
 
       /** Create up to any number of records; chunked to 100/call. Attributed to this actor. */
       async createRecords(module: string, records: ZohoRecord[]): Promise<unknown[]> {

@@ -30,6 +30,7 @@ export interface CaseServiceDeps {
 const READ_FIELDS = [
   "Current_Stage", "Notice_Date", "Documented_Receipt_Date", "Date_Opened",
   "ALJ_Hearing_Scheduled_Date", "Notice_of_Award_Date", "Release_Signed_Date",
+  "Assigned_Attorney",
 ];
 
 /** Fields the sweep/recompute read to re-derive the deadline + counts. */
@@ -114,12 +115,21 @@ export function createCaseService(deps: CaseServiceDeps) {
     await api.updateRecords(MODULE, [update]);
 
     if (effects?.tasks?.length) {
-      const tasks = effects.tasks.map((t) => ({
-        Subject: t.label,
-        Due_Date: resolveDate(t.due, { deadline, fields: merged }),
-        What_Id: { id: caseId },
-        $se_module: MODULE,
-      })).filter((t) => t.Due_Date);
+      // Lookup field on SSDI_Cases. Zoho returns either an object {id,name} or a bare id.
+      const aa = merged.Assigned_Attorney as { id?: string } | string | undefined;
+      const attorneyId = typeof aa === "string" ? aa : aa?.id;
+      const tasks = effects.tasks.map((t) => {
+        const task: ZohoRecord = {
+          Subject: t.label,
+          Due_Date: resolveDate(t.due, { deadline, fields: merged }),
+          What_Id: { id: caseId },
+          $se_module: MODULE,
+          Status: "Not Started",
+          Priority: "High",
+        };
+        if (attorneyId) task.Owner = { id: attorneyId };
+        return task;
+      }).filter((t) => t.Due_Date);
       if (tasks.length) await api.createRecords("Tasks", tasks);
     }
 

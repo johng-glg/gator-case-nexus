@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { caseAdvance, completeTask, getCase, getCaseTasks, zohoQuery } from "@/lib/zoho.functions";
+import { caseAdvance, getCase, zohoQuery } from "@/lib/zoho.functions";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { StageRail } from "@/components/cases/StageRail";
 import { AdvanceStageDialog } from "@/components/cases/AdvanceStageDialog";
 import { DeadlinePanel } from "@/components/cases/DeadlinePanel";
-import { ChevronLeft, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { TasksPanel } from "@/components/cases/TasksPanel";
+import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/practices/ssdi/cases/$caseId")({
@@ -20,8 +21,6 @@ function CaseDetail() {
   const fetchCase = useServerFn(getCase);
   const runQuery = useServerFn(zohoQuery);
   const advance = useServerFn(caseAdvance);
-  const finishTask = useServerFn(completeTask);
-  const fetchCaseTasks = useServerFn(getCaseTasks);
 
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -72,14 +71,6 @@ function CaseDetail() {
           undefined)
       : undefined;
 
-  const tasksQ = useQuery({
-    queryKey: ["tasks", caseId],
-    enabled: validCaseId,
-    queryFn: () => fetchCaseTasks({ data: { caseId } }),
-  });
-
-
-
   async function onAdvance(toStage: string, fields: Record<string, unknown>) {
     const result = await advance({ data: { caseId, toStage, fields } });
     await Promise.all([
@@ -93,16 +84,6 @@ function CaseDetail() {
         ? `Moved to "${toStage}". Deadline: ${result.deadline}.`
         : `Moved to "${toStage}".`,
     );
-  }
-
-  async function onCompleteTask(taskId: string) {
-    try {
-      await finishTask({ data: { taskId } });
-      await queryClient.invalidateQueries({ queryKey: ["tasks", caseId] });
-      toast.success("Task marked complete.");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e));
-    }
   }
 
 
@@ -199,28 +180,7 @@ function CaseDetail() {
           </div>
         </Panel>
 
-        <Panel title="Tasks">
-          {tasksQ.isLoading && <p className="text-xs text-muted-foreground">Loading…</p>}
-          {tasksQ.data && tasksQ.data.rows.length === 0 && (
-            <p className="text-xs text-muted-foreground">No open tasks.</p>
-          )}
-          <ul className="space-y-2">
-            {tasksQ.data?.rows.map((t) => {
-              const id = String((t as Record<string, unknown>).id ?? "");
-              return (
-                <li key={id} className="flex items-start justify-between gap-2 border-b border-border/50 pb-2 last:border-0">
-                  <div>
-                    <div className="text-sm">{String(t.Subject ?? "—")}</div>
-                    <div className="text-xs text-muted-foreground">Due {String(t.Due_Date ?? "—")}</div>
-                  </div>
-                  <Button size="sm" variant="ghost" onClick={() => onCompleteTask(id)}>
-                    <CheckCircle2 className="h-4 w-4 mr-1" /> Done
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
-        </Panel>
+        <TasksPanel caseId={caseId} />
       </div>
 
       <section>
