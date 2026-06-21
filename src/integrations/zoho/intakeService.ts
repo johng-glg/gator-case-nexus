@@ -147,15 +147,24 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
     const t = today();
     const actor = undefined as { id: string } | undefined; // optional
 
-    // Client (Contact)
-    const cRes = await api.createRecords("Contacts", [clean({
-      First_Name: firstName, Last_Name: lastName,
-      Email: email, Mobile: lead.Mobile, Home_Phone: lead.Phone,
-      Contact_Type: "Client", Lead_Source: lead.Lead_Source,
-      Mailing_Street: lead.Street, Mailing_City: lead.City,
-      Mailing_State: lead.State, Mailing_Zip: lead.Zip_Code,
-    })]);
-    const clientId = idOf(cRes[0]);
+    // If an existing Contact matches by email, reuse it instead of creating a duplicate.
+    const emailMatch = email
+      ? matches.find((m) => (m.Email ?? "").toLowerCase() === email.toLowerCase())
+      : undefined;
+
+    let clientId: string;
+    if (emailMatch) {
+      clientId = emailMatch.id;
+    } else {
+      const cRes = await api.createRecords("Contacts", [clean({
+        First_Name: firstName, Last_Name: lastName,
+        Email: email, Mobile: lead.Mobile, Home_Phone: lead.Phone,
+        Contact_Type: "Client", Lead_Source: lead.Lead_Source,
+        Mailing_Street: lead.Street, Mailing_City: lead.City,
+        Mailing_State: lead.State, Mailing_Zip: lead.Zip_Code,
+      })]);
+      clientId = idOf(cRes[0]);
+    }
 
     // Engagement (SSDI)
     const engRes = await api.createRecords("Engagements", [clean({
