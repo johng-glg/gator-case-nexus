@@ -230,6 +230,33 @@ export const caseRecomputeDeadline = createServerFn({ method: "POST" })
     return await svc.recomputeDeadline(context.userId, data.caseId);
   });
 
+const updateCaseDatesInput = z.object({
+  caseId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  Notice_Date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  Documented_Receipt_Date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+});
+
+/**
+ * Update one or both deadline-driving dates on a case, then recompute the deadline.
+ * Pass `null` for either field to clear it.
+ */
+export const updateCaseDates = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => updateCaseDatesInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { createCaseService } = await import("@/integrations/zoho/caseService");
+    const client = makeZohoClient();
+    const payload: Record<string, unknown> = { id: data.caseId };
+    if (data.Notice_Date !== undefined) payload.Notice_Date = data.Notice_Date;
+    if (data.Documented_Receipt_Date !== undefined) payload.Documented_Receipt_Date = data.Documented_Receipt_Date;
+    if (Object.keys(payload).length === 1) return { ok: true, changed: false };
+    await client.as(context.userId).updateRecords("SSDI_Cases", [payload]);
+    const svc = createCaseService({ zoho: client });
+    const recomputed = await svc.recomputeDeadline(context.userId, data.caseId);
+    return { ok: true, changed: true, recomputed };
+  });
+
 const taskIdInput = z.object({ taskId: z.string().regex(/^[A-Za-z0-9_]+$/) });
 
 export const completeTask = createServerFn({ method: "POST" })

@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { caseAdvance, caseRecomputeDeadline, completeTask, getCase, getCaseTasks, zohoQuery } from "@/lib/zoho.functions";
+import { caseAdvance, completeTask, getCase, getCaseTasks, zohoQuery } from "@/lib/zoho.functions";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { StageRail } from "@/components/cases/StageRail";
 import { AdvanceStageDialog } from "@/components/cases/AdvanceStageDialog";
-import { ChevronLeft, AlertTriangle, CheckCircle2, RefreshCw } from "lucide-react";
+import { DeadlinePanel } from "@/components/cases/DeadlinePanel";
+import { ChevronLeft, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/practices/ssdi/cases/$caseId")({
@@ -21,8 +22,6 @@ function CaseDetail() {
   const advance = useServerFn(caseAdvance);
   const finishTask = useServerFn(completeTask);
   const fetchCaseTasks = useServerFn(getCaseTasks);
-  const recomputeDeadline = useServerFn(caseRecomputeDeadline);
-  const [recomputing, setRecomputing] = useState(false);
 
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -106,35 +105,12 @@ function CaseDetail() {
     }
   }
 
-  async function onRecomputeDeadline() {
-    setRecomputing(true);
-    try {
-      const r = (await recomputeDeadline({ data: { caseId } })) as Record<string, unknown>;
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["case", caseId] }),
-        queryClient.invalidateQueries({ queryKey: ["deadlinesAtRisk"] }),
-        queryClient.invalidateQueries({ queryKey: ["deadlinesAll"] }),
-      ]);
-      const changedKeys = Object.keys(r).filter((k) => k !== "id");
-      const newDeadline = r.Deadline_Date as string | undefined;
-      const newDays = r.Days_To_Deadline as number | undefined;
-      if (changedKeys.length === 0) toast.message("Already up to date.");
-      else if (newDeadline) toast.success(`Deadline recomputed: ${newDeadline} (${newDays ?? "—"}d).`);
-      else toast.success("Deadline fields refreshed.");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : String(e));
-    } finally {
-      setRecomputing(false);
-    }
-  }
 
   if (caseQ.isLoading) return <div className="p-8 text-sm text-muted-foreground">Loading case…</div>;
   if (caseQ.error) return <div className="p-8 text-sm text-destructive-foreground">{(caseQ.error as Error).message}</div>;
   if (!record) return <div className="p-8 text-sm text-muted-foreground">Case not found.</div>;
 
   const stage = String(record.Current_Stage ?? "");
-  const days = record.Days_To_Deadline;
-  const atRisk = record.Deadline_At_Risk === true;
   const releaseExpiringSoon = record.Release_Expiring_Soon === true;
 
   const backPay = typeof record.Back_Pay_Amount === "number" ? record.Back_Pay_Amount : null;
@@ -181,26 +157,8 @@ function CaseDetail() {
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Panel title="Deadline">
-          <Row k="Active type" v={record.Active_Deadline_Type} />
-          <Row k="Deadline date" v={record.Deadline_Date} />
-          <Row k="Days to deadline" v={typeof days === "number" ? `${days}` : "—"} />
-          <div className="pt-2 flex items-center justify-between gap-2">
-            {atRisk ? (
-              <span className="inline-flex items-center gap-1 rounded-md bg-destructive/10 border border-destructive/30 px-2 py-1 text-xs font-medium text-destructive">
-                <AlertTriangle className="h-3 w-3" /> At risk
-              </span>
-            ) : (
-              <span className="text-xs text-muted-foreground">
-                Derived from Notice Date — edit the notice, then recompute.
-              </span>
-            )}
-            <Button size="sm" variant="outline" onClick={onRecomputeDeadline} disabled={recomputing}>
-              <RefreshCw className={`h-3.5 w-3.5 mr-1 ${recomputing ? "animate-spin" : ""}`} />
-              Recompute
-            </Button>
-          </div>
-        </Panel>
+        <DeadlinePanel caseId={caseId} record={record} />
+
 
         <Panel title="SSA case data">
           <Row k="Sub-status" v={record.Sub_Status} />
