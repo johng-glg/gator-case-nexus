@@ -69,7 +69,7 @@ export const getCaseActivity = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false })
       .limit(limit);
     if (error) throw new Error(error.message);
-    return { rows: (rows ?? []) as ActivityRow[] };
+    return { rows: toRows(rows) };
   });
 
 const firmActivityInput = z.object({
@@ -93,5 +93,5 @@ export const getFirmActivity = createServerFn({ method: "POST" })
     if (data.actorEmail) q = q.eq("actor_email", data.actorEmail.toLowerCase());
     const { data: rows, error } = await q;
     if (error) throw new Error(error.message);
-    return { rows: (rows ?? []) as ActivityRow[] };
+    return { rows: toRows(rows) };
   });
