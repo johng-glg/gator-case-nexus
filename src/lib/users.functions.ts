@@ -20,6 +20,7 @@ export type AdminUser = {
   created_at: string;
   last_sign_in_at: string | null;
   roles: Array<"admin" | "staff">;
+  zohoConnected: boolean;
 };
 
 export const listUsers = createServerFn({ method: "GET" })
@@ -42,12 +43,18 @@ export const listUsers = createServerFn({ method: "GET" })
       arr.push(r.role as "admin" | "staff");
       roleMap.set(r.user_id, arr);
     }
+    const { data: zoho, error: zErr } = await supabaseAdmin
+      .from("zoho_tokens")
+      .select("user_id");
+    if (zErr) throw new Error(zErr.message);
+    const zohoSet = new Set<string>((zoho ?? []).map((z: any) => z.user_id));
     return list.users.map((u) => ({
       id: u.id,
       email: u.email ?? null,
       created_at: u.created_at,
       last_sign_in_at: u.last_sign_in_at ?? null,
       roles: roleMap.get(u.id) ?? [],
+      zohoConnected: zohoSet.has(u.id),
     }));
   });
 
