@@ -48,7 +48,7 @@ function Engagements() {
   });
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-5">
+    <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5">
       <div className="flex items-baseline justify-between flex-wrap gap-4">
         <div>
           <h1 className="font-display text-2xl text-foreground">Engagements</h1>
