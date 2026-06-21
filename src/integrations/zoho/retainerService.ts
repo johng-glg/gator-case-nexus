@@ -31,7 +31,7 @@ const ENGAGEMENTS = "Engagements";
 const CONTACTS = "Contacts";
 
 /** Engagement.Retainer_Status values. */
-export type RetainerStatus = "Not sent" | "Sent" | "Signed" | "Declined" | "Expired";
+export type RetainerStatus = "Not sent" | "Sent" | "Viewed" | "Signed" | "Declined" | "Expired";
 
 export interface SignSendResult {
   /** Zoho Sign request id — persisted to Engagement.Retainer_ID; the webhook joins back on it. */
