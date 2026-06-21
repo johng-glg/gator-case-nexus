@@ -27,7 +27,8 @@ export type FirmConnectionStatus = {
   refreshTail?: string;
   lastRotatedAt?: string;
   lastVerifiedAt?: string;
-  configured: boolean; // client_id + secret present in env
+  configured: boolean; // client_id + secret present (DB or env)
+  clientIdTail?: string; // last 6 of client_id, for display
 };
 
 export const listFirmConnections = createServerFn({ method: "GET" })
@@ -37,13 +38,38 @@ export const listFirmConnections = createServerFn({ method: "GET" })
     const { getCredentialsService, getFirmConnections } = await import(
       "@/integrations/zoho/credentialsClient.server"
     );
-    const creds = getCredentialsService();
-    const conns = getFirmConnections();
+    const creds = await getCredentialsService();
+    const conns = await getFirmConnections();
     const statuses = await creds.list();
     return statuses.map((s) => {
       const c = conns.find((x) => x.key === s.key)!;
-      return { ...s, configured: !!(c.clientId && c.clientSecret) };
+      return {
+        ...s,
+        configured: !!(c.clientId && c.clientSecret),
+        clientIdTail: c.clientId ? c.clientId.slice(-6) : undefined,
+      };
     });
+  });
+
+export const saveFirmClientCreds = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (d: { key: "SIGN_FIRM" | "SERVICE"; clientId: string; clientSecret: string }) =>
+      z
+        .object({
+          key: KEY,
+          clientId: z.string().min(1),
+          clientSecret: z.string().min(1),
+        })
+        .parse(d),
+  )
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context as any);
+    const { saveFirmClientCredentials } = await import(
+      "@/integrations/zoho/credentialsClient.server"
+    );
+    await saveFirmClientCredentials(data.key, data.clientId.trim(), data.clientSecret.trim());
+    return { ok: true };
   });
 
 export const exchangeFirmGrantCode = createServerFn({ method: "POST" })
@@ -56,7 +82,7 @@ export const exchangeFirmGrantCode = createServerFn({ method: "POST" })
     const { getCredentialsService } = await import(
       "@/integrations/zoho/credentialsClient.server"
     );
-    const creds = getCredentialsService();
+    const creds = await getCredentialsService();
     await creds.exchangeGrantCode(data.key, data.code);
     return { ok: true };
   });
@@ -71,7 +97,8 @@ export const testFirmConnection = createServerFn({ method: "POST" })
     const { getCredentialsService } = await import(
       "@/integrations/zoho/credentialsClient.server"
     );
-    return (await getCredentialsService().test(data.key));
+    const creds = await getCredentialsService();
+    return creds.test(data.key);
   });
 
 export const revokeFirmConnection = createServerFn({ method: "POST" })
@@ -84,6 +111,7 @@ export const revokeFirmConnection = createServerFn({ method: "POST" })
     const { getCredentialsService } = await import(
       "@/integrations/zoho/credentialsClient.server"
     );
-    await getCredentialsService().revoke(data.key);
+    const creds = await getCredentialsService();
+    await creds.revoke(data.key);
     return { ok: true };
   });
