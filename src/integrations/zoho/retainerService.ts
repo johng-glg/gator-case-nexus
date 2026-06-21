@@ -190,5 +190,6 @@ export function parseSignWebhook(payload: unknown): { requestId?: string; status
   if (key === "requestexpired"   || key === "expired")         return { requestId, status: "Expired" };
   if (key === "requestrecalled"  || key === "recalled" ||
       key === "requestwithdrawn" || key === "withdrawn")       return { requestId, status: "Not sent" as RetainerStatus };
+  if (key === "requestviewed"    || key === "viewed")          return { requestId, status: "Viewed" };
   return { requestId, status: undefined };
 }
