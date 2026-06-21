@@ -84,13 +84,33 @@ function Leads() {
             One pipeline across all practice areas. Qualify, then convert into an engagement.
           </p>
         </div>
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search name, email, source…"
-          className="w-64 rounded-md border border-border bg-input px-3 py-1.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search name, email, source…"
+            className="w-64 rounded-md border border-border bg-input px-3 py-1.5 text-sm placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <button
+            type="button"
+            onClick={() => setOpenNew(true)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+          >
+            <Plus className="h-4 w-4" /> New lead
+          </button>
+        </div>
       </div>
+
+      <NewLeadDialog
+        open={openNew}
+        onOpenChange={setOpenNew}
+        defaultPractice={practice === "All" ? undefined : (practice as Exclude<Practice, "All">)}
+        onCreated={(id) => {
+          qc.invalidateQueries({ queryKey: ["allLeads"] });
+          setOpenNew(false);
+          navigate({ to: "/leads/$leadId", params: { leadId: id } });
+        }}
+      />
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         <FilterGroup label="Practice" value={practice} options={PRACTICES} onChange={setPractice} />
