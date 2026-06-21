@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getContact, getEngagement, retainerSend, zohoQuery } from "@/lib/zoho.functions";
-import { ChevronLeft, AlertTriangle, Loader2 } from "lucide-react";
+import { ChevronLeft, AlertTriangle, Loader2, Check, CircleDot, Circle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -278,30 +278,24 @@ function RetainerPanel({
   onSend: () => void;
   sending: boolean;
 }) {
-  const tone =
-    status === "Signed" ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-500"
-    : status === "Sent" ? "bg-amber-500/10 border-amber-500/40 text-amber-500"
-    : status === "Declined" || status === "Expired" ? "bg-destructive/10 border-destructive/40 text-destructive"
-    : "bg-muted/30 border-border text-muted-foreground";
+  const STEPS = ["Not sent", "Sent", "Signed"] as const;
+  const isError = status === "Declined" || status === "Expired";
+  const currentIdx = isError ? 1 : Math.max(0, STEPS.indexOf(status as (typeof STEPS)[number]));
   const canSend = status !== "Signed" && status !== "Sent";
+
   return (
     <section className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
         <div>
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Retainer</div>
-          <div className="mt-1 flex items-center gap-2">
-            <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium", tone)}>
-              {status}
-            </span>
+          <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+            {sentDate && <span>Sent {sentDate.slice(0, 10)}</span>}
+            {signedDate && <span>Signed {signedDate.slice(0, 10)}</span>}
             {link && (
-              <a href={link} target="_blank" rel="noreferrer" className="text-xs text-primary hover:underline">
+              <a href={link} target="_blank" rel="noreferrer" className="text-primary hover:underline">
                 View document
               </a>
             )}
-          </div>
-          <div className="mt-2 text-xs text-muted-foreground space-y-0.5">
-            {sentDate && <div>Sent: {sentDate.slice(0, 10)}</div>}
-            {signedDate && <div>Signed: {signedDate.slice(0, 10)}</div>}
           </div>
         </div>
         {canSend && (
@@ -316,9 +310,43 @@ function RetainerPanel({
           </button>
         )}
       </div>
+      <ol className="flex items-center w-full gap-1">
+        {STEPS.map((step, i) => {
+          const isDone = currentIdx > i;
+          const isActive = currentIdx === i;
+          const activeError = isActive && isError;
+          return (
+            <li key={step} className="flex items-center flex-1 last:flex-none min-w-0">
+              <div
+                className={cn(
+                  "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] whitespace-nowrap min-w-0",
+                  activeError && "border-destructive/40 bg-destructive/10 text-destructive font-medium",
+                  isActive && !activeError && "border-primary bg-primary/10 text-primary font-medium",
+                  isDone && "border-border bg-muted text-muted-foreground",
+                  !isActive && !isDone && "border-dashed border-border text-muted-foreground/60",
+                )}
+              >
+                {isDone && <Check className="h-3 w-3 shrink-0" />}
+                {isActive && <CircleDot className="h-3 w-3 shrink-0" />}
+                {!isActive && !isDone && <Circle className="h-3 w-3 shrink-0" />}
+                <span className="truncate">{activeError ? status : step}</span>
+              </div>
+              {i < STEPS.length - 1 && (
+                <div
+                  className={cn(
+                    "h-px flex-1 mx-1 min-w-2",
+                    currentIdx > i ? "bg-foreground/30" : "bg-border",
+                  )}
+                />
+              )}
+            </li>
+          );
+        })}
+      </ol>
     </section>
   );
 }
+
 
 
 function Th({ children }: { children: React.ReactNode }) {
