@@ -226,10 +226,19 @@ export const caseAdvance = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const { createCaseService } = await import("@/integrations/zoho/caseService");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     const svc = createCaseService({ zoho: makeZohoClient() });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await svc.advanceStage(context.userId, data.caseId, data.toStage as any, {
       fields: data.fields,
+    });
+    await logCaseActivity({
+      caseId: data.caseId,
+      actorUserId: context.userId,
+      actorEmail: actorEmail(context.claims),
+      action: "stage.advance",
+      summary: `Advanced to "${data.toStage}"${result.deadline ? ` — deadline ${result.deadline}` : ""}.`,
+      metadata: { toStage: data.toStage, deadline: result.deadline ?? null, fields: data.fields ?? {} },
     });
     return result;
   });
