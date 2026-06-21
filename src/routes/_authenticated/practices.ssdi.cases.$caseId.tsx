@@ -11,6 +11,7 @@ import { TasksPanel } from "@/components/cases/TasksPanel";
 import { DenialNextStepBanner } from "@/components/cases/DenialNextStepBanner";
 import { ClosedCaseBanner } from "@/components/cases/ClosedCaseBanner";
 import { DocumentChecklist } from "@/components/cases/DocumentChecklist";
+import { CostEntryForm, DeleteCostButton } from "@/components/cases/CostEntryForm";
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
 import { useStageRequirements } from "@/hooks/use-stage-requirements";
 import { ChevronLeft, AlertTriangle } from "lucide-react";
@@ -259,29 +260,46 @@ function CaseDetail() {
       </div>
 
       <section>
-        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Costs</div>
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Costs</div>
+          {engagementId && !isClosed && <CostEntryForm engagementId={engagementId} />}
+        </div>
         <div className="rounded-lg border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr><th className="px-4 py-2 text-left font-medium">Name</th><th className="px-4 py-2 text-left font-medium">Type</th><th className="px-4 py-2 text-right font-medium">Amount</th></tr>
+              <tr>
+                <th className="px-4 py-2 text-left font-medium">Name</th>
+                <th className="px-4 py-2 text-left font-medium">Type</th>
+                <th className="px-4 py-2 text-right font-medium">Amount</th>
+                <th className="px-4 py-2 w-8" />
+              </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {!engagementId && (
-                <tr><td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">No engagement linked.</td></tr>
+                <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">No engagement linked.</td></tr>
               )}
               {engagementId && costsQ.isLoading && (
-                <tr><td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">Loading…</td></tr>
+                <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">Loading…</td></tr>
               )}
               {engagementId && costsQ.data && costsQ.data.rows.length === 0 && (
-                <tr><td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">No costs recorded.</td></tr>
+                <tr><td colSpan={4} className="px-4 py-6 text-center text-muted-foreground">No costs recorded.</td></tr>
               )}
-              {costsQ.data?.rows.map((c, i) => (
-                <tr key={i}>
-                  <td className="px-4 py-2">{String(c.Name ?? "—")}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{String(c.Cost_Type ?? "")}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">{fmtMoney(typeof c.Amount === "number" ? c.Amount : null)}</td>
-                </tr>
-              ))}
+              {costsQ.data?.rows.map((c, i) => {
+                const id = typeof c.id === "string" ? c.id : null;
+                const name = String(c.Name ?? "—");
+                return (
+                  <tr key={id ?? i}>
+                    <td className="px-4 py-2">{name}</td>
+                    <td className="px-4 py-2 text-muted-foreground">{String(c.Cost_Type ?? "")}</td>
+                    <td className="px-4 py-2 text-right tabular-nums">{fmtMoney(typeof c.Amount === "number" ? c.Amount : null)}</td>
+                    <td className="px-4 py-2 text-right">
+                      {id && engagementId && !isClosed && (
+                        <DeleteCostButton costId={id} engagementId={engagementId} costName={name} />
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
