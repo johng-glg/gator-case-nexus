@@ -115,12 +115,13 @@ function Engagements() {
               return (
                 <tr key={id} className="hover:bg-accent/30">
                   <Td>
-                    <a
-                      href={openWorkspaceHref(practice?.slug, id)}
+                    <Link
+                      to="/engagements/$engagementId"
+                      params={{ engagementId: id }}
                       className="font-medium text-primary hover:underline"
                     >
                       {String(r.Name ?? "—")}
-                    </a>
+                    </Link>
                   </Td>
                   <Td>{client ?? <span className="text-muted-foreground">—</span>}</Td>
                   <Td>
