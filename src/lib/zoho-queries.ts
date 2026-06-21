@@ -69,10 +69,22 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               where Deadline_At_Risk = true and Is_Closed = false
               order by Days_To_Deadline asc
               limit 200`;
+    case "deadlinesAll":
+      return `select Case_Number, Current_Stage, Active_Deadline_Type, Deadline_Date, Days_To_Deadline, Engagement
+              from SSDI_Cases
+              where Deadline_Date is not null and Is_Closed = false
+              order by Deadline_Date asc
+              limit 200`;
     case "releasesExpiringSoon":
       return `select Case_Number, Release_Expiration_Date, Engagement
               from SSDI_Cases
               where Release_Expiring_Soon = true and Is_Closed = false
+              order by Release_Expiration_Date asc
+              limit 200`;
+    case "releasesAll":
+      return `select Case_Number, Release_Signed_Date, Release_Expiration_Date, Release_Expiring_Soon, Engagement
+              from SSDI_Cases
+              where Release_Signed_Date is not null and Is_Closed = false
               order by Release_Expiration_Date asc
               limit 200`;
     case "pipelineByStage":
