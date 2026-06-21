@@ -41,7 +41,7 @@ function Deadlines() {
           return (
             <tr key={id} className="hover:bg-accent/30">
               <Td>
-                <Link to="/cases/$caseId" params={{ caseId: id }} className="font-medium hover:underline">
+                <Link to="/practices/ssdi/cases/$caseId" params={{ caseId: id }} className="font-medium hover:underline">
                   {String(r.Case_Number ?? "—")}
                 </Link>
               </Td>
@@ -65,7 +65,7 @@ function Deadlines() {
           return (
             <tr key={id} className="hover:bg-accent/30">
               <Td>
-                <Link to="/cases/$caseId" params={{ caseId: id }} className="font-medium hover:underline">
+                <Link to="/practices/ssdi/cases/$caseId" params={{ caseId: id }} className="font-medium hover:underline">
                   {String(r.Case_Number ?? "—")}
                 </Link>
               </Td>
