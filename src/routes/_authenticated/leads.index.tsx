@@ -119,7 +119,9 @@ function Leads() {
       </div>
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[720px]">
+
           <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
             <tr>
               <Th>Name</Th>
