@@ -24,6 +24,14 @@ function ensureStaff(claims: unknown): string {
 
 const ID_RE = /^[A-Za-z0-9_]+$/;
 
+type ActivityJson =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: ActivityJson }
+  | ActivityJson[];
+
 export type ActivityRow = {
   id: string;
   case_id: string | null;
@@ -31,9 +39,13 @@ export type ActivityRow = {
   actor_email: string | null;
   action: string;
   summary: string;
-  metadata: unknown;
+  metadata: ActivityJson;
   created_at: string;
 };
+
+function toRows(rows: Array<Record<string, unknown>> | null | undefined): ActivityRow[] {
+  return JSON.parse(JSON.stringify(rows ?? [])) as ActivityRow[];
+}
 
 const caseActivityInput = z.object({
   caseId: z.string().regex(ID_RE),
