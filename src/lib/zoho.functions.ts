@@ -240,3 +240,17 @@ export const intakeCreate = createServerFn({ method: "POST" })
     const result = await svc.createIntake(context.userId, { ...data, actorZohoUserId });
     return result;
   });
+
+
+// ---------- Retainer (Zoho Sign) ----------
+
+export const retainerSend = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => engagementIdInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeRetainerService } = await import("@/integrations/zoho/signClient.server");
+    const svc = makeRetainerService();
+    const result = await svc.sendRetainer(context.userId, data.engagementId);
+    return result;
+  });
+
