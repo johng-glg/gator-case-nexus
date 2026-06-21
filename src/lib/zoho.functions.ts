@@ -18,6 +18,15 @@ function toJson<T extends Json>(value: unknown): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+/** Pull the actor's email out of the validated Supabase claims. */
+function actorEmail(claims: unknown): string | null {
+  if (claims && typeof claims === "object" && "email" in claims) {
+    const e = (claims as { email?: unknown }).email;
+    return typeof e === "string" ? e : null;
+  }
+  return null;
+}
+
 
 const queryInput = z.object({
   name: z.enum([
@@ -217,10 +226,19 @@ export const caseAdvance = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const { createCaseService } = await import("@/integrations/zoho/caseService");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     const svc = createCaseService({ zoho: makeZohoClient() });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await svc.advanceStage(context.userId, data.caseId, data.toStage as any, {
       fields: data.fields,
+    });
+    await logCaseActivity({
+      caseId: data.caseId,
+      actorUserId: context.userId,
+      actorEmail: actorEmail(context.claims),
+      action: "stage.advance",
+      summary: `Advanced to "${data.toStage}"${result.deadline ? ` — deadline ${result.deadline}` : ""}.`,
+      metadata: { toStage: data.toStage, deadline: result.deadline ?? null, fields: data.fields ?? {} },
     });
     return result;
   });
@@ -251,6 +269,7 @@ export const updateCaseDates = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const { createCaseService } = await import("@/integrations/zoho/caseService");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     const client = makeZohoClient();
     const payload: Record<string, unknown> = { id: data.caseId };
     if (data.Notice_Date !== undefined) payload.Notice_Date = data.Notice_Date;
@@ -259,19 +278,49 @@ export const updateCaseDates = createServerFn({ method: "POST" })
     await client.as(context.userId).updateRecords("SSDI_Cases", [payload]);
     const svc = createCaseService({ zoho: client });
     const recomputed = await svc.recomputeDeadline(context.userId, data.caseId);
+    const changed: string[] = [];
+    if (data.Notice_Date !== undefined) changed.push(`Notice date → ${data.Notice_Date ?? "cleared"}`);
+    if (data.Documented_Receipt_Date !== undefined)
+      changed.push(`Documented receipt → ${data.Documented_Receipt_Date ?? "cleared"}`);
+    await logCaseActivity({
+      caseId: data.caseId,
+      actorUserId: context.userId,
+      actorEmail: actorEmail(context.claims),
+      action: "case.dates.update",
+      summary: changed.join("; "),
+      metadata: {
+        Notice_Date: data.Notice_Date,
+        Documented_Receipt_Date: data.Documented_Receipt_Date,
+        recomputedDeadline: recomputed,
+      },
+    });
     return { ok: true, changed: true, recomputed };
   });
 
-const taskIdInput = z.object({ taskId: z.string().regex(/^[A-Za-z0-9_]+$/) });
+const taskIdInput = z.object({
+  taskId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  caseId: z.string().regex(/^[A-Za-z0-9_]+$/).optional(),
+});
 
 export const completeTask = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => taskIdInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     await makeZohoClient().as(context.userId).updateRecords("Tasks", [
       { id: data.taskId, Status: "Completed" },
     ]);
+    if (data.caseId) {
+      await logCaseActivity({
+        caseId: data.caseId,
+        actorUserId: context.userId,
+        actorEmail: actorEmail(context.claims),
+        action: "task.complete",
+        summary: "Completed a task.",
+        metadata: { taskId: data.taskId },
+      });
+    }
     return { ok: true };
   });
 
@@ -280,15 +329,28 @@ export const reopenTask = createServerFn({ method: "POST" })
   .inputValidator((data) => taskIdInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     await makeZohoClient().as(context.userId).updateRecords("Tasks", [
       { id: data.taskId, Status: "Not Started" },
     ]);
+    if (data.caseId) {
+      await logCaseActivity({
+        caseId: data.caseId,
+        actorUserId: context.userId,
+        actorEmail: actorEmail(context.claims),
+        action: "task.reopen",
+        summary: "Re-opened a task.",
+        metadata: { taskId: data.taskId },
+      });
+    }
     return { ok: true };
   });
 
 const reassignTaskInput = z.object({
   taskId: z.string().regex(/^[A-Za-z0-9_]+$/),
   ownerId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  caseId: z.string().regex(/^[A-Za-z0-9_]+$/).optional(),
+  ownerName: z.string().trim().max(120).optional(),
 });
 
 export const reassignTask = createServerFn({ method: "POST" })
@@ -296,9 +358,20 @@ export const reassignTask = createServerFn({ method: "POST" })
   .inputValidator((data) => reassignTaskInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     await makeZohoClient().as(context.userId).updateRecords("Tasks", [
       { id: data.taskId, Owner: { id: data.ownerId } },
     ]);
+    if (data.caseId) {
+      await logCaseActivity({
+        caseId: data.caseId,
+        actorUserId: context.userId,
+        actorEmail: actorEmail(context.claims),
+        action: "task.reassign",
+        summary: data.ownerName ? `Reassigned task to ${data.ownerName}.` : "Reassigned a task.",
+        metadata: { taskId: data.taskId, ownerId: data.ownerId },
+      });
+    }
     return { ok: true };
   });
 
@@ -316,6 +389,7 @@ export const createCaseTask = createServerFn({ method: "POST" })
   .inputValidator((data) => createCaseTaskInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     const payload: Record<string, unknown> = {
       Subject: data.subject,
       What_Id: { id: data.caseId },
@@ -331,6 +405,14 @@ export const createCaseTask = createServerFn({ method: "POST" })
     if (first.code && first.code !== "SUCCESS") {
       throw new Error(first.message || "Failed to create task");
     }
+    await logCaseActivity({
+      caseId: data.caseId,
+      actorUserId: context.userId,
+      actorEmail: actorEmail(context.claims),
+      action: "task.create",
+      summary: `Created task "${data.subject}"${data.dueDate ? ` (due ${data.dueDate})` : ""}.`,
+      metadata: { subject: data.subject, dueDate: data.dueDate, priority: data.priority, ownerId: data.ownerId },
+    });
     return { ok: true, id: first.details?.id };
   });
 
@@ -519,6 +601,7 @@ export const createCost = createServerFn({ method: "POST" })
   .inputValidator((data) => createCostInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     const payload: Record<string, unknown> = {
       Name: data.name,
       Amount: data.amount,
@@ -530,17 +613,40 @@ export const createCost = createServerFn({ method: "POST" })
     if (first.code && first.code !== "SUCCESS") {
       throw new Error(first.message || "Failed to create cost");
     }
+    await logCaseActivity({
+      engagementId: data.engagementId,
+      actorUserId: context.userId,
+      actorEmail: actorEmail(context.claims),
+      action: "cost.create",
+      summary: `Added cost "${data.name}" — $${data.amount.toFixed(2)} (${data.costType}).`,
+      metadata: { name: data.name, amount: data.amount, costType: data.costType, costId: first.details?.id },
+    });
     return { ok: true, id: first.details?.id };
   });
 
-const deleteCostInput = z.object({ costId: z.string().regex(/^[A-Za-z0-9_]+$/) });
+const deleteCostInput = z.object({
+  costId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  engagementId: z.string().regex(/^[A-Za-z0-9_]+$/).optional(),
+  costName: z.string().trim().max(200).optional(),
+});
 
 export const deleteCost = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => deleteCostInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
     await makeZohoClient().as(context.userId).deleteRecords("Costs", [data.costId]);
+    if (data.engagementId) {
+      await logCaseActivity({
+        engagementId: data.engagementId,
+        actorUserId: context.userId,
+        actorEmail: actorEmail(context.claims),
+        action: "cost.delete",
+        summary: data.costName ? `Deleted cost "${data.costName}".` : "Deleted a cost.",
+        metadata: { costId: data.costId },
+      });
+    }
     return { ok: true };
   });
 

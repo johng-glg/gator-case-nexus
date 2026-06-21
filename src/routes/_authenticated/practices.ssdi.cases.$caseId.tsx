@@ -13,6 +13,7 @@ import { ClosedCaseBanner } from "@/components/cases/ClosedCaseBanner";
 import { DocumentChecklist } from "@/components/cases/DocumentChecklist";
 import { CostEntryForm, DeleteCostButton } from "@/components/cases/CostEntryForm";
 import { InviteClientButton } from "@/components/cases/InviteClientButton";
+import { ActivityPanel } from "@/components/cases/ActivityPanel";
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
 import { useStageRequirements } from "@/hooks/use-stage-requirements";
 import { ChevronLeft, AlertTriangle, Download } from "lucide-react";
@@ -96,6 +97,7 @@ function CaseDetail() {
       queryClient.invalidateQueries({ queryKey: ["tasks", caseId] }),
       queryClient.invalidateQueries({ queryKey: ["ssdi-cases"] }),
       queryClient.invalidateQueries({ queryKey: ["deadlinesAtRisk"] }),
+      queryClient.invalidateQueries({ queryKey: ["case-activity", caseId] }),
     ]);
 
     // 2.3 — After a denial advance, suggest the next-tier filing stage in a toast.
@@ -339,6 +341,10 @@ function CaseDetail() {
           </table>
         </div>
       </section>
+
+      <ActivityPanel caseId={caseId} engagementId={engagementId} />
+
+
 
       <AdvanceStageDialog
         open={dialogOpen}

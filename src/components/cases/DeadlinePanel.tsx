@@ -61,6 +61,7 @@ export function DeadlinePanel({ caseId, record }: Props) {
       qc.invalidateQueries({ queryKey: ["deadlinesAtRisk"] }),
       qc.invalidateQueries({ queryKey: ["deadlinesAll"] }),
       qc.invalidateQueries({ queryKey: ["ssdi-cases"] }),
+      qc.invalidateQueries({ queryKey: ["case-activity", caseId] }),
     ]);
   }
 

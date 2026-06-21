@@ -96,23 +96,25 @@ export function TasksPanel({ caseId }: Props) {
 
   async function invalidate() {
     await qc.invalidateQueries({ queryKey: ["tasks", caseId] });
+    await qc.invalidateQueries({ queryKey: ["case-activity", caseId] });
   }
 
   async function onComplete(id: string) {
     setBusyTask(id);
-    try { await complete({ data: { taskId: id } }); await invalidate(); toast.success("Task completed."); }
+    try { await complete({ data: { taskId: id, caseId } }); await invalidate(); toast.success("Task completed."); }
     catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
     finally { setBusyTask(null); }
   }
   async function onReopen(id: string) {
     setBusyTask(id);
-    try { await reopen({ data: { taskId: id } }); await invalidate(); toast.success("Task reopened."); }
+    try { await reopen({ data: { taskId: id, caseId } }); await invalidate(); toast.success("Task reopened."); }
     catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
     finally { setBusyTask(null); }
   }
   async function onReassign(id: string, ownerId: string) {
     setBusyTask(id);
-    try { await reassign({ data: { taskId: id, ownerId } }); await invalidate(); toast.success("Task reassigned."); }
+    const ownerName = users.find((u) => u.id === ownerId)?.full_name;
+    try { await reassign({ data: { taskId: id, ownerId, caseId, ownerName } }); await invalidate(); toast.success("Task reassigned."); }
     catch (e) { toast.error(e instanceof Error ? e.message : String(e)); }
     finally { setBusyTask(null); }
   }

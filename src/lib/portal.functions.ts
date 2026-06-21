@@ -92,6 +92,17 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
       );
     if (upsertError) throw new Error(upsertError.message);
 
+    const { logCaseActivity } = await import("@/integrations/audit/log.server");
+    await logCaseActivity({
+      caseId: data.caseId,
+      engagementId: data.engagementId ?? null,
+      actorUserId: context.userId,
+      actorEmail: staffEmail,
+      action: "portal.invite",
+      summary: `Sent portal invite to ${data.email}.`,
+      metadata: { email: data.email },
+    });
+
     return { ok: true, userId, emailSent: true };
   });
 

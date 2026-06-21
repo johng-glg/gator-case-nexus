@@ -12,6 +12,19 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: case activity log (audit trail)",
+    summary:
+      "Every staff-side change to an SSDI case is now recorded — visible per case and firm-wide.",
+    changes: [
+      "New case_activity_log table (RLS: firm staff only; clients cannot see it).",
+      "Instrumented mutations: stage advance, case-date edits, cost add/delete, task create/complete/reopen/reassign, and client-portal invites.",
+      "New 'Activity' panel on the case page shows the latest 100 events for that case (or its engagement).",
+      "New Settings → Activity Log tab: firm-wide feed with action / actor / search filters and one-click CSV export.",
+      "Logging is fire-and-forget: an audit-write failure never breaks a mutation.",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: lightweight client portal (Phase 4.1)",
     summary:
       "Clients can sign in with a magic-link email to see their case status, current stage, deadline, and hearing details — read-only.",

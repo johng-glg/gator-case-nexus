@@ -49,6 +49,7 @@ export function CostEntryForm({
     try {
       await createFn({ data: { engagementId, name: name.trim(), amount: amt, costType } });
       await queryClient.invalidateQueries({ queryKey: ["costs", engagementId] });
+      await queryClient.invalidateQueries({ queryKey: ["case-activity"] });
       toast.success("Cost added.");
       reset();
       setOpen(false);
@@ -155,8 +156,9 @@ export function DeleteCostButton({
     if (!confirm(`Delete cost "${costName}"? This cannot be undone.`)) return;
     setBusy(true);
     try {
-      await deleteFn({ data: { costId } });
+      await deleteFn({ data: { costId, engagementId, costName } });
       await queryClient.invalidateQueries({ queryKey: ["costs", engagementId] });
+      await queryClient.invalidateQueries({ queryKey: ["case-activity"] });
       toast.success("Cost deleted.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : String(err));
