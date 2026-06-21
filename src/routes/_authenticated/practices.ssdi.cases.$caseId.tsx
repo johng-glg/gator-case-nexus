@@ -167,7 +167,7 @@ function CaseDetail() {
           >
             <ChevronLeft className="h-4 w-4" /> Back to SSDI cases
           </Link>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end">
             <Button
               variant="outline"
               size="sm"
@@ -183,6 +183,14 @@ function CaseDetail() {
             >
               Seed test data
             </Button>
+            {(stage === "Award / NOA received" || stage === "Fee petition filed") && (
+              <Link
+                to="/practices/ssdi/cases/$caseId/fee-petition"
+                params={{ caseId }}
+              >
+                <Button variant="outline" size="sm">Fee petition draft</Button>
+              </Link>
+            )}
             {!isClosed && <Button onClick={() => openAdvance()}>Advance stage</Button>}
           </div>
         </div>
