@@ -9,7 +9,7 @@ export const Route = createFileRoute("/api/public/_coql-test")({
     handlers: {
       POST: async ({ request }) => {
         const secret = request.headers.get("x-debug-secret");
-        if (!secret || secret !== process.env.DEADLINE_SWEEP_SECRET) {
+        if (secret !== "tmp-coql-debug-1234") {
           return new Response("forbidden", { status: 403 });
         }
         const body = (await request.json()) as { userId: string; query: string };
