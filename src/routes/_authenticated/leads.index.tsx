@@ -231,7 +231,7 @@ function NewLeadDialog({
   const createFn = useServerFn(createLead);
   const [form, setForm] = useState({
     First_Name: "", Last_Name: "", Email: "", Phone: "", Mobile: "",
-    Company: "", Lead_Source: "", Description: "",
+    Lead_Source: "", Description: "",
     Practice_Area: (defaultPractice ?? "SSDI") as PracticeChoice,
   });
   useEffect(() => {
@@ -247,7 +247,7 @@ function NewLeadDialog({
       onCreated(res.id);
       setForm({
         First_Name: "", Last_Name: "", Email: "", Phone: "", Mobile: "",
-        Company: "", Lead_Source: "", Description: "",
+        Lead_Source: "", Description: "",
         Practice_Area: defaultPractice ?? "SSDI",
       });
     },
@@ -297,9 +297,6 @@ function NewLeadDialog({
               <select value={form.Practice_Area} onChange={upd("Practice_Area")} className={inputCls}>
                 {PRACTICE_CHOICES.map((p) => <option key={p} value={p}>{p}</option>)}
               </select>
-            </LField>
-            <LField label="Company">
-              <input value={form.Company} onChange={upd("Company")} maxLength={200} className={inputCls} />
             </LField>
           </div>
           <LField label="Notes">
