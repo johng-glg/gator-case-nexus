@@ -118,6 +118,49 @@ export const getContact = createServerFn({ method: "POST" })
     return { record: record ? toJson<ZohoRow>(record) : null };
   });
 
+const leadIdInput = z.object({ leadId: z.string().regex(/^[A-Za-z0-9_]+$/) });
+
+export const getLead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => leadIdInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const record = await makeZohoClient()
+      .as(context.userId)
+      .getRecord("Leads", data.leadId);
+    return { record: record ? toJson<ZohoRow>(record) : null };
+  });
+
+const leadStatusInput = z.object({
+  leadId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  status: z.enum(["New", "Qualified", "Disqualified"]),
+});
+
+export const updateLeadStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => leadStatusInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    await makeZohoClient().as(context.userId).updateRecords("Leads", [
+      { id: data.leadId, Lead_Status: data.status },
+    ]);
+    return { ok: true };
+  });
+
+export const convertLead = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => leadIdInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { createIntakeService } = await import("@/integrations/zoho/intakeService");
+    const svc = createIntakeService({ zoho: makeZohoClient() });
+    const result = await svc.convertLead(context.userId, data.leadId);
+    return toJson<{
+      clientId: string; engagementId: string; caseId: string; leadId: string;
+      conflict: { status: "Cleared" | "Conflict found"; matches: ZohoRow[] };
+    }>(result);
+  });
+
 
 const advanceInput = z.object({
   caseId: z.string().regex(/^[A-Za-z0-9_]+$/),
