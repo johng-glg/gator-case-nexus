@@ -94,5 +94,11 @@ export function makeRetainerService() {
     signActionId,
     dc,
   });
-  return createRetainerService({ zoho: makeZohoClient(), sign });
+  const zoho = makeZohoClient();
+  // Lazy-import to avoid a circular dep at module load.
+  const onRetainerSigned = async (ctx: { engagementId: string }) => {
+    const { createCaseOpener } = await import("./intakeService");
+    await createCaseOpener({ zoho })(ctx);
+  };
+  return createRetainerService({ zoho, sign, onRetainerSigned });
 }
