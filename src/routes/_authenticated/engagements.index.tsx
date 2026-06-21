@@ -146,11 +146,8 @@ function clientName(r: Record<string, unknown>): string | null {
   return name || null;
 }
 
-function openWorkspaceHref(slug: string | undefined, engagementId: string): string {
-  if (slug === "ssdi") return `/practices/ssdi/cases?engagementId=${engagementId}`;
-  if (slug) return `/practices/${slug}`;
-  return "/engagements";
-}
+
+
 
 function TypeBadge({ type, active }: { type: string; active: boolean }) {
   if (!type) return <span className="text-muted-foreground">—</span>;
