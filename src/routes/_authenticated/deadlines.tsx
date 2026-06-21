@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { AlarmClock, FileWarning } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/deadlines")({
-  head: () => ({ meta: [{ title: "Deadlines — Gator SSDI" }] }),
+  head: () => ({ meta: [{ title: "Deadlines — Gator" }] }),
   component: Deadlines,
 });
 
@@ -22,11 +22,12 @@ function Deadlines() {
   });
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+    <div className="max-w-5xl mx-auto px-8 py-10 space-y-8">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Deadlines</h1>
+        <h1 className="font-display text-3xl text-foreground">Deadlines</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Appeal windows at risk and HIPAA releases nearing expiration.
+          Firm-wide. Today: SSDI appeal windows and HIPAA releases — FCRA SOL and dispute
+          windows slot in here when those workspaces go live.
         </p>
       </div>
 

@@ -10,8 +10,8 @@ import { ssdiProjectedFee, ssdiUserFee } from "@/integrations/zoho/fees";
 import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/cases/$caseId")({
-  head: () => ({ meta: [{ title: "Case — Gator SSDI" }] }),
+export const Route = createFileRoute("/_authenticated/practices/ssdi/cases/$caseId")({
+  head: () => ({ meta: [{ title: "SSDI case — Gator" }] }),
   component: CaseDetail,
 });
 
@@ -43,7 +43,7 @@ function CaseDetail() {
   async function onAdvance(toStage: string, fields: Record<string, unknown>) {
     const result = await advance({ data: { caseId, toStage, fields } });
     await queryClient.invalidateQueries({ queryKey: ["case", caseId] });
-    await queryClient.invalidateQueries({ queryKey: ["cases"] });
+    await queryClient.invalidateQueries({ queryKey: ["ssdi-cases"] });
     await queryClient.invalidateQueries({ queryKey: ["deadlinesAtRisk"] });
     toast.success(
       result.deadline
@@ -53,7 +53,7 @@ function CaseDetail() {
   }
 
   if (caseQ.isLoading) return <div className="p-8 text-sm text-muted-foreground">Loading case…</div>;
-  if (caseQ.error) return <div className="p-8 text-sm text-destructive">{(caseQ.error as Error).message}</div>;
+  if (caseQ.error) return <div className="p-8 text-sm text-destructive-foreground">{(caseQ.error as Error).message}</div>;
   if (!record) return <div className="p-8 text-sm text-muted-foreground">Case not found.</div>;
 
   const stage = String(record.Current_Stage ?? "");
@@ -64,16 +64,17 @@ function CaseDetail() {
   const userFee = projectedFee !== null ? ssdiUserFee(projectedFee) : null;
 
   return (
-    <div className="max-w-6xl mx-auto px-6 py-6 space-y-6">
+    <div className="max-w-6xl mx-auto px-8 py-8 space-y-6">
       <div>
-        <Link to="/cases" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="h-4 w-4" /> Back to cases
+        <Link to="/practices/ssdi/cases" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
+          <ChevronLeft className="h-4 w-4" /> Back to SSDI cases
         </Link>
       </div>
 
       <header className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
+          <div className="text-xs uppercase tracking-[0.18em] text-primary/80">SSDI case</div>
+          <h1 className="font-display text-3xl text-foreground mt-0.5">
             {String(record.Case_Number ?? "Case")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -83,8 +84,8 @@ function CaseDetail() {
         <Button onClick={() => setDialogOpen(true)}>Advance stage</Button>
       </header>
 
-      <section className="rounded-lg border bg-card p-4">
-        <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Lifecycle</div>
+      <section className="rounded-lg border border-border bg-card p-4">
+        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Lifecycle</div>
         <StageRail current={stage} />
       </section>
 
@@ -133,13 +134,13 @@ function CaseDetail() {
       </div>
 
       <section>
-        <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Costs</div>
-        <div className="rounded-lg border bg-card overflow-hidden">
+        <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Costs</div>
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+            <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
               <tr><th className="px-4 py-2 text-left font-medium">Name</th><th className="px-4 py-2 text-left font-medium">Type</th><th className="px-4 py-2 text-right font-medium">Amount</th></tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-border">
               {!engagementId && (
                 <tr><td colSpan={3} className="px-4 py-6 text-center text-muted-foreground">No engagement linked.</td></tr>
               )}
@@ -173,8 +174,8 @@ function CaseDetail() {
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="rounded-lg border bg-card p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-3">{title}</div>
+    <section className="rounded-lg border border-border bg-card p-4">
+      <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">{title}</div>
       <div className="space-y-1.5 text-sm">{children}</div>
     </section>
   );
