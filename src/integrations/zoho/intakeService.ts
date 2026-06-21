@@ -106,5 +106,82 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
     return { clientId, engagementId, caseId };
   }
 
-  return { runConflictCheck, createIntake };
+
+
+  /**
+   * Convert a Zoho Lead into Client + SSDI Engagement + first SSDI Case (linked) and
+   * stamp the Lead with Lead_Status="Converted" + Converted_Contact. Only SSDI is wired
+   * today; other practice areas throw a clear "coming soon" message.
+   */
+  async function convertLead(userKey: string, leadId: string) {
+    const api = deps.zoho.as(userKey);
+    const lead = await api.getRecord<ZohoRecord>("Leads", leadId);
+    if (!lead) throw new Error(`Lead ${leadId} not found`);
+
+    const practice = (lead.Practice_Area as string | undefined) ?? "";
+    if (practice !== "SSDI") {
+      throw new Error(
+        `only SSDI conversion is built today; coming for ${practice || "this practice"}`,
+      );
+    }
+    if (lead.Converted_Contact) throw new Error("lead is already converted");
+
+    const lastName = (lead.Last_Name as string | undefined)?.trim();
+    if (!lastName) throw new Error("lead has no last name; cannot convert");
+    const firstName = ((lead.First_Name as string | undefined) ?? "").trim();
+    const email = lead.Email as string | undefined;
+
+    // Conflict check on existing Contacts (Last_Name or Email).
+    const clauses: string[] = [];
+    if (lastName) clauses.push(`Last_Name = '${esc(lastName)}'`);
+    if (email) clauses.push(`Email = '${esc(email)}'`);
+    const matches = clauses.length
+      ? await api.coql<ConflictMatch>(
+          `select id, First_Name, Last_Name, Email from Contacts where ${clauses.join(" or ")}`,
+        )
+      : [];
+    const conflict = {
+      status: (matches.length ? "Conflict found" : "Cleared") as "Cleared" | "Conflict found",
+      matches,
+    };
+    const t = today();
+    const actor = undefined as { id: string } | undefined; // optional
+
+    // Client (Contact)
+    const cRes = await api.createRecords("Contacts", [clean({
+      First_Name: firstName, Last_Name: lastName,
+      Email: email, Mobile: lead.Mobile, Home_Phone: lead.Phone,
+      Contact_Type: "Client", Lead_Source: lead.Lead_Source,
+      Mailing_Street: lead.Street, Mailing_City: lead.City,
+      Mailing_State: lead.State, Mailing_Zip: lead.Zip_Code,
+    })]);
+    const clientId = idOf(cRes[0]);
+
+    // Engagement (SSDI)
+    const engRes = await api.createRecords("Engagements", [clean({
+      Name: `${lastName}, ${firstName || ""} — SSDI`.replace(/, —/, " —"),
+      Client: { id: clientId }, Engagement_Type: "SSDI", Engagement_Status: "Open",
+      Open_Date: t, Retainer_Status: "Not sent",
+      Conflict_Check_Status: conflict.status, Conflict_Check_Date: t, Conflict_Check_By: actor,
+    })]);
+    const engagementId = idOf(engRes[0]);
+
+    // First SSDI Case
+    const caseRes = await api.createRecords("SSDI_Cases", [clean({
+      Engagement: { id: engagementId }, Current_Stage: "Intake", Date_Opened: t,
+      Assigned_Case_Manager: actor,
+    })]);
+    const caseId = idOf(caseRes[0]);
+
+    // Stamp the Lead
+    await api.updateRecords("Leads", [{
+      id: leadId,
+      Lead_Status: "Converted",
+      Converted_Contact: { id: clientId },
+    }]);
+
+    return { clientId, engagementId, caseId, leadId, conflict };
+  }
+
+  return { runConflictCheck, createIntake, convertLead };
 }

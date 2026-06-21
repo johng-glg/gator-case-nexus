@@ -63,9 +63,10 @@ function CasesList() {
           </select>
           <Link
             to="/practices/ssdi/intake"
-            className="ml-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90"
+            className="ml-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted/40"
+            title="Back-office: skip the Leads pipeline and create a client directly."
           >
-            + New SSDI client
+            + Add client directly
           </Link>
         </div>
       </div>

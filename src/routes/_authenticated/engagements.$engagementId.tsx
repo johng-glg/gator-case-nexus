@@ -118,6 +118,18 @@ function EngagementDetail() {
         <Stat label="Net" value={fmtMoney(net)} emphasis={net !== null && net < 0 ? "negative" : "positive"} />
       </section>
 
+      {record.Conflict_Check_Status === "Conflict found" && (
+        <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400 flex items-start gap-2">
+          <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+          <div>
+            <div className="font-medium">Possible prior representation — review</div>
+            <div className="text-xs opacity-80">
+              The conflict check at intake found one or more existing contacts matching this client.
+            </div>
+          </div>
+        </div>
+      )}
+
       <RetainerPanel
         status={String(record.Retainer_Status ?? "Not sent")}
         link={record.Retainer_Link ? String(record.Retainer_Link) : undefined}
