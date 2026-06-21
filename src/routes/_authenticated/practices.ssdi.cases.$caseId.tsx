@@ -54,6 +54,25 @@ function CaseDetail() {
     queryFn: () => runQuery({ data: { name: "costsByEngagement", params: { engagementId: engagementId! } } }),
   });
 
+  // Pull the engagement so we can show the linked Client (case has no direct Client field).
+  const engagementQ = useQuery({
+    queryKey: ["engagement", engagementId],
+    enabled: !!engagementId,
+    queryFn: () => runQuery({ data: { name: "engagementById", params: { engagementId: engagementId! } } }),
+  });
+  const engagementRow = (engagementQ.data as Array<Record<string, unknown>> | undefined)?.[0];
+  const clientRef = engagementRow?.Client as
+    | { id?: string; name?: string; First_Name?: string; Last_Name?: string }
+    | string
+    | undefined;
+  const clientId = typeof clientRef === "string" ? clientRef : clientRef?.id;
+  const clientName =
+    typeof clientRef === "object"
+      ? clientRef?.name ??
+        ([clientRef?.First_Name, clientRef?.Last_Name].filter(Boolean).join(" ").trim() ||
+          undefined)
+      : undefined;
+
   const tasksQ = useQuery({
     queryKey: ["tasks", caseId],
     enabled: validCaseId,
@@ -137,7 +156,18 @@ function CaseDetail() {
             {String(record.Case_Number ?? "Case")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Engagement: {engagementId ? <code className="text-xs">{engagementId}</code> : "—"}
+            Client:{" "}
+            {clientId ? (
+              <Link
+                to="/clients/$clientId"
+                params={{ clientId }}
+                className="text-foreground underline-offset-2 hover:underline"
+              >
+                {clientName ?? clientId}
+              </Link>
+            ) : (
+              "—"
+            )}
           </p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>Advance stage</Button>

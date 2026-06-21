@@ -9,8 +9,18 @@ import type { ZohoTokenStore } from "./zohoClient";
 export const zohoTokenStore: ZohoTokenStore = {
   async getRefreshToken(actorKey: string): Promise<string | null> {
     // SERVICE actor is read from env so background jobs work without an OAuth grant per process.
+    // Fallback: if no env token is provisioned, borrow ANY connected user's refresh token so
+    // webhooks (Zoho Sign, deadline sweep, etc.) still work. Attribution will be that user.
     if (actorKey === "SERVICE") {
-      return process.env.ZOHO_SERVICE_REFRESH_TOKEN ?? null;
+      const envToken = process.env.ZOHO_SERVICE_REFRESH_TOKEN;
+      if (envToken) return envToken;
+      const { data } = await supabaseAdmin
+        .from("zoho_tokens")
+        .select("refresh_token")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data?.refresh_token ?? null;
     }
     const { data, error } = await supabaseAdmin
       .from("zoho_tokens")
