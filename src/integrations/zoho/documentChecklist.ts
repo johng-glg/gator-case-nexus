@@ -107,7 +107,6 @@ export const PHASE_DOCS: Record<string, ChecklistDoc[]> = {
  * shrinks). Phases with no documents are omitted.
  */
 export function checklistForStage(stage: Stage): ChecklistGroup[] {
-  const { PHASES } = require("./lifecycle") as typeof import("./lifecycle");
   const currentPhase = phaseForStage(stage);
   if (!currentPhase) return [];
   const currentIdx = PHASES.findIndex((p) => p.key === currentPhase.key);
