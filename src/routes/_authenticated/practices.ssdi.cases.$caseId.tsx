@@ -69,8 +69,8 @@ function CaseDetail() {
   const clientName =
     typeof clientRef === "object"
       ? clientRef?.name ??
-        [clientRef?.First_Name, clientRef?.Last_Name].filter(Boolean).join(" ").trim() ||
-        undefined
+        ([clientRef?.First_Name, clientRef?.Last_Name].filter(Boolean).join(" ").trim() ||
+          undefined)
       : undefined;
 
   const tasksQ = useQuery({
