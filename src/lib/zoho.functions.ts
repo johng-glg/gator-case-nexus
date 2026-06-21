@@ -26,6 +26,7 @@ const queryInput = z.object({
     "deadlinesAtRisk",
     "releasesExpiringSoon",
     "pipelineByStage",
+    "pipelineByPractice",
     "costsByEngagement",
     "casesByEngagement",
     "engagementById",
