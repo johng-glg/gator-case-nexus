@@ -1,63 +1,74 @@
-## Phase 2 wiring — gap-fill plan
+# Plan — compact 7-phase SSDI lifecycle stepper
 
-Most of the engine is already wired (`caseAdvance`, `StageRail`, `AdvanceStageDialog`, `deadline-sweep`, `deadlinesAtRisk` / `releasesExpiringSoon` queries, `getCase` record-GET). This plan closes the remaining gaps without touching the engines.
+Replace the horizontal 24-chip `StageRail` on the case detail page with a 7-phase stepper that only expands the active phase. Grouping is exported from `lifecycle.ts` so the UI never hardcodes the phase list.
 
-### 1. Expand `AdvanceStageDialog` requirements table
-`src/components/cases/AdvanceStageDialog.tsx` — extend `STAGE_REQUIREMENTS` to cover every target stage from the spec:
+## 1. Add phase grouping to `src/integrations/zoho/lifecycle.ts`
 
-| Stage | Fields |
-|---|---|
-| Application filed | `Application_Filed_Date*` |
-| Reconsideration filed | `Recon_Filed_Date*` |
-| Recon decision - approved | `Recon_Decision_Date*` |
-| ALJ hearing requested | `ALJ_Hearing_Requested_Date*` |
-| Hearing scheduled | `ALJ_Hearing_Scheduled_Date*`, `Hearing_Office_ODAR` (text), `ALJ_Name` (text) |
-| Hearing held | `ALJ_Hearing_Held_Date*` |
-| ALJ decision - approved | `ALJ_Decision_Date*` |
-| Appeals Council requested | `Appeals_Council_Requested_Date*` |
-| AC decision - approved | `AC_Decision_Date*` |
-| Award / NOA received | `Notice_of_Award_Date*`, `Back_Pay_Amount*` (number), `Monthly_Benefit` (number), `Entitlement_Date` (date) |
-| Fee petition filed | `Fee_Petition_Filed_Date*` |
-| Closed | `Closure_Reason*` (text), `Closure_Notes` (textarea); also inject `Is_Closed = true` |
+Append (does not touch `TRANSITIONS` or `HOOKS`):
 
-Add `type: "text" | "number" | "textarea"` to the requirement shape (currently only `"date"`) and render the corresponding input.
-
-On the denied-stage groups (Initial / Recon / ALJ / AC denied), show a one-line helper directly below the field list:
-> "Enter the date printed on the SSA notice — the 60-day appeal deadline is computed from it."
-
-When `Closed` is selected, the dialog merges `Is_Closed: true` into the submitted fields.
-
-### 2. New server fns + COQL query for tasks
-`src/lib/zoho-queries.ts` — add a `tasksByCase` query:
-```
-select id, Subject, Due_Date, Status
-from Tasks
-where What_Id = {caseId} and Status != 'Completed'
-order by Due_Date asc
-```
-Add `"tasksByCase"` to the `QueryName` union and the `queryInput` enum in `zoho.functions.ts`.
-
-`src/lib/zoho.functions.ts` — add `completeTask` server fn (POST, auth-gated):
 ```ts
-completeTask({ taskId }) → api.updateRecords("Tasks", [{ id, Status: "Completed" }])
+export interface Phase { key: string; label: string; stages: Stage[]; }
+
+export const PHASES: Phase[] = [
+  { key: "intake",   label: "Intake & filing",   stages: ["Intake", "Retainer signed", "Application filed"] },
+  { key: "initial",  label: "Initial decision",  stages: ["Initial decision - pending", "Initial decision - denied", "Initial decision - approved"] },
+  { key: "recon",    label: "Reconsideration",   stages: ["Reconsideration filed", "Recon decision - pending", "Recon decision - denied", "Recon decision - approved"] },
+  { key: "alj",      label: "ALJ hearing",       stages: ["ALJ hearing requested", "Hearing scheduled", "Hearing prep", "Hearing held", "ALJ decision - pending", "ALJ decision - denied", "ALJ decision - approved"] },
+  { key: "ac",       label: "Appeals Council",   stages: ["Appeals Council requested", "AC decision - pending", "AC decision - denied", "AC decision - approved"] },
+  { key: "award",    label: "Award & fees",      stages: ["Award / NOA received", "Fee petition filed"] },
+  { key: "closed",   label: "Closed",            stages: ["Closed"] },
+];
+
+export function phaseForStage(stage: Stage): Phase | undefined { ... }
+export function phaseIndex(stage: Stage): number { ... } // -1 if not found
 ```
 
-### 3. Case detail panels
-`src/routes/_authenticated/practices.ssdi.cases.$caseId.tsx`:
+All 24 `Stage` literals are accounted for exactly once.
 
-- **Tasks panel** (new) — `useQuery({ name:"tasksByCase", params:{ caseId } })`; render Subject + Due_Date with a "Mark complete" button calling `completeTask` and invalidating `["tasks", caseId]`. Also invalidated after every `onAdvance`.
-- **Fees panel** — drop the client-side `ssdiProjectedFee` / `ssdiUserFee` computation; read `record.Projected_Fee`, `record.User_Fee_Withheld`, `record.Back_Pay_Amount` straight from `getCase` (those are Zoho formula fields, populated on the record). Keep the same Row layout, remove the "(preview)" label.
-- **HIPAA panel** (new) — show `Release_Signed_Date`, `Release_Expiration_Date`, and a red "Expiring soon" badge when `Release_Expiring_Soon === true`.
+## 2. Rewrite `src/components/cases/StageRail.tsx`
 
-### 4. Out of scope (already done, leave alone)
-- `caseAdvance` server fn — done
-- `/api/public/deadline-sweep` route — done
-- `Deadlines` page with at-risk + expiring-releases sections — done
-- `StageRail` rail UI — done
-- The engines themselves (`lifecycle.ts`, `deadlines.ts`, `fees.ts`, `caseService.ts`)
+New component contract: `<StageRail current={stage} />` (unchanged props).
 
-### 5. External cron
-Not a code change — note in the closing message that the user needs to point a daily scheduler (cron-job.org or pg_cron) at `https://gator-case-nexus.lovable.app/api/public/deadline-sweep` with header `Authorization: Bearer $DEADLINE_SWEEP_SECRET`. The secret must be set via `add_secret`; I'll surface it if not already present.
+Layout — horizontal phase stepper, active phase expands below:
 
-### Acceptance
-After build: open a test case → Advance to "Application filed" (date prompt), then "Initial decision - pending", then "Initial decision - denied" (Notice_Date + Initial_Decision_Date prompts). Verify (a) Deadline panel populates with date = notice+65 rolled, (b) Tasks panel shows "File reconsideration" due deadline−5, (c) `/deadlines` lists the case once `Deadline_At_Risk` flips (≤14d) or after the sweep runs.
+```text
+[✓ Intake & filing]──[✓ Initial decision]──[● Reconsideration]──[ ALJ ]──[ AC ]──[ Award ]──[ Closed ]
+                                            │
+                                            ├ ✓ Reconsideration filed
+                                            ├ ● Recon decision - pending     ← bold
+                                            ○ Recon decision - denied
+                                            ○ Recon decision - approved
+```
+
+Rules:
+- Compute `current = phaseIndex(currentStage)`, iterate `PHASES`.
+- Phase state: `i < current` → done (muted + check); `i === current` → active (primary/green); `i > current` → upcoming (dimmed, dashed border).
+- Thin connector line between chips (`h-px bg-border flex-1`), colored up through `current`.
+- Only the active phase renders a sub-list directly beneath the row (absolute/anchored under that chip, or just below the row aligned to it). Sub-stage state computed from `phase.stages.indexOf(currentStage)`:
+  - before → check
+  - equal → filled dot, bold
+  - after → hollow dot
+- Past/future phases show only label + icon, no sub-list.
+- Use existing tokens (`bg-primary`, `text-muted-foreground`, `border-border`); no hardcoded colors.
+- Lucide icons: `Check`, `Circle`, `CircleDot`.
+- No `overflow-x-auto`, no `min-w-max`. The row uses `flex w-full` so 7 chips fit at any reasonable width.
+
+## 3. Optional "Full timeline" disclosure
+
+Below the stepper, a small `<button>` "Show full timeline" toggling local state. When open, render the old flat 24-stage list (same visuals as today's rail) in a `<details>`-style block. Collapsed by default. Keeps power-user access without forcing side-scroll.
+
+## 4. Case detail page — no change required
+
+`src/routes/_authenticated/practices.ssdi.cases.$caseId.tsx` already renders `<StageRail current={stage} />` and the "Advance stage" button. Both stay exactly as is.
+
+## Out of scope (v1)
+- Branching/"skipped" phase detection from lifecycle dates — noted as future enhancement; v1 styles purely by `phaseIndex`.
+- Vertical timeline alternative — sticking with the recommended horizontal layout.
+- No changes to `lifecycle.ts` transitions, `HOOKS`, `AdvanceStageDialog`, queries, or routes.
+
+## Acceptance
+- Case detail page renders 7 phase chips on one row at standard widths, no horizontal scroll.
+- Active phase shows sub-stages; other phases collapsed.
+- Current stage is bold with a filled dot; prior sub-stages checked; later hollow.
+- "Advance stage" button works unchanged.
+- "Show full timeline" reveals the legacy 24-stage list.
