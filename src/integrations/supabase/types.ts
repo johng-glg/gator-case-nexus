@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      case_activity_log: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_user_id: string | null
+          case_id: string
+          created_at: string
+          engagement_id: string | null
+          id: string
+          metadata: Json
+          summary: string
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          case_id: string
+          created_at?: string
+          engagement_id?: string | null
+          id?: string
+          metadata?: Json
+          summary: string
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_user_id?: string | null
+          case_id?: string
+          created_at?: string
+          engagement_id?: string | null
+          id?: string
+          metadata?: Json
+          summary?: string
+        }
+        Relationships: []
+      }
       client_portal_links: {
         Row: {
           created_at: string
