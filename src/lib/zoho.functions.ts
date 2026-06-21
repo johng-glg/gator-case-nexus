@@ -116,3 +116,17 @@ export const caseAdvance = createServerFn({ method: "POST" })
     });
     return result;
   });
+
+const taskIdInput = z.object({ taskId: z.string().regex(/^[A-Za-z0-9_]+$/) });
+
+export const completeTask = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => taskIdInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    await makeZohoClient().as(context.userId).updateRecords("Tasks", [
+      { id: data.taskId, Status: "Completed" },
+    ]);
+    return { ok: true };
+  });
+

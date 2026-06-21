@@ -1,13 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { caseAdvance, getCase, zohoQuery } from "@/lib/zoho.functions";
+import { caseAdvance, completeTask, getCase, zohoQuery } from "@/lib/zoho.functions";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { StageRail } from "@/components/cases/StageRail";
 import { AdvanceStageDialog } from "@/components/cases/AdvanceStageDialog";
-import { ssdiProjectedFee, ssdiUserFee } from "@/integrations/zoho/fees";
-import { ChevronLeft, AlertTriangle } from "lucide-react";
+import { ChevronLeft, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/practices/ssdi/cases/$caseId")({
@@ -20,6 +19,7 @@ function CaseDetail() {
   const fetchCase = useServerFn(getCase);
   const runQuery = useServerFn(zohoQuery);
   const advance = useServerFn(caseAdvance);
+  const finishTask = useServerFn(completeTask);
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -40,16 +40,34 @@ function CaseDetail() {
     queryFn: () => runQuery({ data: { name: "costsByEngagement", params: { engagementId: engagementId! } } }),
   });
 
+  const tasksQ = useQuery({
+    queryKey: ["tasks", caseId],
+    queryFn: () => runQuery({ data: { name: "tasksByCase", params: { caseId } } }),
+  });
+
   async function onAdvance(toStage: string, fields: Record<string, unknown>) {
     const result = await advance({ data: { caseId, toStage, fields } });
-    await queryClient.invalidateQueries({ queryKey: ["case", caseId] });
-    await queryClient.invalidateQueries({ queryKey: ["ssdi-cases"] });
-    await queryClient.invalidateQueries({ queryKey: ["deadlinesAtRisk"] });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ["case", caseId] }),
+      queryClient.invalidateQueries({ queryKey: ["tasks", caseId] }),
+      queryClient.invalidateQueries({ queryKey: ["ssdi-cases"] }),
+      queryClient.invalidateQueries({ queryKey: ["deadlinesAtRisk"] }),
+    ]);
     toast.success(
       result.deadline
         ? `Moved to "${toStage}". Deadline: ${result.deadline}.`
         : `Moved to "${toStage}".`,
     );
+  }
+
+  async function onCompleteTask(taskId: string) {
+    try {
+      await finishTask({ data: { taskId } });
+      await queryClient.invalidateQueries({ queryKey: ["tasks", caseId] });
+      toast.success("Task marked complete.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    }
   }
 
   if (caseQ.isLoading) return <div className="p-8 text-sm text-muted-foreground">Loading case…</div>;
@@ -59,9 +77,11 @@ function CaseDetail() {
   const stage = String(record.Current_Stage ?? "");
   const days = record.Days_To_Deadline;
   const atRisk = record.Deadline_At_Risk === true;
+  const releaseExpiringSoon = record.Release_Expiring_Soon === true;
+
   const backPay = typeof record.Back_Pay_Amount === "number" ? record.Back_Pay_Amount : null;
-  const projectedFee = backPay !== null ? ssdiProjectedFee(backPay) : null;
-  const userFee = projectedFee !== null ? ssdiUserFee(projectedFee) : null;
+  const projectedFee = typeof record.Projected_Fee === "number" ? record.Projected_Fee : null;
+  const userFee = typeof record.User_Fee_Withheld === "number" ? record.User_Fee_Withheld : null;
 
   return (
     <div className="max-w-6xl mx-auto px-8 py-8 space-y-6">
@@ -123,13 +143,50 @@ function CaseDetail() {
           <Row k="Notice of Award" v={record.Notice_of_Award_Date} />
         </Panel>
 
-        <Panel title="Fees (preview)">
+        <Panel title="Fees">
           <Row k="Back pay" v={fmtMoney(backPay)} />
-          <Row k="Projected fee (25%, cap $9,200)" v={fmtMoney(projectedFee)} />
+          <Row k="Projected fee" v={fmtMoney(projectedFee)} />
           <Row k="User fee withheld" v={fmtMoney(userFee)} />
           <p className="text-xs text-muted-foreground pt-2">
-            Authoritative values come from Zoho formula fields (Projected_Fee, User_Fee_Withheld).
+            Computed by Zoho formula fields (Projected_Fee, User_Fee_Withheld). 25% of back pay, capped at $9,200.
           </p>
+        </Panel>
+
+        <Panel title="HIPAA release">
+          <Row k="Signed date" v={record.Release_Signed_Date} />
+          <Row k="Expiration date" v={record.Release_Expiration_Date} />
+          <div className="pt-2">
+            {releaseExpiringSoon ? (
+              <span className="inline-flex items-center gap-1 rounded-md bg-destructive/10 border border-destructive/30 px-2 py-1 text-xs font-medium text-destructive">
+                <AlertTriangle className="h-3 w-3" /> Expiring soon
+              </span>
+            ) : (
+              <span className="text-xs text-muted-foreground">SSA-827 releases expire one year after signing.</span>
+            )}
+          </div>
+        </Panel>
+
+        <Panel title="Tasks">
+          {tasksQ.isLoading && <p className="text-xs text-muted-foreground">Loading…</p>}
+          {tasksQ.data && tasksQ.data.rows.length === 0 && (
+            <p className="text-xs text-muted-foreground">No open tasks.</p>
+          )}
+          <ul className="space-y-2">
+            {tasksQ.data?.rows.map((t) => {
+              const id = String((t as Record<string, unknown>).id ?? "");
+              return (
+                <li key={id} className="flex items-start justify-between gap-2 border-b border-border/50 pb-2 last:border-0">
+                  <div>
+                    <div className="text-sm">{String(t.Subject ?? "—")}</div>
+                    <div className="text-xs text-muted-foreground">Due {String(t.Due_Date ?? "—")}</div>
+                  </div>
+                  <Button size="sm" variant="ghost" onClick={() => onCompleteTask(id)}>
+                    <CheckCircle2 className="h-4 w-4 mr-1" /> Done
+                  </Button>
+                </li>
+              );
+            })}
+          </ul>
         </Panel>
       </div>
 
