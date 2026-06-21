@@ -40,7 +40,7 @@ function Dashboard() {
       const type = String((r as Record<string, unknown>).Engagement_Type ?? "");
       const status = String((r as Record<string, unknown>).Engagement_Status ?? "");
       const count = Number(
-        (r as Record<string, unknown>)["count(id)"] ?? (r as Record<string, unknown>).count ?? 0,
+        (r as Record<string, unknown>)["count(id)"] ?? (r as Record<string, unknown>).count ?? 1,
       );
       const practice = practiceForEngagementType(type);
       const key = practice?.slug ?? "other";
