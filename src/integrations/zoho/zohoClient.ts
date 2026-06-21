@@ -169,10 +169,10 @@ export function createZohoClient(cfg: ZohoConfig) {
       async coql<T = ZohoRecord>(selectQuery: string): Promise<T[]> {
         const out: T[] = [];
         let offset = 0;
-        const base = selectQuery.replace(/\s+limit\s+\d+(\s+offset\s+\d+)?\s*$/i, "").trim();
+        const base = selectQuery.replace(/\s+limit\s+\d+(\s*,\s*\d+|\s+offset\s+\d+)?\s*$/i, "").trim();
         // guard against accidental huge pulls
         for (let page = 0; page < 100; page++) {
-          const q = `${base} limit 200 offset ${offset}`;
+          const q = `${base} limit ${offset}, 200`;
           const r = await request<{ data?: T[]; info?: { more_records?: boolean } }>(
             actorKey, "POST", "/coql", { select_query: q },
           );
