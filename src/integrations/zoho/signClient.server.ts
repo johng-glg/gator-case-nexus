@@ -23,16 +23,30 @@ const ACCOUNTS_HOSTS: Record<string, string> = {
 
 let cachedToken: { token: string; exp: number } | null = null;
 
-/** Refresh-token grant against the firm Sign connection. Cached in-process until ~60s before expiry. */
+/** Refresh-token grant against the firm Sign connection. Prefers the DB-stored
+ * refresh token (rotated via Settings → Connections) and falls back to the
+ * ZOHO_SIGN_REFRESH_TOKEN env var. Cached in-process until ~60s before expiry. */
 async function getFirmSignAccessToken(): Promise<string> {
   if (cachedToken && cachedToken.exp > Date.now()) return cachedToken.token;
+
+  // Prefer the credentials service (DB-backed refresh token) when available.
+  try {
+    const { getCredentialsService } = await import("./credentialsClient.server");
+    const creds = getCredentialsService();
+    const token = await creds.getAccessToken("SIGN_FIRM");
+    // creds already caches; we still keep a local cache so other paths skip the import.
+    cachedToken = { token, exp: Date.now() + 60 * 60 * 1000 - 60_000 };
+    return token;
+  } catch (e) {
+    // Fall back to env-based refresh below.
+  }
 
   const clientId = process.env.ZOHO_SIGN_CLIENT_ID;
   const clientSecret = process.env.ZOHO_SIGN_CLIENT_SECRET;
   const refreshToken = process.env.ZOHO_SIGN_REFRESH_TOKEN;
   if (!clientId || !clientSecret || !refreshToken) {
     throw new Error(
-      "Zoho Sign is not configured: missing ZOHO_SIGN_CLIENT_ID / ZOHO_SIGN_CLIENT_SECRET / ZOHO_SIGN_REFRESH_TOKEN.",
+      "Zoho Sign is not configured. Rotate it on Settings → Connections, or set ZOHO_SIGN_CLIENT_ID / ZOHO_SIGN_CLIENT_SECRET / ZOHO_SIGN_REFRESH_TOKEN.",
     );
   }
 

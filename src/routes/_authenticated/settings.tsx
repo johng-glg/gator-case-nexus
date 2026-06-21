@@ -20,7 +20,10 @@ function SettingsLayout() {
   const tabs = [
     { to: "/settings", label: "Overview", exact: true },
     ...(isAdmin
-      ? [{ to: "/settings/users", label: "Users & Roles", exact: false }]
+      ? [
+          { to: "/settings/users", label: "Users & Roles", exact: false },
+          { to: "/settings/connections", label: "Connections", exact: false },
+        ]
       : []),
   ];
 

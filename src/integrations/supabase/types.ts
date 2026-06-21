@@ -35,6 +35,36 @@ export type Database = {
         }
         Relationships: []
       }
+      zoho_firm_tokens: {
+        Row: {
+          created_at: string
+          key: string
+          last_rotated_at: string | null
+          last_verified_at: string | null
+          refresh_tail: string | null
+          refresh_token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          last_rotated_at?: string | null
+          last_verified_at?: string | null
+          refresh_tail?: string | null
+          refresh_token: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          last_rotated_at?: string | null
+          last_verified_at?: string | null
+          refresh_tail?: string | null
+          refresh_token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       zoho_tokens: {
         Row: {
           created_at: string
