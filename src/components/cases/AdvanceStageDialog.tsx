@@ -81,7 +81,8 @@ export const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
     { field: "Fee_Petition_Filed_Date", label: "Fee petition filed date", type: "date", required: true },
   ],
   "Closed": [
-    { field: "Closure_Reason", label: "Closure reason", type: "text", required: true },
+    { field: "Closure_Reason", label: "Closure reason", type: "select", required: true, options: CLOSURE_REASONS },
+    { field: "Final_Disposition_Date", label: "Final disposition date", type: "date", required: true },
     { field: "Closure_Notes", label: "Closure notes", type: "textarea" },
   ],
 };
