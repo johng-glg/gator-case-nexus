@@ -118,10 +118,10 @@ function EngagementDetail() {
             </thead>
             <tbody className="divide-y divide-border">
               {casesQ.isLoading && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">Loading…</td></tr>
               )}
               {casesQ.data && casesQ.data.rows.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">No cases on this engagement.</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">No cases on this engagement.</td></tr>
               )}
               {casesQ.data?.rows.map((c) => {
                 const cid = String((c as Record<string, unknown>).id ?? "");
