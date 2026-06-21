@@ -1,26 +1,29 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { TRANSITIONS, type Stage } from "@/integrations/zoho/lifecycle";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TRANSITIONS, CLOSURE_REASONS, type Stage } from "@/integrations/zoho/lifecycle";
 
-type FieldType = "date" | "text" | "number" | "textarea";
-interface FieldSpec {
+type FieldType = "date" | "text" | "number" | "textarea" | "select";
+export interface FieldSpec {
   field: string;
   label: string;
   type: FieldType;
   required?: boolean;
+  options?: readonly string[];
 }
 
 /**
  * Stages that need extra data captured before they can be entered.
  * Keys map to SSDI_Cases API field names (zoho-api-contract.md).
  */
-const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
+export const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
   "Application filed": [
     { field: "Application_Filed_Date", label: "Application filed date", type: "date", required: true },
+    { field: "SSA_Claim_Number", label: "SSA claim number", type: "text" },
   ],
   "Initial decision - denied": [
     { field: "Notice_Date", label: "Notice date (printed on the adverse notice)", type: "date", required: true },
@@ -44,6 +47,7 @@ const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
   ],
   "Hearing scheduled": [
     { field: "ALJ_Hearing_Scheduled_Date", label: "Hearing date (scheduled)", type: "date", required: true },
+    { field: "Hearing_Type", label: "Hearing type (in-person / video / phone)", type: "text" },
     { field: "Hearing_Office_ODAR", label: "Hearing office / ODAR", type: "text" },
     { field: "ALJ_Name", label: "ALJ name", type: "text" },
   ],
@@ -77,7 +81,8 @@ const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
     { field: "Fee_Petition_Filed_Date", label: "Fee petition filed date", type: "date", required: true },
   ],
   "Closed": [
-    { field: "Closure_Reason", label: "Closure reason", type: "text", required: true },
+    { field: "Closure_Reason", label: "Closure reason", type: "select", required: true, options: CLOSURE_REASONS },
+    { field: "Final_Disposition_Date", label: "Final disposition date", type: "date", required: true },
     { field: "Closure_Notes", label: "Closure notes", type: "textarea" },
   ],
 };
@@ -93,16 +98,29 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentStage: string;
+  /** Optional: when set, the dialog opens with this next stage already selected. */
+  initialStage?: Stage;
+  /** Optional: prefill values keyed by field API name. */
+  initialFields?: Record<string, string>;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   onSubmit: (toStage: Stage, fields: Record<string, any>) => Promise<void>;
 }
 
-export function AdvanceStageDialog({ open, onOpenChange, currentStage, onSubmit }: Props) {
+export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialStage, initialFields, onSubmit }: Props) {
   const nextStages = (TRANSITIONS[currentStage as Stage] ?? []) as Stage[];
-  const [selected, setSelected] = useState<Stage | "">("");
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const [selected, setSelected] = useState<Stage | "">(initialStage ?? "");
+  const [fields, setFields] = useState<Record<string, string>>(initialFields ?? {});
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  // When the dialog re-opens (e.g. from a banner), re-seed selection + prefill.
+  useEffect(() => {
+    if (open) {
+      setSelected(initialStage ?? "");
+      setFields(initialFields ?? {});
+      setErr(null);
+    }
+  }, [open, initialStage, initialFields]);
 
   const requirements = selected ? STAGE_REQUIREMENTS[selected] ?? [] : [];
 
@@ -177,6 +195,20 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, onSubmit 
                       onChange={(e) => setFields((f) => ({ ...f, [r.field]: e.target.value }))}
                       className="mt-1"
                     />
+                  ) : r.type === "select" ? (
+                    <Select
+                      value={fields[r.field] ?? ""}
+                      onValueChange={(v) => setFields((f) => ({ ...f, [r.field]: v }))}
+                    >
+                      <SelectTrigger id={r.field} className="mt-1">
+                        <SelectValue placeholder="Select…" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(r.options ?? []).map((opt) => (
+                          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   ) : (
                     <Input
                       id={r.field}

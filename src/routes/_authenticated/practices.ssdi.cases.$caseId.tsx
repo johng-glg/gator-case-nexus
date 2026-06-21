@@ -8,7 +8,9 @@ import { StageRail } from "@/components/cases/StageRail";
 import { AdvanceStageDialog } from "@/components/cases/AdvanceStageDialog";
 import { DeadlinePanel } from "@/components/cases/DeadlinePanel";
 import { TasksPanel } from "@/components/cases/TasksPanel";
-import { normalizeStage } from "@/integrations/zoho/lifecycle";
+import { DenialNextStepBanner } from "@/components/cases/DenialNextStepBanner";
+import { ClosedCaseBanner } from "@/components/cases/ClosedCaseBanner";
+import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
 import { ChevronLeft, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,6 +28,14 @@ function CaseDetail() {
 
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogInitialStage, setDialogInitialStage] = useState<Stage | undefined>(undefined);
+  const [dialogInitialFields, setDialogInitialFields] = useState<Record<string, string> | undefined>(undefined);
+
+  function openAdvance(initialStage?: Stage, initialFields?: Record<string, string>) {
+    setDialogInitialStage(initialStage);
+    setDialogInitialFields(initialFields);
+    setDialogOpen(true);
+  }
 
   const ID_RE = /^[A-Za-z0-9_]+$/;
   const validCaseId = ID_RE.test(caseId);
@@ -81,6 +91,24 @@ function CaseDetail() {
       queryClient.invalidateQueries({ queryKey: ["ssdi-cases"] }),
       queryClient.invalidateQueries({ queryKey: ["deadlinesAtRisk"] }),
     ]);
+
+    // 2.3 — After a denial advance, suggest the next-tier filing stage in a toast.
+    const nextStep = DENIAL_NEXT_STEP[toStage as Stage];
+    if (nextStep) {
+      const today = new Date().toISOString().slice(0, 10);
+      toast(`Moved to "${toStage}".`, {
+        description: result.deadline
+          ? `Next: ${nextStep.label} by ${result.deadline}.`
+          : `Next: ${nextStep.label}.`,
+        action: {
+          label: nextStep.label,
+          onClick: () => openAdvance(nextStep.nextStage, { [nextStep.dateField]: today }),
+        },
+        duration: 10_000,
+      });
+      return;
+    }
+
     toast.success(
       result.deadline
         ? `Moved to "${toStage}". Deadline: ${result.deadline}.`
@@ -95,6 +123,11 @@ function CaseDetail() {
 
   const stage = normalizeStage(record.Current_Stage as string | undefined);
   const releaseExpiringSoon = record.Release_Expiring_Soon === true;
+  const isClosed = stage === "Closed";
+
+  const deadlineISO = (record.Deadline_Date as string | null | undefined) ?? null;
+  const daysToDeadline =
+    typeof record.Days_To_Deadline === "number" ? (record.Days_To_Deadline as number) : null;
 
   const backPay = typeof record.Back_Pay_Amount === "number" ? record.Back_Pay_Amount : null;
   const projectedFee = typeof record.Projected_Fee === "number" ? record.Projected_Fee : null;
@@ -146,10 +179,26 @@ function CaseDetail() {
             >
               Seed test data
             </Button>
-            <Button onClick={() => setDialogOpen(true)}>Advance stage</Button>
+            {!isClosed && <Button onClick={() => openAdvance()}>Advance stage</Button>}
           </div>
         </div>
       </header>
+
+      {isClosed && (
+        <ClosedCaseBanner
+          closureReason={(record.Closure_Reason as string) ?? null}
+          closureDate={(record.Final_Disposition_Date as string) ?? null}
+        />
+      )}
+
+      {!isClosed && (
+        <DenialNextStepBanner
+          stage={stage}
+          deadline={deadlineISO}
+          daysRemaining={daysToDeadline}
+          onAct={(nextStage, prefill) => openAdvance(nextStage, prefill)}
+        />
+      )}
 
       <section className="rounded-lg border border-border bg-card p-4">
         <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Lifecycle</div>
@@ -235,6 +284,8 @@ function CaseDetail() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         currentStage={stage}
+        initialStage={dialogInitialStage}
+        initialFields={dialogInitialFields}
         onSubmit={onAdvance}
       />
     </div>

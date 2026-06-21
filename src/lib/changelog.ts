@@ -12,6 +12,19 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: stage workflow completeness (Phase 2.2–2.4)",
+    summary:
+      "Denial stages now suggest the next-tier filing in one click, closure captures a structured disposition, and closed cases are locked to edits.",
+    changes: [
+      "2.2 — Side-effect runner stays the single source of truth: stage-entry effects (deadline, tasks, e-sign, calendar) are still driven by HOOKS in lifecycle.ts; no per-stage branching in components.",
+      "2.3 — Denial → next-tier auto-suggest: persistent banner above the Stage Rail (with deadline + days remaining, color-shifts inside 14/0 days) AND a toast right after the advance with a one-click action that opens the Advance dialog preselected to the next filing stage with today's date prefilled.",
+      "2.4 — Closed case workflow: Closure reason is now a picklist (Won / Lost / Withdrawn / Transferred / Client deceased / Conflict), Final disposition date is required, Closed cases show a read-only banner and the Advance button is hidden (Notes and Costs remain editable).",
+      "2.1 placeholder — new Admin → Stage Requirements tab lists the per-stage field schema with an explicit 'to do' (make it editable, add validation rules, sync from Zoho metadata).",
+      "Hearing scheduled now also asks for Hearing_Type; Application filed now also asks for SSA claim number.",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: nightly deadline sweep + digest (Phase 1.4)",
     summary: "Automatic nightly recompute of SSDI deadlines with an admin-visible digest of overdue / due-soon / expiring releases.",
     changes: [
