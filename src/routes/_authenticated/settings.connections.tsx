@@ -69,15 +69,89 @@ function ConnectionsPage() {
         <div className="text-sm text-muted-foreground">Loading…</div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {(data ?? []).map((c) => (
-            <ConnectionCard
-              key={c.key}
-              c={c}
-              onChanged={() => qc.invalidateQueries({ queryKey: ["firm-connections"] })}
-            />
-          ))}
+          {(data ?? [])
+            .filter((c) => c.key === "SIGN_FIRM")
+            .map((c) => (
+              <ConnectionCard
+                key={c.key}
+                c={c}
+                onChanged={() => qc.invalidateQueries({ queryKey: ["firm-connections"] })}
+              />
+            ))}
+          <UserCrmCard />
         </div>
       )}
+    </div>
+  );
+}
+
+function UserCrmCard() {
+  const fetchStatus = useServerFn(getConnectionStatus);
+  const fetchAuthUrl = useServerFn(getAuthorizeUrl);
+  const { data, isLoading } = useQuery({
+    queryKey: ["user-zoho-status"],
+    queryFn: () => fetchStatus(),
+  });
+
+  const connectMut = useMutation({
+    mutationFn: async () => {
+      const { url } = await fetchAuthUrl();
+      window.location.href = url;
+    },
+    onError: (e: any) => toast.error(e.message ?? "Failed to start Zoho auth"),
+  });
+
+  const connected = !!data?.connected;
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-5 space-y-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="font-medium">Zoho CRM (your account)</div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            Per-user OAuth. Powers your CRM reads/writes (cases, engagements, contacts).
+          </div>
+        </div>
+        {isLoading ? (
+          <span className="inline-flex items-center gap-1 text-xs rounded-full bg-muted text-muted-foreground px-2 py-0.5">
+            …
+          </span>
+        ) : connected ? (
+          <span className="inline-flex items-center gap-1 text-xs rounded-full bg-primary/15 text-primary px-2 py-0.5">
+            <CheckCircle2 className="h-3 w-3" /> Connected
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 text-xs rounded-full bg-muted text-muted-foreground px-2 py-0.5">
+            <AlertCircle className="h-3 w-3" /> Not connected
+          </span>
+        )}
+      </div>
+
+      <div className="text-xs text-muted-foreground space-y-1">
+        <p>
+          This connection is unique to <strong>your</strong> Zoho user — not a firm-wide service
+          token. Each staff member authorizes their own.
+        </p>
+        <p>
+          The Zoho Sign card above is the firm-wide service token for sending retainers and other
+          background work.
+        </p>
+      </div>
+
+      <div className="flex gap-2 pt-1 border-t border-border -mx-5 px-5 pt-3">
+        <Button
+          size="sm"
+          variant={connected ? "outline" : "default"}
+          onClick={() => connectMut.mutate()}
+          disabled={connectMut.isPending}
+        >
+          {connectMut.isPending
+            ? "Redirecting…"
+            : connected
+            ? "Reconnect"
+            : "Connect Zoho CRM"}
+        </Button>
+      </div>
     </div>
   );
 }
