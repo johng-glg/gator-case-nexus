@@ -350,6 +350,59 @@ export const listZohoUsers = createServerFn({ method: "GET" })
     return { users };
   });
 
+// ---------- Dev: seed an SSDI case with realistic test data ----------
+
+const seedTestCaseInput = z.object({ caseId: z.string().regex(/^[A-Za-z0-9_]+$/) });
+
+/**
+ * Fill in a representative set of SSDI_Cases fields so the UI has real data
+ * to render. Does NOT change Current_Stage. Notice_Date is set ~20 days ago
+ * so the appeal deadline lands ~45 days out (visible on the Deadline panel).
+ */
+export const seedTestCaseData = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => seedTestCaseInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { createCaseService } = await import("@/integrations/zoho/caseService");
+
+    const iso = (offset: number) => {
+      const d = new Date();
+      d.setUTCDate(d.getUTCDate() + offset);
+      return d.toISOString().slice(0, 10);
+    };
+
+    const payload: Record<string, unknown> = {
+      id: data.caseId,
+      Notice_Date: iso(-20),
+      Date_Opened: iso(-60),
+      Application_Filed_Date: iso(-55),
+      Initial_Decision_Date: iso(-22),
+      Sub_Status: "Awaiting decision",
+      Hearing_Office_ODAR: "ODAR — San Francisco",
+      ALJ_Name: "Hon. Patricia Reyes",
+      Back_Pay_Amount: 35000,
+      Monthly_Benefit: 1850,
+      Entitlement_Date: iso(-180),
+      Release_Signed_Date: iso(-50),
+      DIB_Claim: true,
+      Claim_Type: "DIB (Title II)",
+      Onset_Date: iso(-540),
+      Last_Worked_Date: iso(-520),
+      DLI: iso(180),
+      Disability_Type: "Physical",
+      Primary_Impairment: "Lumbar degenerative disc disease w/ radiculopathy",
+      Secondary_Impairments: "Major depressive disorder; chronic migraines",
+      SSA_Claim_Number: "555-22-9999A",
+    };
+
+    await makeZohoClient().as(context.userId).updateRecords("SSDI_Cases", [payload]);
+    // Recompute deadline so Days_To_Deadline / Deadline_At_Risk are fresh.
+    const svc = createCaseService({ zoho: makeZohoClient() });
+    await svc.recomputeDeadline(context.userId, data.caseId);
+    return { ok: true };
+  });
+
 
 
 // ---------- Intake (new SSDI client wizard) ----------
