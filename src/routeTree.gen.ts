@@ -19,6 +19,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedConnectZohoRouteImport } from './routes/_authenticated/connect-zoho'
 import { Route as AuthenticatedClientsRouteImport } from './routes/_authenticated/clients'
 import { Route as ApiPublicDeadlineSweepRouteImport } from './routes/api/public/deadline-sweep'
+import { Route as ApiPublicCoqlTestRouteImport } from './routes/api/public/_coql-test'
 import { Route as AuthenticatedPracticesSsdiRouteImport } from './routes/_authenticated/practices.ssdi'
 import { Route as AuthenticatedPracticesPracticeRouteImport } from './routes/_authenticated/practices.$practice'
 import { Route as AuthenticatedPracticesSsdiIndexRouteImport } from './routes/_authenticated/practices.ssdi.index'
@@ -77,6 +78,11 @@ const ApiPublicDeadlineSweepRoute = ApiPublicDeadlineSweepRouteImport.update({
   path: '/api/public/deadline-sweep',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCoqlTestRoute = ApiPublicCoqlTestRouteImport.update({
+  id: '/api/public/_coql-test',
+  path: '/api/public',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedPracticesSsdiRoute =
   AuthenticatedPracticesSsdiRouteImport.update({
     id: '/practices/ssdi',
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/leads': typeof AuthenticatedLeadsRoute
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
+  '/api/public': typeof ApiPublicCoqlTestRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/engagements': typeof AuthenticatedEngagementsRoute
   '/leads': typeof AuthenticatedLeadsRoute
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
+  '/api/public': typeof ApiPublicCoqlTestRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiIndexRoute
@@ -159,6 +167,7 @@ export interface FileRoutesById {
   '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/_authenticated/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
+  '/api/public/_coql-test': typeof ApiPublicCoqlTestRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/_authenticated/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/practices/$practice'
     | '/practices/ssdi'
+    | '/api/public'
     | '/api/public/deadline-sweep'
     | '/api/zoho/connect/callback'
     | '/practices/ssdi/'
@@ -194,6 +204,7 @@ export interface FileRouteTypes {
     | '/engagements'
     | '/leads'
     | '/practices/$practice'
+    | '/api/public'
     | '/api/public/deadline-sweep'
     | '/api/zoho/connect/callback'
     | '/practices/ssdi'
@@ -212,6 +223,7 @@ export interface FileRouteTypes {
     | '/_authenticated/leads'
     | '/_authenticated/practices/$practice'
     | '/_authenticated/practices/ssdi'
+    | '/api/public/_coql-test'
     | '/api/public/deadline-sweep'
     | '/api/zoho/connect/callback'
     | '/_authenticated/practices/ssdi/'
@@ -223,6 +235,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicCoqlTestRoute: typeof ApiPublicCoqlTestRoute
   ApiPublicDeadlineSweepRoute: typeof ApiPublicDeadlineSweepRoute
   ApiZohoConnectCallbackRoute: typeof ApiZohoConnectCallbackRoute
 }
@@ -297,6 +310,13 @@ declare module '@tanstack/react-router' {
       path: '/api/public/deadline-sweep'
       fullPath: '/api/public/deadline-sweep'
       preLoaderRoute: typeof ApiPublicDeadlineSweepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/_coql-test': {
+      id: '/api/public/_coql-test'
+      path: '/api/public'
+      fullPath: '/api/public'
+      preLoaderRoute: typeof ApiPublicCoqlTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/practices/ssdi': {
@@ -393,19 +413,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicCoqlTestRoute: ApiPublicCoqlTestRoute,
   ApiPublicDeadlineSweepRoute: ApiPublicDeadlineSweepRoute,
   ApiZohoConnectCallbackRoute: ApiZohoConnectCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
