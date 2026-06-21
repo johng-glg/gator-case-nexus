@@ -31,6 +31,7 @@ const FIRM_NAV = [
   { to: "/clients", label: "Clients", icon: Users },
   { to: "/engagements", label: "Engagements", icon: Briefcase },
   { to: "/deadlines", label: "Deadlines", icon: AlarmClock },
+  { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
 export function AppShell({ userEmail, zohoConnected, onSignOut, signingOut, children }: Props) {
