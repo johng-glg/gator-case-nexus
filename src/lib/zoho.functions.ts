@@ -83,6 +83,17 @@ export const getCase = createServerFn({ method: "POST" })
 
   });
 
+const engagementIdInput = z.object({ engagementId: z.string().regex(/^[A-Za-z0-9_]+$/) });
+
+export const getEngagement = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => engagementIdInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const record = await makeZohoClient().as(context.userId).getRecord("Engagements", data.engagementId);
+    return { record: record ? toJson<ZohoRow>(record) : null };
+  });
+
 
 const advanceInput = z.object({
   caseId: z.string().regex(/^[A-Za-z0-9_]+$/),
