@@ -118,6 +118,17 @@ function EngagementDetail() {
         <Stat label="Net" value={fmtMoney(net)} emphasis={net !== null && net < 0 ? "negative" : "positive"} />
       </section>
 
+      <RetainerPanel
+        status={String(record.Retainer_Status ?? "Not sent")}
+        link={record.Retainer_Link ? String(record.Retainer_Link) : undefined}
+        sentDate={record.Retainer_Sent_Date ? String(record.Retainer_Sent_Date) : undefined}
+        signedDate={record.Retainer_Signed_Date ? String(record.Retainer_Signed_Date) : undefined}
+        onSend={() => sendRetainer.mutate()}
+        sending={sendRetainer.isPending}
+      />
+
+
+
       <section>
         <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Cases</div>
         <div className="rounded-lg border border-border bg-card overflow-hidden">
