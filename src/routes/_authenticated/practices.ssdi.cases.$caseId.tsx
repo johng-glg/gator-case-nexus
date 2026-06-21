@@ -193,6 +193,7 @@ function CaseDetail() {
                 <Button variant="outline" size="sm">Fee petition draft</Button>
               </Link>
             )}
+            <InviteClientButton caseId={caseId} engagementId={engagementId} />
             {!isClosed && <Button onClick={() => openAdvance()}>Advance stage</Button>}
           </div>
         </div>
