@@ -25,6 +25,8 @@ const queryInput = z.object({
     "myOpenCases",
     "deadlinesAtRisk",
     "deadlinesAll",
+    "myDeadlines",
+    "upcomingHearings",
     "releasesExpiringSoon",
     "releasesAll",
     "pipelineByStage",
