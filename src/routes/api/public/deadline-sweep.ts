@@ -33,9 +33,9 @@ export const Route = createFileRoute("/api/public/deadline-sweep")({
           await supabaseAdmin.from("ssdi_deadline_digests").insert({
             scanned: result.scanned,
             updated: result.updated,
-            overdue: result.overdue,
-            due_soon: result.dueSoon,
-            release_expiring: result.releaseExpiring,
+            overdue: result.overdue as unknown as never,
+            due_soon: result.dueSoon as unknown as never,
+            release_expiring: result.releaseExpiring as unknown as never,
           });
 
           return Response.json({
