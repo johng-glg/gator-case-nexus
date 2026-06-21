@@ -284,6 +284,8 @@ function CaseDetail() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
         currentStage={stage}
+        initialStage={dialogInitialStage}
+        initialFields={dialogInitialFields}
         onSubmit={onAdvance}
       />
     </div>
