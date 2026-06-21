@@ -42,6 +42,8 @@ export const zohoTokenStore: ZohoTokenStore = {
         {
           user_id: actorKey,
           refresh_token: refreshToken,
+          access_token: null,
+          access_token_expires_at: null,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "user_id" },
