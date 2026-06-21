@@ -25,6 +25,7 @@ import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authen
 import { Route as AuthenticatedSettingsConnectionsRouteImport } from './routes/_authenticated/settings.connections'
 import { Route as AuthenticatedPracticesSsdiRouteImport } from './routes/_authenticated/practices.ssdi'
 import { Route as AuthenticatedPracticesPracticeRouteImport } from './routes/_authenticated/practices.$practice'
+import { Route as AuthenticatedLeadsLeadIdRouteImport } from './routes/_authenticated/leads.$leadId'
 import { Route as AuthenticatedEngagementsEngagementIdRouteImport } from './routes/_authenticated/engagements.$engagementId'
 import { Route as AuthenticatedPracticesSsdiIndexRouteImport } from './routes/_authenticated/practices.ssdi.index'
 import { Route as ApiZohoConnectCallbackRouteImport } from './routes/api/zoho/connect/callback'
@@ -119,6 +120,12 @@ const AuthenticatedPracticesPracticeRoute =
     path: '/practices/$practice',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedLeadsLeadIdRoute =
+  AuthenticatedLeadsLeadIdRouteImport.update({
+    id: '/$leadId',
+    path: '/$leadId',
+    getParentRoute: () => AuthenticatedLeadsRoute,
+  } as any)
 const AuthenticatedEngagementsEngagementIdRoute =
   AuthenticatedEngagementsEngagementIdRouteImport.update({
     id: '/engagements/$engagementId',
@@ -168,9 +175,10 @@ export interface FileRoutesByFullPath {
   '/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
-  '/leads': typeof AuthenticatedLeadsRoute
+  '/leads': typeof AuthenticatedLeadsRouteWithChildren
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
+  '/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
@@ -192,8 +200,9 @@ export interface FileRoutesByTo {
   '/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
-  '/leads': typeof AuthenticatedLeadsRoute
+  '/leads': typeof AuthenticatedLeadsRouteWithChildren
   '/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
+  '/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -216,9 +225,10 @@ export interface FileRoutesById {
   '/_authenticated/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
-  '/_authenticated/leads': typeof AuthenticatedLeadsRoute
+  '/_authenticated/leads': typeof AuthenticatedLeadsRouteWithChildren
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
+  '/_authenticated/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
   '/_authenticated/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/_authenticated/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
   '/_authenticated/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
@@ -245,6 +255,7 @@ export interface FileRouteTypes {
     | '/leads'
     | '/settings'
     | '/engagements/$engagementId'
+    | '/leads/$leadId'
     | '/practices/$practice'
     | '/practices/ssdi'
     | '/settings/connections'
@@ -268,6 +279,7 @@ export interface FileRouteTypes {
     | '/deadlines'
     | '/leads'
     | '/engagements/$engagementId'
+    | '/leads/$leadId'
     | '/practices/$practice'
     | '/settings/connections'
     | '/settings/users'
@@ -292,6 +304,7 @@ export interface FileRouteTypes {
     | '/_authenticated/leads'
     | '/_authenticated/settings'
     | '/_authenticated/engagements/$engagementId'
+    | '/_authenticated/leads/$leadId'
     | '/_authenticated/practices/$practice'
     | '/_authenticated/practices/ssdi'
     | '/_authenticated/settings/connections'
@@ -430,6 +443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPracticesPracticeRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/leads/$leadId': {
+      id: '/_authenticated/leads/$leadId'
+      path: '/$leadId'
+      fullPath: '/leads/$leadId'
+      preLoaderRoute: typeof AuthenticatedLeadsLeadIdRouteImport
+      parentRoute: typeof AuthenticatedLeadsRoute
+    }
     '/_authenticated/engagements/$engagementId': {
       id: '/_authenticated/engagements/$engagementId'
       path: '/engagements/$engagementId'
@@ -482,6 +502,17 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthenticatedLeadsRouteChildren {
+  AuthenticatedLeadsLeadIdRoute: typeof AuthenticatedLeadsLeadIdRoute
+}
+
+const AuthenticatedLeadsRouteChildren: AuthenticatedLeadsRouteChildren = {
+  AuthenticatedLeadsLeadIdRoute: AuthenticatedLeadsLeadIdRoute,
+}
+
+const AuthenticatedLeadsRouteWithChildren =
+  AuthenticatedLeadsRoute._addFileChildren(AuthenticatedLeadsRouteChildren)
+
 interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsConnectionsRoute: typeof AuthenticatedSettingsConnectionsRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
@@ -527,7 +558,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedConnectZohoRoute: typeof AuthenticatedConnectZohoRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeadlinesRoute: typeof AuthenticatedDeadlinesRoute
-  AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
+  AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRouteWithChildren
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
   AuthenticatedEngagementsEngagementIdRoute: typeof AuthenticatedEngagementsEngagementIdRoute
   AuthenticatedPracticesPracticeRoute: typeof AuthenticatedPracticesPracticeRoute
@@ -540,7 +571,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedConnectZohoRoute: AuthenticatedConnectZohoRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeadlinesRoute: AuthenticatedDeadlinesRoute,
-  AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
+  AuthenticatedLeadsRoute: AuthenticatedLeadsRouteWithChildren,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
   AuthenticatedEngagementsEngagementIdRoute:
     AuthenticatedEngagementsEngagementIdRoute,
