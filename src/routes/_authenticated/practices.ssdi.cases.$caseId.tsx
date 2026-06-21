@@ -148,7 +148,18 @@ function CaseDetail() {
             {String(record.Case_Number ?? "Case")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Engagement: {engagementId ? <code className="text-xs">{engagementId}</code> : "—"}
+            Client:{" "}
+            {clientId ? (
+              <Link
+                to="/clients/$clientId"
+                params={{ clientId }}
+                className="text-foreground underline-offset-2 hover:underline"
+              >
+                {clientName ?? clientId}
+              </Link>
+            ) : (
+              "—"
+            )}
           </p>
         </div>
         <Button onClick={() => setDialogOpen(true)}>Advance stage</Button>
