@@ -137,9 +137,22 @@ export function createZohoClient(cfg: ZohoConfig) {
 
     let res = await doFetch(await accessToken(actorKey));
     if (res.status === 401) res = await doFetch(await refreshAccessToken(actorKey));
-    if (res.status === 204) return undefined as T;            // no content
+    if (res.status === 204) return { data: [], info: {} } as T;  // normalize no-content
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw new ZohoError(`Zoho ${method} ${path} → ${res.status}`, res.status, json);
+    if (!res.ok) {
+      const detail = (() => {
+        try {
+          const j = json as { data?: Array<{ code?: string; message?: string; details?: unknown }>; message?: string; code?: string };
+          if (Array.isArray(j.data) && j.data[0]) {
+            const d = j.data[0];
+            return `${d.code ?? ""} ${d.message ?? ""} ${d.details ? JSON.stringify(d.details) : ""}`.trim();
+          }
+          if (j.message) return `${j.code ?? ""} ${j.message}`.trim();
+          return JSON.stringify(json);
+        } catch { return ""; }
+      })();
+      throw new ZohoError(`Zoho ${method} ${path} → ${res.status}${detail ? `: ${detail}` : ""}`, res.status, json);
+    }
     return json as T;
   }
 
