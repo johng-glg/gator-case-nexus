@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedLeadsRouteImport } from './routes/_authenticated/leads'
 import { Route as AuthenticatedEngagementsRouteImport } from './routes/_authenticated/engagements'
 import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -38,6 +39,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedLeadsRoute = AuthenticatedLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedEngagementsRoute =
   AuthenticatedEngagementsRouteImport.update({
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/engagements': typeof AuthenticatedEngagementsRoute
+  '/leads': typeof AuthenticatedLeadsRoute
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/engagements': typeof AuthenticatedEngagementsRoute
+  '/leads': typeof AuthenticatedLeadsRoute
   '/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
   '/_authenticated/engagements': typeof AuthenticatedEngagementsRoute
+  '/_authenticated/leads': typeof AuthenticatedLeadsRoute
   '/_authenticated/practices/$practice': typeof AuthenticatedPracticesPracticeRoute
   '/_authenticated/practices/ssdi': typeof AuthenticatedPracticesSsdiRouteWithChildren
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
@@ -166,6 +175,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/deadlines'
     | '/engagements'
+    | '/leads'
     | '/practices/$practice'
     | '/practices/ssdi'
     | '/api/public/deadline-sweep'
@@ -182,6 +192,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/deadlines'
     | '/engagements'
+    | '/leads'
     | '/practices/$practice'
     | '/api/public/deadline-sweep'
     | '/api/zoho/connect/callback'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/deadlines'
     | '/_authenticated/engagements'
+    | '/_authenticated/leads'
     | '/_authenticated/practices/$practice'
     | '/_authenticated/practices/ssdi'
     | '/api/public/deadline-sweep'
@@ -237,6 +249,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/leads': {
+      id: '/_authenticated/leads'
+      path: '/leads'
+      fullPath: '/leads'
+      preLoaderRoute: typeof AuthenticatedLeadsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/engagements': {
       id: '/_authenticated/engagements'
@@ -351,6 +370,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeadlinesRoute: typeof AuthenticatedDeadlinesRoute
   AuthenticatedEngagementsRoute: typeof AuthenticatedEngagementsRoute
+  AuthenticatedLeadsRoute: typeof AuthenticatedLeadsRoute
   AuthenticatedPracticesPracticeRoute: typeof AuthenticatedPracticesPracticeRoute
   AuthenticatedPracticesSsdiRoute: typeof AuthenticatedPracticesSsdiRouteWithChildren
 }
@@ -361,6 +381,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeadlinesRoute: AuthenticatedDeadlinesRoute,
   AuthenticatedEngagementsRoute: AuthenticatedEngagementsRoute,
+  AuthenticatedLeadsRoute: AuthenticatedLeadsRoute,
   AuthenticatedPracticesPracticeRoute: AuthenticatedPracticesPracticeRoute,
   AuthenticatedPracticesSsdiRoute: AuthenticatedPracticesSsdiRouteWithChildren,
 }

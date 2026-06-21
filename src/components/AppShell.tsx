@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import {
   LayoutDashboard,
   Users,
+  UserPlus,
   Briefcase,
   AlarmClock,
   LogOut,
