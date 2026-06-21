@@ -68,16 +68,33 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               order by Date_Opened desc
               limit 200`;
     case "deadlinesAtRisk":
-      return `select Case_Number, Current_Stage, Active_Deadline_Type, Deadline_Date, Days_To_Deadline, Engagement
+      return `select Case_Number, Current_Stage, Active_Deadline_Type, Deadline_Date, Days_To_Deadline,
+                     Engagement, Engagement.Name, Assigned_Attorney
               from SSDI_Cases
               where Deadline_At_Risk = true and Is_Closed = false
               order by Days_To_Deadline asc
               limit 200`;
     case "deadlinesAll":
-      return `select Case_Number, Current_Stage, Active_Deadline_Type, Deadline_Date, Days_To_Deadline, Engagement
+      return `select Case_Number, Current_Stage, Active_Deadline_Type, Deadline_Date, Days_To_Deadline,
+                     Engagement, Engagement.Name, Assigned_Attorney
               from SSDI_Cases
               where Deadline_Date is not null and Is_Closed = false
               order by Deadline_Date asc
+              limit 200`;
+    case "myDeadlines":
+      return `select Case_Number, Current_Stage, Active_Deadline_Type, Deadline_Date, Days_To_Deadline,
+                     Engagement, Engagement.Name, Assigned_Attorney
+              from SSDI_Cases
+              where Deadline_Date is not null and Is_Closed = false
+                and Assigned_Attorney = ${safeId(params.userId)}
+              order by Deadline_Date asc
+              limit 200`;
+    case "upcomingHearings":
+      return `select Case_Number, ALJ_Hearing_Scheduled_Date, Hearing_Office_ODAR, ALJ_Name,
+                     Engagement, Engagement.Name, Assigned_Attorney
+              from SSDI_Cases
+              where ALJ_Hearing_Scheduled_Date is not null and Is_Closed = false
+              order by ALJ_Hearing_Scheduled_Date asc
               limit 200`;
     case "releasesExpiringSoon":
       return `select Case_Number, Release_Expiration_Date, Engagement
