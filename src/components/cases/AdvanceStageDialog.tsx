@@ -1,17 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { TRANSITIONS, type Stage } from "@/integrations/zoho/lifecycle";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { TRANSITIONS, CLOSURE_REASONS, type Stage } from "@/integrations/zoho/lifecycle";
 
-type FieldType = "date" | "text" | "number" | "textarea";
-interface FieldSpec {
+type FieldType = "date" | "text" | "number" | "textarea" | "select";
+export interface FieldSpec {
   field: string;
   label: string;
   type: FieldType;
   required?: boolean;
+  options?: readonly string[];
 }
 
 /**
