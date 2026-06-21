@@ -96,6 +96,7 @@ export function TasksPanel({ caseId }: Props) {
 
   async function invalidate() {
     await qc.invalidateQueries({ queryKey: ["tasks", caseId] });
+    await qc.invalidateQueries({ queryKey: ["case-activity", caseId] });
   }
 
   async function onComplete(id: string) {
