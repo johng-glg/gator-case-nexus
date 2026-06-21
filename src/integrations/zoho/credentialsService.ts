@@ -111,26 +111,50 @@ export function createCredentialsService(deps: CredentialsDeps) {
     return status(key);
   }
 
+  // Dedup concurrent refreshes on a cold isolate so we never fire two parallel
+  // refresh-token grants for the same connection.
+  const inFlight = new Map<string, Promise<string>>();
+
   /** Mint a short-lived access token for this connection (cached until ~1 min before expiry). */
   async function getAccessToken(key: ConnectionKey): Promise<string> {
     const hit = cache.get(key);
     if (hit && hit.exp > now().getTime()) return hit.token;
-    const c = conn(key);
-    const refresh = await deps.tokenStore.getRefreshToken(key);
-    if (!refresh) throw new Error(`No token stored for ${c.label}. Rotate it on the Connections page.`);
-    const json = await tokenRequest(new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: c.clientId, client_secret: c.clientSecret, refresh_token: refresh,
-    }));
-    if (!json.access_token) throw new Error(`Refresh failed for ${c.label}: ${json.error ?? "unknown"}`);
-    // Diagnostic: log granted scopes + api_domain. Zoho returns these on refresh.
-    console.log(`[zoho:${key}] refresh ok — scope="${json.scope ?? "(none)"}" api_domain="${json.api_domain ?? "(none)"}"`);
-    if (key === "SIGN_FIRM" && json.scope && !/ZohoSign\.documents/i.test(json.scope)) {
-      throw new Error(`Refresh token for ${c.label} is missing ZohoSign.documents scope. Granted scopes: "${json.scope}". Re-mint the refresh token from a self-client authorization that includes ZohoSign.documents.ALL.`);
+    // Shared DB cache so multiple Worker isolates reuse one access token.
+    if (deps.tokenStore.getCachedAccessToken) {
+      try {
+        const shared = await deps.tokenStore.getCachedAccessToken(key);
+        if (shared && shared.expiresAt > now().getTime()) {
+          cache.set(key, { token: shared.token, exp: shared.expiresAt });
+          return shared.token;
+        }
+      } catch { /* fall through */ }
     }
-    const token = json.access_token;
-    cache.set(key, { token, exp: now().getTime() + (json.expires_in ?? 3600) * 1000 - 60_000 });
-    return token;
+    let pending = inFlight.get(key);
+    if (pending) return pending;
+    pending = (async () => {
+      const c = conn(key);
+      const refresh = await deps.tokenStore.getRefreshToken(key);
+      if (!refresh) throw new Error(`No token stored for ${c.label}. Rotate it on the Connections page.`);
+      const json = await tokenRequest(new URLSearchParams({
+        grant_type: "refresh_token",
+        client_id: c.clientId, client_secret: c.clientSecret, refresh_token: refresh,
+      }));
+      if (!json.access_token) throw new Error(`Refresh failed for ${c.label}: ${json.error ?? "unknown"}`);
+      // Diagnostic: log granted scopes + api_domain. Zoho returns these on refresh.
+      console.log(`[zoho:${key}] refresh ok — scope="${json.scope ?? "(none)"}" api_domain="${json.api_domain ?? "(none)"}"`);
+      if (key === "SIGN_FIRM" && json.scope && !/ZohoSign\.documents/i.test(json.scope)) {
+        throw new Error(`Refresh token for ${c.label} is missing ZohoSign.documents scope. Granted scopes: "${json.scope}". Re-mint the refresh token from a self-client authorization that includes ZohoSign.documents.ALL.`);
+      }
+      const token = json.access_token;
+      const expiresAt = now().getTime() + (json.expires_in ?? 3600) * 1000 - 60_000;
+      cache.set(key, { token, exp: expiresAt });
+      if (deps.tokenStore.setCachedAccessToken) {
+        try { await deps.tokenStore.setCachedAccessToken(key, token, expiresAt); } catch { /* ignore */ }
+      }
+      return token;
+    })().finally(() => inFlight.delete(key));
+    inFlight.set(key, pending);
+    return pending;
   }
 
   /** Live check that the stored token works. Updates lastVerifiedAt. Returns ok + a short message. */

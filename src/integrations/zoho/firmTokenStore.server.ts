@@ -32,10 +32,35 @@ export const firmTokenStore: ZohoTokenStore = {
           key,
           refresh_token: refreshToken,
           refresh_tail: refreshToken.slice(-4),
+          access_token: null,
+          access_token_expires_at: null,
           updated_at: new Date().toISOString(),
         },
         { onConflict: "key" },
       );
+    if (error) throw error;
+  },
+
+  async getCachedAccessToken(key: string) {
+    const { data, error } = await supabaseAdmin
+      .from("zoho_firm_tokens" as any)
+      .select("access_token, access_token_expires_at")
+      .eq("key", key)
+      .maybeSingle();
+    if (error) return null;
+    const d = data as any;
+    if (!d?.access_token || !d?.access_token_expires_at) return null;
+    return { token: d.access_token as string, expiresAt: new Date(d.access_token_expires_at as string).getTime() };
+  },
+
+  async setCachedAccessToken(key: string, token: string, expiresAt: number) {
+    const { error } = await supabaseAdmin
+      .from("zoho_firm_tokens" as any)
+      .update({
+        access_token: token,
+        access_token_expires_at: new Date(expiresAt).toISOString(),
+      })
+      .eq("key", key);
     if (error) throw error;
   },
 };

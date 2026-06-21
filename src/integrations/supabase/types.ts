@@ -37,6 +37,8 @@ export type Database = {
       }
       zoho_firm_tokens: {
         Row: {
+          access_token: string | null
+          access_token_expires_at: string | null
           client_id: string | null
           client_secret: string | null
           created_at: string
@@ -48,6 +50,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          access_token?: string | null
+          access_token_expires_at?: string | null
           client_id?: string | null
           client_secret?: string | null
           created_at?: string
@@ -59,6 +63,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          access_token?: string | null
+          access_token_expires_at?: string | null
           client_id?: string | null
           client_secret?: string | null
           created_at?: string
@@ -73,6 +79,8 @@ export type Database = {
       }
       zoho_tokens: {
         Row: {
+          access_token: string | null
+          access_token_expires_at: string | null
           created_at: string
           refresh_token: string
           updated_at: string
@@ -80,6 +88,8 @@ export type Database = {
           zoho_user_id: string | null
         }
         Insert: {
+          access_token?: string | null
+          access_token_expires_at?: string | null
           created_at?: string
           refresh_token: string
           updated_at?: string
@@ -87,6 +97,8 @@ export type Database = {
           zoho_user_id?: string | null
         }
         Update: {
+          access_token?: string | null
+          access_token_expires_at?: string | null
           created_at?: string
           refresh_token?: string
           updated_at?: string
