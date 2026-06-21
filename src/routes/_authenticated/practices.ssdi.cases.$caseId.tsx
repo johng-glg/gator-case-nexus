@@ -142,15 +142,9 @@ function CaseDetail() {
   const userFee = typeof record.User_Fee_Withheld === "number" ? record.User_Fee_Withheld : null;
 
   return (
-    <div className="max-w-6xl mx-auto px-8 py-5 space-y-4">
-      <div>
-        <Link to="/practices/ssdi/cases" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="h-4 w-4" /> Back to SSDI cases
-        </Link>
-      </div>
-
+    <div className="max-w-6xl mx-auto px-8 py-5 space-y-3">
       <header className="flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <div className="text-xs uppercase tracking-[0.18em] text-primary/80">SSDI case</div>
           <h1 className="font-display text-2xl text-foreground mt-0.5">
             {String(record.Case_Number ?? "Case")}
@@ -170,7 +164,15 @@ function CaseDetail() {
             )}
           </p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>Advance stage</Button>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <Link
+            to="/practices/ssdi/cases"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" /> Back to SSDI cases
+          </Link>
+          <Button onClick={() => setDialogOpen(true)}>Advance stage</Button>
+        </div>
       </header>
 
       <section className="rounded-lg border border-border bg-card p-4">

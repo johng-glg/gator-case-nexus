@@ -43,19 +43,23 @@ function ClientDetail() {
   const street = rec.Mailing_Street ? `${rec.Mailing_Street}${loc ? ", " + loc : ""}` : loc;
 
   return (
-    <div className="max-w-5xl mx-auto px-8 py-5 space-y-4">
-      <Link to="/clients" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
-        <ChevronLeft className="h-4 w-4" /> Back to clients
-      </Link>
-
-      <header>
-        <div className="text-xs uppercase tracking-[0.18em] text-primary/80">Client</div>
-        <h1 className="font-display text-2xl text-foreground mt-0.5">{name}</h1>
-        <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-          {rec.Contact_Type && <span>{String(rec.Contact_Type)}</span>}
-          {rec.Lead_Source && <span>· Source: {String(rec.Lead_Source)}</span>}
-          {rec.Owner?.name && <span>· Owner: {String(rec.Owner.name)}</span>}
+    <div className="max-w-5xl mx-auto px-8 py-5 space-y-3">
+      <header className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <div className="text-xs uppercase tracking-[0.18em] text-primary/80">Client</div>
+          <h1 className="font-display text-2xl text-foreground mt-0.5">{name}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            {rec.Contact_Type && <span>{String(rec.Contact_Type)}</span>}
+            {rec.Lead_Source && <span>· Source: {String(rec.Lead_Source)}</span>}
+            {rec.Owner?.name && <span>· Owner: {String(rec.Owner.name)}</span>}
+          </div>
         </div>
+        <Link
+          to="/clients"
+          className="inline-flex shrink-0 items-center text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ChevronLeft className="h-4 w-4" /> Back to clients
+        </Link>
       </header>
 
       <section className="rounded-lg border border-border bg-card p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
