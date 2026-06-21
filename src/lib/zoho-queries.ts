@@ -79,6 +79,7 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
     case "pipelineByPractice":
       return `select Engagement_Type, Engagement_Status
               from Engagements
+              where id is not null
               order by Modified_Time desc
               limit 200`;
     case "costsByEngagement":
@@ -100,6 +101,7 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
     case "allEngagements":
       return `select ${ENGAGEMENT_COLS}
               from Engagements
+              where id is not null
               order by Modified_Time desc
               limit 200`;
     case "engagementsByType":
