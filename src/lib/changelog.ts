@@ -12,6 +12,17 @@ export type ChangelogEntry = {
 export const CHANGELOG: ChangelogEntry[] = [
   {
     date: "2026-06-21",
+    title: "SSDI: fee petition draft generator (Phase 5.2)",
+    summary:
+      "Cases in the Award phase get a one-click printable fee petition draft pulling claimant, fee math, and costs.",
+    changes: [
+      "New 'Fee petition draft' button appears on the case page when stage is 'Award / NOA received' or 'Fee petition filed'.",
+      "Printable page at /practices/ssdi/cases/:id/fee-petition shows claimant + SSA claim info, fee calculation (25% of past-due vs. $9,200 cap, less SSA user fee), itemized case costs with total, and signature block.",
+      "Print / Save as PDF via the browser — no extra dependencies. Time & services section is a stub for itemization before filing.",
+    ],
+  },
+  {
+    date: "2026-06-21",
     title: "SSDI: cost entry on case page (Phase 5.1)",
     summary:
       "Attorneys can add and remove case costs directly from the case page; writes go straight to the Zoho Costs module.",
