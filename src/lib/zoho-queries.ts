@@ -7,6 +7,7 @@
  * IMPORTANT: every interpolated value must be safe (id, enum, boolean) — no raw strings.
  * Identifiers we accept are Zoho record ids (alphanumeric) or known enum values.
  */
+import { ALL_ENGAGEMENT_TYPES } from "@/practices/registry";
 
 const ID = /^[A-Za-z0-9_]+$/;
 
@@ -15,15 +16,32 @@ function safeId(v: unknown): string {
   return v;
 }
 
+/** Quote a string for COQL only if it is in the provided whitelist. */
+function safeEnum(v: unknown, allowed: readonly string[]): string {
+  if (typeof v !== "string" || !allowed.includes(v)) {
+    throw new Error("Invalid enum parameter.");
+  }
+  // COQL string literal: single-quoted; escape embedded single quotes.
+  return `'${v.replace(/'/g, "''")}'`;
+}
+
 export type QueryName =
   | "openCases"
   | "myOpenCases"
   | "deadlinesAtRisk"
   | "releasesExpiringSoon"
   | "pipelineByStage"
+  | "pipelineByPractice"
   | "costsByEngagement"
   | "casesByEngagement"
-  | "engagementById";
+  | "engagementById"
+  | "allEngagements"
+  | "engagementsByType"
+  | "myEngagements"
+  | "allContacts";
+
+const ENGAGEMENT_COLS =
+  "id, Engagement_Name, Engagement_Type, Engagement_Status, Retainer_Status, Client.First_Name, Client.Last_Name, Assigned_Attorney";
 
 export function buildQuery(name: QueryName, params: Record<string, unknown> = {}): string {
   switch (name) {
@@ -52,6 +70,10 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               from SSDI_Cases
               where Is_Closed = false
               group by Current_Stage`;
+    case "pipelineByPractice":
+      return `select Engagement_Type, Engagement_Status, count(id)
+              from Engagements
+              group by Engagement_Type, Engagement_Status`;
     case "costsByEngagement":
       return `select id, Name, Amount, Cost_Type, Engagement
               from Costs
@@ -65,5 +87,23 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
                      Client.First_Name, Client.Last_Name, All_Fees, Total_Costs1
               from Engagements
               where id = ${safeId(params.engagementId)}`;
+    case "allEngagements":
+      return `select ${ENGAGEMENT_COLS}
+              from Engagements
+              order by Modified_Time desc`;
+    case "engagementsByType":
+      return `select ${ENGAGEMENT_COLS}
+              from Engagements
+              where Engagement_Type = ${safeEnum(params.engagementType, ALL_ENGAGEMENT_TYPES)}
+              order by Modified_Time desc`;
+    case "myEngagements":
+      return `select ${ENGAGEMENT_COLS}
+              from Engagements
+              where Assigned_Attorney = ${safeId(params.userId)}
+              order by Modified_Time desc`;
+    case "allContacts":
+      return `select id, First_Name, Last_Name, Email, Phone, Mailing_City, Mailing_State
+              from Contacts
+              order by Modified_Time desc`;
   }
 }
