@@ -144,6 +144,7 @@ function EngagementDetail() {
         status={String(record.Retainer_Status ?? "Not sent")}
         link={record.Retainer_Link ? String(record.Retainer_Link) : undefined}
         sentDate={record.Retainer_Sent_Date ? String(record.Retainer_Sent_Date) : undefined}
+        viewedDate={record.Retainer_Viewed_Date ? String(record.Retainer_Viewed_Date) : undefined}
         signedDate={record.Retainer_Signed_Date ? String(record.Retainer_Signed_Date) : undefined}
         onSend={() => sendRetainer.mutate()}
         sending={sendRetainer.isPending}
@@ -271,16 +272,17 @@ function Badge({ children }: { children: React.ReactNode }) {
 }
 
 function RetainerPanel({
-  status, link, sentDate, signedDate, onSend, sending,
+  status, link, sentDate, viewedDate, signedDate, onSend, sending,
 }: {
   status: string;
   link?: string;
   sentDate?: string;
+  viewedDate?: string;
   signedDate?: string;
   onSend: () => void;
   sending: boolean;
 }) {
-  const STEPS = ["Not sent", "Sent", "Signed"] as const;
+  const STEPS = ["Not sent", "Sent", "Viewed", "Signed"] as const;
   const isError = status === "Declined" || status === "Expired";
   const currentIdx = isError ? 1 : Math.max(0, STEPS.indexOf(status as (typeof STEPS)[number]));
   const canSend = status !== "Signed";
@@ -292,6 +294,7 @@ function RetainerPanel({
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Retainer</div>
           <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
             {sentDate && <span>Sent {sentDate.slice(0, 10)}</span>}
+            {viewedDate && <span>Viewed {viewedDate.slice(0, 10)}</span>}
             {signedDate && <span>Signed {signedDate.slice(0, 10)}</span>}
             {link && (
               <a href={link} target="_blank" rel="noreferrer" className="text-primary hover:underline">

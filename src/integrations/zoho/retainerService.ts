@@ -31,7 +31,7 @@ const ENGAGEMENTS = "Engagements";
 const CONTACTS = "Contacts";
 
 /** Engagement.Retainer_Status values. */
-export type RetainerStatus = "Not sent" | "Sent" | "Signed" | "Declined" | "Expired";
+export type RetainerStatus = "Not sent" | "Sent" | "Viewed" | "Signed" | "Declined" | "Expired";
 
 export interface SignSendResult {
   /** Zoho Sign request id — persisted to Engagement.Retainer_ID; the webhook joins back on it. */
@@ -136,8 +136,17 @@ export function createRetainerService(deps: RetainerServiceDeps) {
     const eng = rows[0];
     if (!eng?.id) return null;
 
+    // Don't downgrade a terminal status (Signed/Declined/Expired) to Viewed if
+    // a later notification arrives out of order.
+    const current = String(eng.Retainer_Status ?? "");
+    const isTerminal = current === "Signed" || current === "Declined" || current === "Expired";
+    if (evt.status === "Viewed" && isTerminal) {
+      return { engagementId: eng.id as string, status: current as RetainerStatus };
+    }
+
     const update: ZohoRecord = { id: eng.id as string, Retainer_Status: evt.status };
     if (evt.status === "Signed") update.Retainer_Signed_Date = isoDateTime(now());
+    if (evt.status === "Viewed") update.Retainer_Viewed_Date = isoDateTime(now());
     await svc.updateRecords(ENGAGEMENTS, [update]);
 
     if (evt.status === "Signed" && deps.onRetainerSigned) {
@@ -181,5 +190,6 @@ export function parseSignWebhook(payload: unknown): { requestId?: string; status
   if (key === "requestexpired"   || key === "expired")         return { requestId, status: "Expired" };
   if (key === "requestrecalled"  || key === "recalled" ||
       key === "requestwithdrawn" || key === "withdrawn")       return { requestId, status: "Not sent" as RetainerStatus };
+  if (key === "requestviewed"    || key === "viewed")          return { requestId, status: "Viewed" };
   return { requestId, status: undefined };
 }
