@@ -196,6 +196,12 @@ export function createZohoClient(cfg: ZohoConfig) {
         return r?.data ?? [];
       },
 
+      /** Current Zoho user id for this actor's tokens. */
+      async currentUserId(): Promise<string | null> {
+        const r = await request<{ users?: Array<{ id?: string }> }>(actorKey, "GET", "/users?type=CurrentUser");
+        return r?.users?.[0]?.id ?? null;
+      },
+
 
       /** Create up to any number of records; chunked to 100/call. Attributed to this actor. */
       async createRecords(module: string, records: ZohoRecord[]): Promise<unknown[]> {
