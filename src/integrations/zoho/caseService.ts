@@ -12,7 +12,7 @@
  */
 
 import { TRANSITIONS, canTransition, HOOKS, type Stage, type DueRule } from "./lifecycle";
-import { computeAppealDeadline, daysUntil, isAtRisk, releaseExpiration, releaseExpiringSoon, asUTCDate } from "./deadlines";
+import { computeAppealDeadline, daysUntil, isAtRisk, localToday, releaseExpiration, releaseExpiringSoon, asUTCDate } from "./deadlines";
 import type { ZohoClient, ZohoRecord } from "./zohoClient";
 import { SERVICE_ACTOR } from "./zohoClient";
 
@@ -37,7 +37,7 @@ const READ_FIELDS = [
 ];
 
 export function createCaseService(deps: CaseServiceDeps) {
-  const today = () => (deps.now ? deps.now() : new Date());
+  const today = () => (deps.now ? deps.now() : localToday());
 
   /** Resolve a hook's DueRule against the (merged) case fields + computed deadline. */
   function resolveDate(rule: DueRule, ctx: { deadline: Date | null; fields: Record<string, unknown> }): string | null {
