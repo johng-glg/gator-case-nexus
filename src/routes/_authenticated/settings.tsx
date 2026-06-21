@@ -23,6 +23,7 @@ function SettingsLayout() {
       ? [
           { to: "/settings/users", label: "Users & Roles", exact: false },
           { to: "/settings/connections", label: "Connections", exact: false },
+          { to: "/settings/changelog", label: "Change Log", exact: false },
         ]
       : []),
   ];
