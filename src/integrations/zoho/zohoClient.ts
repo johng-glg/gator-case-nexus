@@ -119,14 +119,39 @@ export function createZohoClient(cfg: ZohoConfig) {
     });
     const json = (await res.json()) as TokenResponse;
     if (!json.access_token) throw new ZohoError(`Token refresh failed: ${json.error ?? "unknown"}`, res.status, json);
-    accessCache.set(actorKey, { token: json.access_token, exp: Date.now() + (json.expires_in ?? 3600) * 1000 - 60_000 });
+    const expiresAt = Date.now() + (json.expires_in ?? 3600) * 1000 - 60_000;
+    accessCache.set(actorKey, { token: json.access_token, exp: expiresAt });
+    // Persist to shared cache so other worker isolates don't re-mint.
+    // Best-effort: failures here must not break the request.
+    if (cfg.tokenStore.setCachedAccessToken) {
+      try { await cfg.tokenStore.setCachedAccessToken(actorKey, json.access_token, expiresAt); } catch { /* ignore */ }
+    }
     return json.access_token;
   }
+
+  // In-flight refresh dedup per actor — so 5 parallel queries on a cold isolate
+  // result in ONE refresh call, not 5.
+  const inFlight = new Map<string, Promise<string>>();
 
   async function accessToken(actorKey: string): Promise<string> {
     const c = accessCache.get(actorKey);
     if (c && c.exp > Date.now()) return c.token;
-    return refreshAccessToken(actorKey);
+    // Try the shared DB cache before hitting Zoho's token endpoint.
+    if (cfg.tokenStore.getCachedAccessToken) {
+      try {
+        const shared = await cfg.tokenStore.getCachedAccessToken(actorKey);
+        if (shared && shared.expiresAt > Date.now()) {
+          accessCache.set(actorKey, { token: shared.token, exp: shared.expiresAt });
+          return shared.token;
+        }
+      } catch { /* fall through to refresh */ }
+    }
+    let pending = inFlight.get(actorKey);
+    if (!pending) {
+      pending = refreshAccessToken(actorKey).finally(() => inFlight.delete(actorKey));
+      inFlight.set(actorKey, pending);
+    }
+    return pending;
   }
 
   /** Core request with one automatic retry on 401 (stale token). */
