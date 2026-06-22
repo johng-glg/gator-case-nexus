@@ -3,8 +3,9 @@
  *
  * One firm-level Sign connection (NOT per-user): the retainer goes out from the firm, not from
  * an individual staff member. Supply an access-token getter for that connection (its refresh
- * token needs scope ZohoSign.documents.ALL) plus the template id and the SIGN action/role id
- * from your template.
+ * token needs scopes ZohoSign.documents.ALL,ZohoSign.templates.ALL — send-using-template hits a
+ * /templates/ endpoint, so the TEMPLATES scope is mandatory) plus the template id and the SIGN
+ * action/role id from your template.
  *
  * Zoho Sign send-using-template:
  *   POST {signHost}/api/v1/templates/{template_id}/createdocument
@@ -20,7 +21,7 @@
  * against your Sign account before relying on this in production.
  */
 
-import type { SignAdapter, SignCompletedFile, SignSendResult } from "./retainerService";
+import type { SignAdapter, SignSendResult } from "./retainerService";
 
 const SIGN_HOSTS: Record<string, string> = {
   us: "https://sign.zoho.com", eu: "https://sign.zoho.eu", in: "https://sign.zoho.in",
@@ -48,16 +49,11 @@ export function createZohoSignAdapter(cfg: ZohoSignAdapterConfig): SignAdapter {
       const field_text_data: Record<string, string> = {};
       for (const [k, v] of Object.entries(input.mergeData)) field_text_data[mapKey(k)] = v;
 
-      const templateId = input.templateId ?? cfg.templateId;
-      const actionId = input.actionId ?? cfg.signActionId;
-      // Only include field_data when we actually have merge values that match the template.
-      // Sending an unknown tag makes Zoho return 9004 "No match found".
-      const hasMerge = Object.keys(field_text_data).length > 0;
-      const data: Record<string, unknown> = {
+      const data = {
         templates: {
-          ...(hasMerge ? { field_data: { field_text_data } } : {}),
+          field_data: { field_text_data },
           actions: [{
-            action_id: actionId,
+            action_id: input.actionId ?? cfg.signActionId,
             action_type: "SIGN",
             recipient_name: input.recipient.name,
             recipient_email: input.recipient.email,
@@ -69,6 +65,7 @@ export function createZohoSignAdapter(cfg: ZohoSignAdapterConfig): SignAdapter {
       const form = new FormData();
       form.append("data", JSON.stringify(data));
 
+      const templateId = input.templateId ?? cfg.templateId;
       const token = await cfg.getAccessToken();
       const res = await fetch(`${host}/api/v1/templates/${templateId}/createdocument`, {
         method: "POST",
@@ -85,37 +82,6 @@ export function createZohoSignAdapter(cfg: ZohoSignAdapterConfig): SignAdapter {
       if (!requestId) throw new Error(`Zoho Sign response missing request_id: ${JSON.stringify(json)}`);
       const signLink = req.sign_url ?? req.signing_url ?? undefined;
       return { requestId: String(requestId), signLink };
-    },
-
-    /** Pull the signed PDF + completion certificate. Used to retain ≥ 3 years (SSA CPAS rule). */
-    async downloadCompleted(requestId: string): Promise<SignCompletedFile[]> {
-      const token = await cfg.getAccessToken();
-      const headers = { Authorization: `Zoho-oauthtoken ${token}` };
-      const out: SignCompletedFile[] = [];
-      // Signed PDF
-      const pdfRes = await fetch(`${host}/api/v1/requests/${requestId}/pdf`, { headers });
-      if (!pdfRes.ok) {
-        throw new Error(`Zoho Sign pdf download failed (${pdfRes.status})`);
-      }
-      out.push({
-        name: `${requestId}-signed.pdf`,
-        contentType: pdfRes.headers.get("content-type") ?? "application/pdf",
-        bytes: new Uint8Array(await pdfRes.arrayBuffer()),
-        kind: "signed",
-      });
-      // Completion certificate (audit trail) — endpoint varies by tenant; tolerate 404.
-      const certRes = await fetch(`${host}/api/v1/requests/${requestId}/certificate`, { headers });
-      if (certRes.ok) {
-        out.push({
-          name: `${requestId}-audit.pdf`,
-          contentType: certRes.headers.get("content-type") ?? "application/pdf",
-          bytes: new Uint8Array(await certRes.arrayBuffer()),
-          kind: "audit",
-        });
-      } else {
-        console.warn(`[zohoSignAdapter] audit certificate not available (${certRes.status}) for ${requestId}`);
-      }
-      return out;
     },
   };
 }
