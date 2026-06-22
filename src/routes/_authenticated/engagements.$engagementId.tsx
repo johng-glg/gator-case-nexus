@@ -289,7 +289,7 @@ function Badge({ children }: { children: React.ReactNode }) {
 }
 
 function RetainerPanel({
-  status, link, sentDate, viewedDate, signedDate, onSend, sending,
+  status, link, sentDate, viewedDate, signedDate, onSend, sending, onReset, resetting,
 }: {
   status: string;
   link?: string;
@@ -298,6 +298,8 @@ function RetainerPanel({
   signedDate?: string;
   onSend: () => void;
   sending: boolean;
+  onReset?: () => void;
+  resetting?: boolean;
 }) {
   const STEPS = ["Not sent", "Sent", "Viewed", "Signed"] as const;
   const isError = status === "Declined" || status === "Expired";
