@@ -286,7 +286,9 @@ function RetainerPanel({
   const STEPS = ["Not sent", "Sent", "Viewed", "Signed"] as const;
   const isError = status === "Declined" || status === "Expired";
   const currentIdx = isError ? 1 : Math.max(0, STEPS.indexOf(status as (typeof STEPS)[number]));
-  const canSend = status !== "Signed";
+  const normalized = status.toLowerCase();
+  const canSend = normalized !== "signed";
+  const neverSent = normalized === "not sent" || normalized === "";
 
   return (
     <section className="rounded-lg border border-border bg-card p-4">
@@ -312,7 +314,7 @@ function RetainerPanel({
             className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {sending && <Loader2 className="h-3 w-3 animate-spin" />}
-            {sending ? "Sending…" : status === "Not sent" ? "Send retainer" : "Resend retainer"}
+            {sending ? "Sending…" : neverSent ? "Send retainer" : "Resend retainer"}
           </button>
         )}
       </div>
