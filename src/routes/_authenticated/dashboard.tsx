@@ -33,6 +33,29 @@ function Dashboard() {
     queryFn: () => runQuery({ data: { name: "deadlinesAtRisk" } }),
   });
 
+  const engagements = useQuery({
+    queryKey: ["allEngagements"],
+    queryFn: () => runQuery({ data: { name: "allEngagements" } }),
+  });
+
+  const pending = useMemo(() => {
+    const rows = (engagements.data?.rows ?? []) as Array<Record<string, unknown>>;
+    return rows.filter((r) => {
+      const status = String(r.Engagement_Status ?? "").toLowerCase();
+      const retainer = String(r.Retainer_Status ?? "").toLowerCase();
+      if (/closed|complete|won|lost|terminat/.test(status)) return false;
+      // "Pending" = engagement status pending OR retainer not yet signed.
+      return (
+        status === "pending" ||
+        status === "intake" ||
+        status === "new" ||
+        retainer === "sent" ||
+        retainer === "not sent" ||
+        retainer === "pending"
+      );
+    });
+  }, [engagements.data]);
+
   // Roll up { Engagement_Type, Engagement_Status, count } → per-practice counts.
   const perPractice = useMemo(() => {
     const rows = pipeline.data?.rows ?? [];
