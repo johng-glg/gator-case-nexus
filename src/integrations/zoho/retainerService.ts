@@ -69,7 +69,7 @@ export interface RetainerServiceDeps {
 }
 
 const isoDateTime = (d: Date) => d.toISOString().slice(0, 19) + "+00:00";
-const isoDate = (d: Date) => d.toISOString().slice(0, 10); // Retainer_Sent is a Date field
+const isoDate = (d: Date) => d.toISOString().slice(0, 10);
 const esc = (s: string) => s.replace(/'/g, "''");
 /** Zoho create/update returns [{ details:{ id } }] etc.; pull the lookup id whether bare or object. */
 const lookupId = (v: unknown): string | undefined =>
@@ -119,7 +119,7 @@ export function createRetainerService(deps: RetainerServiceDeps) {
       id: engagementId,
       Retainer_ID: result.requestId,
       Retainer_Link: result.signLink,
-      Retainer_Sent: isoDate(t),
+      Retainer_Sent: isoDateTime(t),
       Retainer_Status: "Sent" as RetainerStatus,
     }]);
 
