@@ -167,10 +167,25 @@ export function DeadlinePanel({ caseId, record }: Props) {
             <div className="mt-0.5 text-sm font-medium text-foreground">{activeType}</div>
           )}
         </div>
-        <Button size="sm" variant="outline" onClick={onRecompute} disabled={busy}>
-          <RefreshCw className={`h-3.5 w-3.5 mr-1 ${busy ? "animate-spin" : ""}`} />
-          Recompute
-        </Button>
+        <div className="flex items-center gap-2">
+          {calConfigured && onCalendar && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400"
+              title="This deadline is on the firm Google Calendar."
+            >
+              <CalendarCheck2 className="h-3 w-3" /> On calendar
+            </span>
+          )}
+          {calConfigured && (
+            <Button size="sm" variant="ghost" onClick={onResyncCalendar} disabled={busy} title="Resync calendar">
+              <CalendarCheck2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={onRecompute} disabled={busy}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${busy ? "animate-spin" : ""}`} />
+            Recompute
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-baseline gap-3">
