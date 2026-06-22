@@ -194,25 +194,25 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
  */
 export function createCaseOpener(deps: { zoho: ZohoClient; now?: () => Date }) {
   const today = () => iso(deps.now ? deps.now() : localToday());
-  return async function openCaseForEngagement({ engagementId }: { engagementId: string }) {
+  return async function openCaseForEngagement({ engagementId }: { engagementId: string }): Promise<{ caseId: string | null }> {
     const { SERVICE_ACTOR } = await import("./zohoClient");
     const svc = deps.zoho.as(SERVICE_ACTOR);
     const eng = await svc.getRecord<ZohoRecord>("Engagements", engagementId, [
       "Name", "Client", "Engagement_Type",
     ]);
-    if (!eng) return;
+    if (!eng) return { caseId: null };
     const type = String(eng.Engagement_Type ?? "");
 
     if (type !== "SSDI") {
       console.log(`[caseOpener] skipping ${engagementId}: practice "${type}" not built yet`);
-      return;
+      return { caseId: null };
     }
 
     // Idempotency: skip if a case already exists for this engagement.
     const existing = await svc.coql<ZohoRecord>(
       `select id from SSDI_Cases where Engagement = '${engagementId}'`,
     );
-    if (existing[0]?.id) return;
+    if (existing[0]?.id) return { caseId: existing[0].id as string };
 
     const clientId = (eng.Client as { id?: string } | undefined)?.id;
     let clientName = "";
@@ -222,12 +222,14 @@ export function createCaseOpener(deps: { zoho: ZohoClient; now?: () => Date }) {
     }
     const name = clientName ? `${clientName} — SSDI` : (eng.Name as string) || "SSDI Case";
 
-    await svc.createRecords("SSDI_Cases", [clean({
+    const res = await svc.createRecords("SSDI_Cases", [clean({
       Name: name,
       Engagement: { id: engagementId },
       Current_Stage: "Retained",
       Date_Opened: today(),
     })]);
+    const caseId = (res[0] as { details?: { id?: string } })?.details?.id ?? null;
+    return { caseId };
   };
 }
 
