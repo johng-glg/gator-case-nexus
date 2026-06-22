@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as ClientAuthRouteImport } from './routes/client-auth'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ClientRouteRouteImport } from './routes/_client/route'
@@ -29,6 +30,7 @@ import { Route as ApiPublicDeadlineSweepRouteImport } from './routes/api/public/
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings.users'
 import { Route as AuthenticatedSettingsTrustExportRouteImport } from './routes/_authenticated/settings.trust-export'
 import { Route as AuthenticatedSettingsStageRequirementsRouteImport } from './routes/_authenticated/settings.stage-requirements'
+import { Route as AuthenticatedSettingsMessagingRouteImport } from './routes/_authenticated/settings.messaging'
 import { Route as AuthenticatedSettingsDeadlineSweepRouteImport } from './routes/_authenticated/settings.deadline-sweep'
 import { Route as AuthenticatedSettingsConnectionsRouteImport } from './routes/_authenticated/settings.connections'
 import { Route as AuthenticatedSettingsChangelogRouteImport } from './routes/_authenticated/settings.changelog'
@@ -54,6 +56,11 @@ import { Route as AuthenticatedPracticesSsdiReportsOutcomesRouteImport } from '.
 import { Route as AuthenticatedPracticesSsdiCasesCaseIdRouteImport } from './routes/_authenticated/practices.ssdi.cases.$caseId'
 import { Route as AuthenticatedPracticesSsdiCasesCaseIdFeePetitionRouteImport } from './routes/_authenticated/practices.ssdi.cases.$caseId.fee-petition'
 
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ClientAuthRoute = ClientAuthRouteImport.update({
   id: '/client-auth',
   path: '/client-auth',
@@ -157,6 +164,12 @@ const AuthenticatedSettingsStageRequirementsRoute =
   AuthenticatedSettingsStageRequirementsRouteImport.update({
     id: '/stage-requirements',
     path: '/stage-requirements',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsMessagingRoute =
+  AuthenticatedSettingsMessagingRouteImport.update({
+    id: '/messaging',
+    path: '/messaging',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
 const AuthenticatedSettingsDeadlineSweepRoute =
@@ -305,6 +318,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/client-auth': typeof ClientAuthRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -320,6 +334,7 @@ export interface FileRoutesByFullPath {
   '/settings/changelog': typeof AuthenticatedSettingsChangelogRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/settings/deadline-sweep': typeof AuthenticatedSettingsDeadlineSweepRoute
+  '/settings/messaging': typeof AuthenticatedSettingsMessagingRoute
   '/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
   '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -349,6 +364,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/client-auth': typeof ClientAuthRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -362,6 +378,7 @@ export interface FileRoutesByTo {
   '/settings/changelog': typeof AuthenticatedSettingsChangelogRoute
   '/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/settings/deadline-sweep': typeof AuthenticatedSettingsDeadlineSweepRoute
+  '/settings/messaging': typeof AuthenticatedSettingsMessagingRoute
   '/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
   '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -394,6 +411,7 @@ export interface FileRoutesById {
   '/_client': typeof ClientRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/client-auth': typeof ClientAuthRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/_authenticated/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
@@ -409,6 +427,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/changelog': typeof AuthenticatedSettingsChangelogRoute
   '/_authenticated/settings/connections': typeof AuthenticatedSettingsConnectionsRoute
   '/_authenticated/settings/deadline-sweep': typeof AuthenticatedSettingsDeadlineSweepRoute
+  '/_authenticated/settings/messaging': typeof AuthenticatedSettingsMessagingRoute
   '/_authenticated/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
   '/_authenticated/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
@@ -440,6 +459,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/client-auth'
+    | '/unsubscribe'
     | '/connect-zoho'
     | '/dashboard'
     | '/deadlines'
@@ -455,6 +475,7 @@ export interface FileRouteTypes {
     | '/settings/changelog'
     | '/settings/connections'
     | '/settings/deadline-sweep'
+    | '/settings/messaging'
     | '/settings/stage-requirements'
     | '/settings/trust-export'
     | '/settings/users'
@@ -484,6 +505,7 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/client-auth'
+    | '/unsubscribe'
     | '/connect-zoho'
     | '/dashboard'
     | '/deadlines'
@@ -497,6 +519,7 @@ export interface FileRouteTypes {
     | '/settings/changelog'
     | '/settings/connections'
     | '/settings/deadline-sweep'
+    | '/settings/messaging'
     | '/settings/stage-requirements'
     | '/settings/trust-export'
     | '/settings/users'
@@ -528,6 +551,7 @@ export interface FileRouteTypes {
     | '/_client'
     | '/auth'
     | '/client-auth'
+    | '/unsubscribe'
     | '/_authenticated/connect-zoho'
     | '/_authenticated/dashboard'
     | '/_authenticated/deadlines'
@@ -543,6 +567,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/changelog'
     | '/_authenticated/settings/connections'
     | '/_authenticated/settings/deadline-sweep'
+    | '/_authenticated/settings/messaging'
     | '/_authenticated/settings/stage-requirements'
     | '/_authenticated/settings/trust-export'
     | '/_authenticated/settings/users'
@@ -575,6 +600,7 @@ export interface RootRouteChildren {
   ClientRouteRoute: typeof ClientRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ClientAuthRoute: typeof ClientAuthRoute
+  UnsubscribeRoute: typeof UnsubscribeRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   ApiPublicDeadlineSweepRoute: typeof ApiPublicDeadlineSweepRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
@@ -589,6 +615,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/client-auth': {
       id: '/client-auth'
       path: '/client-auth'
@@ -727,6 +760,13 @@ declare module '@tanstack/react-router' {
       path: '/stage-requirements'
       fullPath: '/settings/stage-requirements'
       preLoaderRoute: typeof AuthenticatedSettingsStageRequirementsRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
+    '/_authenticated/settings/messaging': {
+      id: '/_authenticated/settings/messaging'
+      path: '/messaging'
+      fullPath: '/settings/messaging'
+      preLoaderRoute: typeof AuthenticatedSettingsMessagingRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
     '/_authenticated/settings/deadline-sweep': {
@@ -905,6 +945,7 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsChangelogRoute: typeof AuthenticatedSettingsChangelogRoute
   AuthenticatedSettingsConnectionsRoute: typeof AuthenticatedSettingsConnectionsRoute
   AuthenticatedSettingsDeadlineSweepRoute: typeof AuthenticatedSettingsDeadlineSweepRoute
+  AuthenticatedSettingsMessagingRoute: typeof AuthenticatedSettingsMessagingRoute
   AuthenticatedSettingsStageRequirementsRoute: typeof AuthenticatedSettingsStageRequirementsRoute
   AuthenticatedSettingsTrustExportRoute: typeof AuthenticatedSettingsTrustExportRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
@@ -917,6 +958,7 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
   AuthenticatedSettingsConnectionsRoute: AuthenticatedSettingsConnectionsRoute,
   AuthenticatedSettingsDeadlineSweepRoute:
     AuthenticatedSettingsDeadlineSweepRoute,
+  AuthenticatedSettingsMessagingRoute: AuthenticatedSettingsMessagingRoute,
   AuthenticatedSettingsStageRequirementsRoute:
     AuthenticatedSettingsStageRequirementsRoute,
   AuthenticatedSettingsTrustExportRoute: AuthenticatedSettingsTrustExportRoute,
@@ -1028,6 +1070,7 @@ const rootRouteChildren: RootRouteChildren = {
   ClientRouteRoute: ClientRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ClientAuthRoute: ClientAuthRoute,
+  UnsubscribeRoute: UnsubscribeRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   ApiPublicDeadlineSweepRoute: ApiPublicDeadlineSweepRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
