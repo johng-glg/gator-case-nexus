@@ -88,11 +88,11 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
       clientId = idOf(res[0]);
     }
 
-    // 2) Engagement (type = SSDI) — records the conflict result; retainer starts "Not sent"
+    // 2) Engagement (type = SSDI) — records the conflict result; retainer starts "Not Sent"
     const engRes = await api.createRecords("Engagements", [clean({
       Name: `${p.client.lastName}, ${p.client.firstName} — SSDI`,
       Client: { id: clientId }, Engagement_Type: "SSDI", Engagement_Status: "Open",
-      Open_Date: t, Retainer_Status: "Not sent",
+      Open_Date: t, Retainer_Status: "Not Sent",
       Conflict_Check_Status: p.conflict.status, Conflict_Check_Date: t, Conflict_Check_By: actor,
     })]);
     const engagementId = idOf(engRes[0]);

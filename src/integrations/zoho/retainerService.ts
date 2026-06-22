@@ -13,7 +13,7 @@
  * ── Zoho-side prerequisites (one-time) ────────────────────────────────────────────────
  *   1. A Zoho Sign template built from "Gator Law SSDI Retainer.docx" with one SIGN recipient
  *      role (the client) and merge tags {{Client_Full_Name}} / {{Today_Date}}.
- *   2. Engagement fields: Retainer_Status (picklist: Not sent | Sent | Signed | Declined |
+ *   2. Engagement fields: Retainer_Status (picklist: Not Sent | Sent | Viewed | Signed | Declined |
  *      Expired), Retainer_ID (single line), Retainer_Link (URL), Retainer_Sent (datetime),
  *      Retainer_Signed_Date (datetime). (Retainer_Status already exists.)
  *   3. A Sign webhook posting to your /webhooks/zoho-sign route → handleSignCompleted(payload).
