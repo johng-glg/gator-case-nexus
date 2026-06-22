@@ -202,3 +202,27 @@ function Section({ title, icon, rows }: { title: string; icon: React.ReactNode; 
     </div>
   );
 }
+
+function CalendarSyncLine({ latest }: { latest: DigestRow }) {
+  const c = latest.calendar_created ?? 0;
+  const u = latest.calendar_updated ?? 0;
+  const d = latest.calendar_deleted ?? 0;
+  const e = latest.calendar_errors ?? 0;
+  if (c === 0 && u === 0 && d === 0 && e === 0) {
+    return (
+      <div className="text-xs text-muted-foreground">
+        Calendar sync: no changes on last run.
+      </div>
+    );
+  }
+  return (
+    <div className="text-xs text-muted-foreground">
+      Calendar sync: <span className="text-foreground tabular-nums">{c}</span> created ·{" "}
+      <span className="text-foreground tabular-nums">{u}</span> updated ·{" "}
+      <span className="text-foreground tabular-nums">{d}</span> deleted
+      {e > 0 && (
+        <span className="ml-2 text-destructive">· {e} error{e === 1 ? "" : "s"}</span>
+      )}
+    </div>
+  );
+}
