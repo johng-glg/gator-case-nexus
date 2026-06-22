@@ -314,7 +314,7 @@ function RetainerPanel({
             className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
           >
             {sending && <Loader2 className="h-3 w-3 animate-spin" />}
-            {sending ? "Sending…" : status === "Not sent" ? "Send retainer" : "Resend retainer"}
+            {sending ? "Sending…" : neverSent ? "Send retainer" : "Resend retainer"}
           </button>
         )}
       </div>
