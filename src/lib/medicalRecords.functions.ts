@@ -95,7 +95,7 @@ export const createRequest = createServerFn({ method: "POST" })
 
     const res = await api.createRecords("Record_Requests", [
       {
-        Provider_Name: data.providerName,
+        Name: data.providerName,
         Request_Status: "Not started",
         Followup_Count: 0,
         SSDI_Case: { id: data.caseId },
