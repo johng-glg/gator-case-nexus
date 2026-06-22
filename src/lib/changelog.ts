@@ -126,7 +126,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Case page now shows required SSA / OHO documents grouped by lifecycle phase, with per-doc status tracking.",
     changes: [
       "New Documents panel on the case page lists SSA-1696 / SSA-827 / Retainer (Intake), SSA-561 / SSA-3441 (Recon), HA-501 / HA-520 / pre-hearing brief (ALJ), HA-520 / AC brief (Appeals Council), and fee petition (Award).",
-      "Each doc cycles through To do → Sent → Received → Filed; status persists per case in localStorage. Phase groups appear once the case reaches that phase and stay visible thereafter.",
+      "Each doc cycles through To do → Sent → Received → Filed; status is firm-wide and durable (every change writes a case activity-log entry). Phase groups appear once the case reaches that phase and stay visible thereafter. SSA-1696 / SSA-827 auto-flip to Received when the e-sign webhook fires.",
       "Direct PDF links to the official SSA forms where available.",
     ],
   },

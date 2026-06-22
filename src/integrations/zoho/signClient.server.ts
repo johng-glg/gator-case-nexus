@@ -123,6 +123,32 @@ export function makeFormsService() {
       ssa1693TemplateId, ssa1693ActionId,
     }),
     archive: async ({ caseId, code, requestId }) => {
+      // Sync the checklist: SSA-1696 / SSA-827 just got Signed → reflect as Received
+      // unless the firm already marked it Filed. Best-effort; never block the webhook.
+      try {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: existing } = await supabaseAdmin
+          .from("case_document_status")
+          .select("status")
+          .eq("case_id", caseId)
+          .eq("doc_code", code)
+          .maybeSingle();
+        if (existing?.status !== "Filed") {
+          await supabaseAdmin.from("case_document_status").upsert(
+            {
+              case_id: caseId,
+              doc_code: code,
+              status: "Received",
+              updated_by: null,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "case_id,doc_code" },
+          );
+        }
+      } catch (err) {
+        console.error("[forms-archive] checklist sync failed", err);
+      }
+
       if (!sign.downloadCompleted) return;
       const files = await sign.downloadCompleted(requestId);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
@@ -151,6 +177,7 @@ export function makeFormsService() {
         }
       }
     },
+
   });
 }
 
