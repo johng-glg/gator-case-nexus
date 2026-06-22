@@ -54,8 +54,8 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <h1 className="font-display text-4xl text-primary">Gator</h1>
-          <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          <img src={gatorLogo.url} alt="Gator" className="mx-auto h-28 w-auto" />
+          <p className="mt-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
             Case platform
           </p>
         </div>
