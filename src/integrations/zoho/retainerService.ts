@@ -170,11 +170,12 @@ export function createRetainerService(deps: RetainerServiceDeps) {
 }
 
 /**
- * Normalize a Zoho Sign webhook body to { requestId, status }. Zoho posts the request object
- * under `requests` with a `request_status` and a notification `action_type`/`operation_type`.
- * Defensive across shapes; returns null for non-terminal events (e.g. "viewed").
+ * Normalize a Zoho Sign webhook body to { requestId, status?, viewed? }. Zoho posts the request
+ * object under `requests` with a `request_status` and a notification `action_type`/`operation_type`.
+ * Defensive across shapes; `viewed:true` for the (non-terminal) "RequestViewed" event so callers
+ * can stamp a viewed-at timestamp without changing the retainer status.
  */
-export function parseSignWebhook(payload: unknown): { requestId?: string; status?: RetainerStatus } | null {
+export function parseSignWebhook(payload: unknown): { requestId?: string; status?: RetainerStatus; viewed?: boolean } | null {
   const p = payload as Record<string, any> | undefined;
   if (!p) return null;
   const req = p.requests ?? p.request ?? p.notifications?.requests ?? p;
@@ -187,10 +188,12 @@ export function parseSignWebhook(payload: unknown): { requestId?: string; status
   if (!requestId || !raw) return null;
 
   const key = String(raw).toLowerCase();
-  // terminal statuses we care about; everything else (viewed/sent/inprogress) is ignored
+  // terminal statuses we care about
   if (key.includes("complete") || key === "signed") return { requestId, status: "Signed" };
   if (key.includes("declin"))                        return { requestId, status: "Declined" };
   if (key.includes("expire"))                        return { requestId, status: "Expired" };
   if (key.includes("recall") || key.includes("withdraw")) return { requestId, status: "Not sent" as RetainerStatus };
+  // non-terminal: client opened the request (e.g. "RequestViewed" / "viewed")
+  if (key.includes("view") || key.includes("open"))  return { requestId, viewed: true };
   return { requestId, status: undefined };
 }
