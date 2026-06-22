@@ -166,7 +166,7 @@ export function createSsdiCaseOpener(zoho: ZohoClient, opts?: { now?: () => Date
   const today = () => iso(opts?.now ? opts.now() : localToday());
   return async ({ engagementId }: { engagementId: string }): Promise<{ caseId?: string }> => {
     const api = zoho.as(SERVICE_ACTOR);
-    const eng = await api.getRecord<ZohoRecord>("Engagements", engagementId, ["Engagement_Type", "Owner"]);
+    const eng = await api.getRecord<ZohoRecord>("Engagements", engagementId, ["Name", "Engagement_Type", "Owner", "Client"]);
     if (!eng || eng.Engagement_Type !== "SSDI") return {}; // only SSDI opens an SSDI case
 
     const existing = await api.coql<ZohoRecord>(
@@ -175,8 +175,13 @@ export function createSsdiCaseOpener(zoho: ZohoClient, opts?: { now?: () => Date
     if (existing.length) return { caseId: existing[0].id as string }; // already opened → no-op
 
     const ownerId = lookupId(eng.Owner);
+    const clientId = lookupId(eng.Client);
     const res = await api.createRecords("SSDI_Cases", [clean({
-      Engagement: { id: engagementId }, Current_Stage: "Retained", Date_Opened: today(),
+      Name: (eng.Name as string) ?? `SSDI Case ${engagementId}`,
+      Engagement: { id: engagementId },
+      Client: clientId ? { id: clientId } : undefined,
+      Current_Stage: "Retained",
+      Date_Opened: today(),
       Assigned_Case_Manager: ownerId ? { id: ownerId } : undefined,
     })]);
     return { caseId: idOf(res[0]) };
