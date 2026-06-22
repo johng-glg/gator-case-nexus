@@ -29,7 +29,7 @@ function mockSign(result = { requestId: "REQ-123", signLink: "https://sign/REQ-1
   // ---- sendRetainer happy path ----
   {
     const { client, calls } = mockZoho({
-      E1: { Name: "Doe, Jane — SSDI", Client: { id: "C1" }, Retainer_Status: "Not sent" },
+      E1: { Name: "Doe, Jane — SSDI", Client: { id: "C1" }, Retainer_Status: "Not Sent" },
       C1: { First_Name: "Jane", Last_Name: "Doe", Email: "jane@example.com" },
     });
     const { sign, sent } = mockSign();
@@ -47,7 +47,7 @@ function mockSign(result = { requestId: "REQ-123", signLink: "https://sign/REQ-1
     ok("Retainer_ID persisted", upd.Retainer_ID === "REQ-123");
     ok("Retainer_Link persisted", upd.Retainer_Link === "https://sign/REQ-123");
     ok("Retainer_Status = Sent", upd.Retainer_Status === "Sent");
-    ok("Retainer_Sent stamped (date-only)", upd.Retainer_Sent === "2026-06-20");
+    ok("Retainer_Sent stamped (datetime)", upd.Retainer_Sent === "2026-06-20T00:00:00+00:00");
     ok("returns requestId", res.requestId === "REQ-123");
   }
 
@@ -63,7 +63,7 @@ function mockSign(result = { requestId: "REQ-123", signLink: "https://sign/REQ-1
 
   // ---- missing email guard ----
   {
-    const { client } = mockZoho({ E3: { Client: { id: "C9" }, Retainer_Status: "Not sent" }, C9: { First_Name: "No", Last_Name: "Email" } });
+    const { client } = mockZoho({ E3: { Client: { id: "C9" }, Retainer_Status: "Not Sent" }, C9: { First_Name: "No", Last_Name: "Email" } });
     const { sign } = mockSign();
     const svc = createRetainerService({ zoho: client, sign, now: NOW });
     let threw = false;
@@ -180,6 +180,7 @@ function mockSign(result = { requestId: "REQ-123", signLink: "https://sign/REQ-1
   // ---- parseSignWebhook variants ----
   ok("parse: complete → Signed", parseSignWebhook({ action_type: "RequestCompleted", requests: { request_id: "R" } })?.status === "Signed");
   ok("parse: notifications.operation_type complete → Signed", parseSignWebhook({ notifications: { operation_type: "RequestCompleted" }, requests: { request_id: "R" } })?.status === "Signed");
+  ok("parse: signing success + completed status → Signed", parseSignWebhook({ notifications: { operation_type: "RequestSigningSuccess" }, requests: { request_id: "R", request_status: "completed" } })?.status === "Signed");
   ok("parse: declined → Declined", parseSignWebhook({ action_type: "RequestRejected? declined", requests: { request_id: "R" } })?.status === "Declined");
   ok("parse: expired → Expired", parseSignWebhook({ requests: { request_id: "R", request_status: "expired" } })?.status === "Expired");
   ok("parse: viewed → undefined status", parseSignWebhook({ action_type: "viewed", requests: { request_id: "R" } })?.status === undefined);

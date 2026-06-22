@@ -163,7 +163,7 @@ function EngagementDetail() {
       )}
 
       <RetainerPanel
-        status={String(record.Retainer_Status ?? "Not sent")}
+        status={String(record.Retainer_Status ?? "Not Sent")}
         link={record.Retainer_Link ? String(record.Retainer_Link) : undefined}
         sentDate={record.Retainer_Sent ? String(record.Retainer_Sent) : undefined}
         viewedDate={record.Retainer_Viewed ? String(record.Retainer_Viewed) : undefined}
@@ -329,7 +329,7 @@ function RetainerPanel({
   onMarkSigned?: () => void;
   markingSigned?: boolean;
 }) {
-  const STEPS = ["Not sent", "Sent", "Viewed", "Signed"] as const;
+  const STEPS = ["Not Sent", "Sent", "Viewed", "Signed"] as const;
   const isError = status === "Declined" || status === "Expired";
   const currentIdx = isError ? 1 : Math.max(0, STEPS.indexOf(status as (typeof STEPS)[number]));
   const normalized = status.toLowerCase();

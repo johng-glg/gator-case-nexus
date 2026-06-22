@@ -38,7 +38,7 @@ function mockZoho(lead: Record<string, unknown> | null, coqlRows: any[] = []) {
     ok("carries Lead_Source", contact.Lead_Source === "Guardian");
 
     const eng = calls.find((c) => c.op === "create" && c.m === "Engagements").rec;
-    ok("creates SSDI engagement", eng.Engagement_Type === "SSDI" && eng.Retainer_Status === "Not sent");
+    ok("creates SSDI engagement", eng.Engagement_Type === "SSDI" && eng.Retainer_Status === "Not Sent");
     ok("records conflict status", eng.Conflict_Check_Status === "Cleared");
 
     ok("no case created at conversion", !calls.some((c) => c.op === "create" && c.m === "SSDI_Cases"));

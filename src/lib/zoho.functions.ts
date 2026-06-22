@@ -745,7 +745,7 @@ export const retainerReset = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     await makeZohoClient().as(context.userId).updateRecords("Engagements", [{
       id: data.engagementId,
-      Retainer_Status: "Not sent",
+      Retainer_Status: "Not Sent",
       Retainer_ID: null,
       Retainer_Link: null,
       Retainer_Sent: null,
