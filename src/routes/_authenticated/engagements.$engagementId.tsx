@@ -159,6 +159,12 @@ function EngagementDetail() {
         signedDate={record.Retainer_Signed_Date ? String(record.Retainer_Signed_Date) : undefined}
         onSend={() => sendRetainer.mutate()}
         sending={sendRetainer.isPending}
+        onReset={() => {
+          if (confirm("Reset retainer tracking on this engagement? This clears Sent / Viewed / Signed timestamps so you can re-test.")) {
+            resetRetainer.mutate();
+          }
+        }}
+        resetting={resetRetainer.isPending}
       />
 
 
