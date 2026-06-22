@@ -4,7 +4,7 @@
  * Two responsibilities:
  *   - sendRetainer(userKey, engagementId) — merge the client's data into the firm's Zoho Sign
  *     retainer template and send it for signature; stamp the Engagement (Retainer_ID / _Link /
- *     _Sent_Date, Retainer_Status = "Sent"). CRM reads/writes are AS the acting user (attribution);
+ *     Retainer_Sent, Retainer_Status = "Sent"). CRM reads/writes are AS the acting user (attribution);
  *     the Sign send itself goes out on the firm's single Sign connection (see SignAdapter).
  *   - handleSignCompleted(payload) — Zoho Sign webhook ("RequestCompleted" et al.): find the
  *     Engagement by Retainer_ID and flip Retainer_Status (Signed / Declined / Expired / Recalled).
@@ -14,7 +14,7 @@
  *   1. A Zoho Sign template built from "Gator Law SSDI Retainer.docx" with one SIGN recipient
  *      role (the client) and merge tags {{Client_Full_Name}} / {{Today_Date}}.
  *   2. Engagement fields: Retainer_Status (picklist: Not sent | Sent | Signed | Declined |
- *      Expired), Retainer_ID (single line), Retainer_Link (URL), Retainer_Sent (date),
+ *      Expired), Retainer_ID (single line), Retainer_Link (URL), Retainer_Sent (datetime),
  *      Retainer_Signed_Date (datetime). (Retainer_Status already exists.)
  *   3. A Sign webhook posting to your /webhooks/zoho-sign route → handleSignCompleted(payload).
  *
@@ -30,7 +30,7 @@ const ENGAGEMENTS = "Engagements";
 const CONTACTS = "Contacts";
 
 /** Engagement.Retainer_Status values. */
-export type RetainerStatus = "Not sent" | "Sent" | "Signed" | "Declined" | "Expired";
+export type RetainerStatus = "Not Sent" | "Sent" | "Viewed" | "Signed" | "Declined" | "Expired";
 
 export interface SignSendResult {
   /** Zoho Sign request id — persisted to Engagement.Retainer_ID; the webhook joins back on it. */
@@ -157,11 +157,17 @@ export function createRetainerService(deps: RetainerServiceDeps) {
     const eng = rows[0];
     if (!eng?.id) return null;
 
-    // Viewed-only event: stamp Retainer_Viewed once; do not touch Retainer_Status.
+    // Viewed-only event: stamp Retainer_Viewed once and advance the progress to Viewed.
+    // Never downgrade a terminal retainer if Zoho sends a late view/open event.
     if (evt.viewed && !evt.status) {
-      if (eng.Retainer_Viewed) return null; // already stamped
-      await svc.updateRecords(ENGAGEMENTS, [{ id: eng.id as string, Retainer_Viewed: isoDateTime(now()) }]);
-      return { engagementId: eng.id as string, viewed: true };
+      if (["Signed", "Declined", "Expired"].includes(String(eng.Retainer_Status ?? ""))) return null;
+      if (eng.Retainer_Status === "Viewed" && eng.Retainer_Viewed) return null;
+      await svc.updateRecords(ENGAGEMENTS, [{
+        id: eng.id as string,
+        Retainer_Status: "Viewed" as RetainerStatus,
+        ...(eng.Retainer_Viewed ? {} : { Retainer_Viewed: isoDateTime(now()) }),
+      }]);
+      return { engagementId: eng.id as string, status: "Viewed", viewed: true };
     }
 
     if (eng.Retainer_Status === evt.status) return null; // duplicate webhook → no-op (idempotent)
@@ -192,20 +198,29 @@ export function parseSignWebhook(payload: unknown): { requestId?: string; status
   if (!p) return null;
   const req = p.requests ?? p.request ?? p.notifications?.requests ?? p;
   const requestId =
-    req?.request_id ?? req?.requestId ?? p.request_id ?? undefined;
-  // Zoho Sign puts the event in notifications.operation_type (e.g. "RequestCompleted").
-  const raw: string | undefined =
-    p.notifications?.operation_type ?? p.operation_type ?? p.action_type ??
-    req?.request_status ?? req?.status ?? undefined;
-  if (!requestId || !raw) return null;
+    req?.request_id ?? req?.requestId ?? p.notifications?.request_id ?? p.request_id ?? undefined;
+  // Zoho Sign puts the event in notifications.operation_type (e.g. "RequestViewed"), while
+  // terminal completion can arrive as either operation_type=RequestSigningSuccess with
+  // requests.request_status=completed, or as RequestCompleted. Check all status hints.
+  const rawValues = [
+    p.notifications?.operation_type,
+    p.operation_type,
+    p.action_type,
+    req?.request_status,
+    req?.status,
+  ].filter((v): v is string => typeof v === "string" && v.length > 0);
+  if (!requestId || rawValues.length === 0) return null;
 
-  const key = String(raw).toLowerCase();
+  const keys = rawValues.map((v) => v.toLowerCase());
+  const has = (needle: string) => keys.some((key) => key.includes(needle));
   // terminal statuses we care about
-  if (key.includes("complete") || key === "signed") return { requestId, status: "Signed" };
-  if (key.includes("declin"))                        return { requestId, status: "Declined" };
-  if (key.includes("expire"))                        return { requestId, status: "Expired" };
-  if (key.includes("recall") || key.includes("withdraw")) return { requestId, status: "Not sent" as RetainerStatus };
+  if (has("complete") || has("signingsuccess") || keys.includes("completed") || keys.includes("signed")) {
+    return { requestId, status: "Signed" };
+  }
+  if (has("declin"))                        return { requestId, status: "Declined" };
+  if (has("expire"))                        return { requestId, status: "Expired" };
+  if (has("recall") || has("withdraw")) return { requestId, status: "Not Sent" as RetainerStatus };
   // non-terminal: client opened the request (e.g. "RequestViewed" / "viewed")
-  if (key.includes("view") || key.includes("open"))  return { requestId, viewed: true };
+  if (has("view") || has("open"))  return { requestId, viewed: true };
   return { requestId, status: undefined };
 }
