@@ -28,7 +28,18 @@ export const Route = createFileRoute("/api/public/deadline-sweep")({
         try {
           const { makeZohoClient } = await import("@/integrations/zoho/client.server");
           const { createCaseService } = await import("@/integrations/zoho/caseService");
+          const { syncAllOpenCases } = await import("@/integrations/zoho/caseCalendarSync");
           const result = await createCaseService({ zoho: makeZohoClient() }).runDailyDeadlineSweep();
+
+          // Reconcile Google Calendar after recomputing deadlines. Calendar failures
+          // must not fail the sweep — capture counts and continue.
+          let cal = { created: 0, updated: 0, deleted: 0, errors: 0 };
+          try {
+            cal = await syncAllOpenCases();
+          } catch (calErr) {
+            console.error("[deadline-sweep] calendar sync failed:", calErr);
+            cal.errors++;
+          }
 
           await supabaseAdmin.from("ssdi_deadline_digests").insert({
             scanned: result.scanned,
@@ -36,6 +47,10 @@ export const Route = createFileRoute("/api/public/deadline-sweep")({
             overdue: result.overdue as unknown as never,
             due_soon: result.dueSoon as unknown as never,
             release_expiring: result.releaseExpiring as unknown as never,
+            calendar_created: cal.created,
+            calendar_updated: cal.updated,
+            calendar_deleted: cal.deleted,
+            calendar_errors: cal.errors,
           });
 
           return Response.json({
@@ -45,6 +60,7 @@ export const Route = createFileRoute("/api/public/deadline-sweep")({
             overdueCount: result.overdue.length,
             dueSoonCount: result.dueSoon.length,
             releaseExpiringCount: result.releaseExpiring.length,
+            calendar: cal,
           });
         } catch (e) {
           console.error("Deadline sweep failed:", e);

@@ -9,12 +9,17 @@
  */
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, RefreshCw, Pencil, Check, X } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, RefreshCw, Pencil, Check, X, CalendarCheck2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { caseRecomputeDeadline, updateCaseDates } from "@/lib/zoho.functions";
+import {
+  caseRecomputeDeadline,
+  updateCaseDates,
+  getCaseCalendarStatus,
+  resyncCaseCalendar,
+} from "@/lib/zoho.functions";
 
 type CaseRecord = Record<string, unknown>;
 
@@ -37,6 +42,16 @@ export function DeadlinePanel({ caseId, record }: Props) {
   const qc = useQueryClient();
   const recompute = useServerFn(caseRecomputeDeadline);
   const updateDates = useServerFn(updateCaseDates);
+  const fetchCalStatus = useServerFn(getCaseCalendarStatus);
+  const resyncCal = useServerFn(resyncCaseCalendar);
+
+  const calStatusQ = useQuery({
+    queryKey: ["case-calendar-status", caseId],
+    queryFn: () => fetchCalStatus({ data: { caseId } }),
+    staleTime: 60_000,
+  });
+  const onCalendar = (calStatusQ.data?.keys ?? []).includes(`deadline:${caseId}`);
+  const calConfigured = calStatusQ.data?.calendarConfigured ?? false;
 
   const [editing, setEditing] = useState<"notice" | "receipt" | null>(null);
   const [draft, setDraft] = useState<string>("");
@@ -58,6 +73,7 @@ export function DeadlinePanel({ caseId, record }: Props) {
   async function invalidate() {
     await Promise.all([
       qc.invalidateQueries({ queryKey: ["case", caseId] }),
+      qc.invalidateQueries({ queryKey: ["case-calendar-status", caseId] }),
       qc.invalidateQueries({ queryKey: ["deadlinesAtRisk"] }),
       qc.invalidateQueries({ queryKey: ["deadlinesAll"] }),
       qc.invalidateQueries({ queryKey: ["ssdi-cases"] }),
@@ -71,6 +87,24 @@ export function DeadlinePanel({ caseId, record }: Props) {
       await recompute({ data: { caseId } });
       await invalidate();
       toast.success("Deadline recomputed.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onResyncCalendar() {
+    setBusy(true);
+    try {
+      const counts = await resyncCal({ data: { caseId } });
+      await invalidate();
+      const parts: string[] = [];
+      if (counts.created) parts.push(`${counts.created} created`);
+      if (counts.updated) parts.push(`${counts.updated} updated`);
+      if (counts.deleted) parts.push(`${counts.deleted} deleted`);
+      toast.success(parts.length ? `Calendar synced: ${parts.join(", ")}.` : "Calendar already in sync.");
+      if (counts.errors) toast.warning(`${counts.errors} calendar error${counts.errors === 1 ? "" : "s"} — see logs.`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
@@ -133,10 +167,25 @@ export function DeadlinePanel({ caseId, record }: Props) {
             <div className="mt-0.5 text-sm font-medium text-foreground">{activeType}</div>
           )}
         </div>
-        <Button size="sm" variant="outline" onClick={onRecompute} disabled={busy}>
-          <RefreshCw className={`h-3.5 w-3.5 mr-1 ${busy ? "animate-spin" : ""}`} />
-          Recompute
-        </Button>
+        <div className="flex items-center gap-2">
+          {calConfigured && onCalendar && (
+            <span
+              className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/30 px-2 py-1 text-[11px] font-medium text-emerald-700 dark:text-emerald-400"
+              title="This deadline is on the firm Google Calendar."
+            >
+              <CalendarCheck2 className="h-3 w-3" /> On calendar
+            </span>
+          )}
+          {calConfigured && (
+            <Button size="sm" variant="ghost" onClick={onResyncCalendar} disabled={busy} title="Resync calendar">
+              <CalendarCheck2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={onRecompute} disabled={busy}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1 ${busy ? "animate-spin" : ""}`} />
+            Recompute
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-baseline gap-3">

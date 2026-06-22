@@ -240,6 +240,9 @@ export const caseAdvance = createServerFn({ method: "POST" })
       summary: `Advanced to "${data.toStage}"${result.deadline ? ` — deadline ${result.deadline}` : ""}.`,
       metadata: { toStage: data.toStage, deadline: result.deadline ?? null, fields: data.fields ?? {} },
     });
+    // Fire-and-forget calendar sync. Never block stage advance on calendar errors.
+    const { syncCaseCalendarSafe } = await import("@/integrations/zoho/caseCalendarSync");
+    await syncCaseCalendarSafe(data.caseId);
     return result;
   });
 
@@ -294,7 +297,40 @@ export const updateCaseDates = createServerFn({ method: "POST" })
         recomputedDeadline: recomputed,
       },
     });
+    const { syncCaseCalendarSafe } = await import("@/integrations/zoho/caseCalendarSync");
+    await syncCaseCalendarSafe(data.caseId);
     return { ok: true, changed: true, recomputed };
+  });
+
+/**
+ * Manual "Resync" button on the case page. Returns the create/update/delete counts.
+ */
+export const resyncCaseCalendar = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => caseIdInput.parse(data))
+  .handler(async ({ data }) => {
+    const { syncCaseCalendar } = await import("@/integrations/zoho/caseCalendarSync");
+    return await syncCaseCalendar(data.caseId);
+  });
+
+/**
+ * Read-only: which calendar event keys ("deadline:<id>" / "hearing:<id>") this case
+ * currently has on the firm calendar. Used to render the "On calendar ✓" pill.
+ */
+export const getCaseCalendarStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => caseIdInput.parse(data))
+  .handler(async ({ data }) => {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: rows, error } = await supabaseAdmin
+      .from("calendar_event_links")
+      .select("key, google_event_id, updated_at")
+      .eq("case_id", data.caseId);
+    if (error) throw new Error(error.message);
+    return {
+      keys: (rows ?? []).map((r) => r.key as string),
+      calendarConfigured: Boolean(process.env.GOOGLE_SSDI_CALENDAR_ID),
+    };
   });
 
 const taskIdInput = z.object({
@@ -666,14 +702,28 @@ export const runDeadlineSweepNow = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const { createCaseService } = await import("@/integrations/zoho/caseService");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { syncAllOpenCases } = await import("@/integrations/zoho/caseCalendarSync");
 
     const result = await createCaseService({ zoho: makeZohoClient() }).runDailyDeadlineSweep();
+    // After recomputing deadlines, reconcile the calendar so date changes flow through.
+    // Calendar errors must not fail the sweep — capture and log.
+    let cal = { created: 0, updated: 0, deleted: 0, errors: 0 };
+    try {
+      cal = await syncAllOpenCases();
+    } catch (e) {
+      console.error("[deadline-sweep] calendar sync failed:", e);
+      cal.errors++;
+    }
     await supabaseAdmin.from("ssdi_deadline_digests").insert({
       scanned: result.scanned,
       updated: result.updated,
       overdue: result.overdue as never,
       due_soon: result.dueSoon as never,
       release_expiring: result.releaseExpiring as never,
+      calendar_created: cal.created,
+      calendar_updated: cal.updated,
+      calendar_deleted: cal.deleted,
+      calendar_errors: cal.errors,
     });
     return {
       scanned: result.scanned,
@@ -681,5 +731,6 @@ export const runDeadlineSweepNow = createServerFn({ method: "POST" })
       overdueCount: result.overdue.length,
       dueSoonCount: result.dueSoon.length,
       releaseExpiringCount: result.releaseExpiring.length,
+      calendar: cal,
     };
   });

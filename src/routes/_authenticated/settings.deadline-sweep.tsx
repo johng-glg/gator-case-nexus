@@ -23,6 +23,10 @@ interface DigestRow {
   due_soon: DigestCase[];
   release_expiring: DigestCase[];
   error: string | null;
+  calendar_created: number | null;
+  calendar_updated: number | null;
+  calendar_deleted: number | null;
+  calendar_errors: number | null;
 }
 
 interface DigestCase {
@@ -56,7 +60,7 @@ function DeadlineSweepAdmin() {
     setLoading(true);
     const { data, error } = await supabase
       .from("ssdi_deadline_digests")
-      .select("id, ran_at, scanned, updated, overdue, due_soon, release_expiring, error")
+      .select("id, ran_at, scanned, updated, overdue, due_soon, release_expiring, error, calendar_created, calendar_updated, calendar_deleted, calendar_errors")
       .order("ran_at", { ascending: false })
       .limit(20);
     if (error) toast.error(error.message);
@@ -106,6 +110,7 @@ function DeadlineSweepAdmin() {
 
       {latest && !latest.error && (
         <div className="space-y-4">
+          <CalendarSyncLine latest={latest} />
           <Section title="Overdue" icon={<AlertTriangle className="w-4 h-4 text-destructive" />} rows={latest.overdue ?? []} />
           <Section title="Due within 7 days" icon={<Clock className="w-4 h-4 text-amber-500" />} rows={latest.due_soon ?? []} />
           <Section title="Medical release expiring ≤ 30 days" icon={<FileWarning className="w-4 h-4 text-amber-500" />} rows={latest.release_expiring ?? []} />
@@ -194,6 +199,30 @@ function Section({ title, icon, rows }: { title: string; icon: React.ReactNode; 
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function CalendarSyncLine({ latest }: { latest: DigestRow }) {
+  const c = latest.calendar_created ?? 0;
+  const u = latest.calendar_updated ?? 0;
+  const d = latest.calendar_deleted ?? 0;
+  const e = latest.calendar_errors ?? 0;
+  if (c === 0 && u === 0 && d === 0 && e === 0) {
+    return (
+      <div className="text-xs text-muted-foreground">
+        Calendar sync: no changes on last run.
+      </div>
+    );
+  }
+  return (
+    <div className="text-xs text-muted-foreground">
+      Calendar sync: <span className="text-foreground tabular-nums">{c}</span> created ·{" "}
+      <span className="text-foreground tabular-nums">{u}</span> updated ·{" "}
+      <span className="text-foreground tabular-nums">{d}</span> deleted
+      {e > 0 && (
+        <span className="ml-2 text-destructive">· {e} error{e === 1 ? "" : "s"}</span>
+      )}
     </div>
   );
 }
