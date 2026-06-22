@@ -336,9 +336,9 @@ function RetainerPanel({
         <div>
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Retainer</div>
           <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-            {sentDate && <span>Sent {sentDate.slice(0, 10)}</span>}
-            {viewedDate && <span>Viewed {viewedDate.slice(0, 10)}</span>}
-            {signedDate && <span>Signed {signedDate.slice(0, 10)}</span>}
+            {sentDate && <span>Sent {fmtWhen(sentDate)}</span>}
+            {viewedDate && <span>Viewed {fmtWhen(viewedDate)}</span>}
+            {signedDate && <span>Signed {fmtWhen(signedDate)}</span>}
             {link && (
               <a href={link} target="_blank" rel="noreferrer" className="text-primary hover:underline">
                 View document
