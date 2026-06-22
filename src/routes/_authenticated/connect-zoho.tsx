@@ -34,7 +34,11 @@ function ConnectZoho() {
     setBusy(true);
     try {
       const { url } = await fetchUrl();
-      window.location.assign(url);
+      try {
+        (window.top ?? window).location.assign(url);
+      } catch {
+        window.open(url, "_blank", "noopener");
+      }
     } catch (e) {
       setBusy(false);
       alert(`Could not start Zoho connect: ${e instanceof Error ? e.message : String(e)}`);
