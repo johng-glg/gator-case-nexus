@@ -1,10 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { convertLead, getLead, updateLeadStatus } from "@/lib/zoho.functions";
-import { ChevronLeft, Loader2, ArrowRight } from "lucide-react";
+import { ChevronLeft, Loader2, ArrowRight, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ScreenerPanel } from "@/components/leads/ScreenerPanel";
+
 
 export const Route = createFileRoute("/_authenticated/leads/$leadId")({
   head: () => ({ meta: [{ title: "Lead — Gator" }] }),
