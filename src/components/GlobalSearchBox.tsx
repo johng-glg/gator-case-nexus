@@ -24,6 +24,20 @@ function fullName(r: { First_Name?: string; Last_Name?: string }) {
   return [r.First_Name, r.Last_Name].filter(Boolean).join(" ").trim();
 }
 
+function uniqueRows(resultSets: unknown[]): any[] {
+  const seen = new Set<string>();
+  const out: any[] = [];
+  for (const set of resultSets) {
+    for (const row of rows(set)) {
+      const key = typeof row?.id === "string" ? row.id : JSON.stringify(row);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push(row);
+    }
+  }
+  return out;
+}
+
 export function GlobalSearchBox() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
@@ -42,19 +56,27 @@ export function GlobalSearchBox() {
     setSearching(true);
     const t = setTimeout(async () => {
       const term = q.trim();
-      const names: Array<{ name: "ssdiCaseSearch" | "contactSearch" | "leadSearch" | "engagementSearch" }> = [
-        { name: "ssdiCaseSearch" },
-        { name: "contactSearch" },
-        { name: "leadSearch" },
-        { name: "engagementSearch" },
-      ];
+      const names = [
+        "ssdiCaseSearch",
+        "contactSearch",
+        "contactFirstNameSearch",
+        "contactEmailSearch",
+        "contactPhoneSearch",
+        "leadSearch",
+        "leadFirstNameSearch",
+        "leadEmailSearch",
+        "leadCompanySearch",
+        "engagementSearch",
+      ] as const;
       const results = await Promise.all(
-        names.map((n) =>
-          runQuery({ data: { name: n.name, params: { q: term } } }).catch(() => ({ rows: [] })),
+        names.map((name) =>
+          runQuery({ data: { name, params: { q: term } } }).catch(() => ({ rows: [] })),
         ),
       );
       if (cancelled) return;
-      const [cases, contacts, leads, engs] = results;
+      const [cases, contactLast, contactFirst, contactEmail, contactPhone, leadLast, leadFirst, leadEmail, leadCompany, engs] = results;
+      const contacts = uniqueRows([contactLast, contactFirst, contactEmail, contactPhone]);
+      const leads = uniqueRows([leadLast, leadFirst, leadEmail, leadCompany]);
       const out: Hit[] = [];
       for (const r of rows(cases).slice(0, 5)) {
         out.push({
@@ -64,7 +86,7 @@ export function GlobalSearchBox() {
           sub: r.Current_Stage,
         });
       }
-      for (const r of rows(contacts).slice(0, 5)) {
+      for (const r of contacts.slice(0, 5)) {
         out.push({
           kind: "contact",
           id: r.id,
@@ -72,7 +94,7 @@ export function GlobalSearchBox() {
           sub: r.Email,
         });
       }
-      for (const r of rows(leads).slice(0, 5)) {
+      for (const r of leads.slice(0, 5)) {
         out.push({
           kind: "lead",
           id: r.id,
