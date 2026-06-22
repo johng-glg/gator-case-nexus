@@ -22,6 +22,10 @@ const ACTION_LABEL: Record<string, string> = {
   "document.request.create": "Document requested",
   "document.request.cancel": "Document request canceled",
   "document.upload": "Document uploaded",
+  "message.sent": "Client email sent",
+  "message.held": "Client email held",
+  "message.discarded": "Client email discarded",
+  "consent.update": "Client consent updated",
 };
 
 function actionColor(action: string): string {
@@ -31,6 +35,8 @@ function actionColor(action: string): string {
   if (action.startsWith("task.")) return "bg-muted text-foreground border-border";
   if (action === "portal.invite") return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30";
   if (action.startsWith("document.")) return "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30";
+  if (action.startsWith("message.")) return "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/30";
+  if (action === "consent.update") return "bg-muted text-muted-foreground border-border";
   return "bg-muted text-muted-foreground border-border";
 }
 
