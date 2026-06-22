@@ -57,6 +57,8 @@ export interface SignAdapter {
   }): Promise<SignSendResult>;
   /** Fetch the signed PDF + completion certificate (for 3-yr retention). Optional. */
   downloadCompleted?(requestId: string): Promise<Array<{ kind: "signed" | "certificate"; bytes: Uint8Array; contentType: string }>>;
+  /** Recall (void) an in-flight request so the prior link can no longer be signed. Optional. */
+  recallRequest?(requestId: string): Promise<void>;
 }
 
 export interface RetainerServiceDeps {
