@@ -20,7 +20,7 @@
  * against your Sign account before relying on this in production.
  */
 
-import type { SignAdapter, SignSendResult } from "./retainerService";
+import type { SignAdapter, SignCompletedFile, SignSendResult } from "./retainerService";
 
 const SIGN_HOSTS: Record<string, string> = {
   us: "https://sign.zoho.com", eu: "https://sign.zoho.eu", in: "https://sign.zoho.in",
