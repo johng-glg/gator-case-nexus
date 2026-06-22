@@ -6,7 +6,7 @@ import { zohoQuery } from "@/lib/zoho.functions";
 import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { PRACTICES, practiceForEngagementType } from "@/practices/registry";
-import { AlarmClock, Briefcase, ArrowRight } from "lucide-react";
+import { AlarmClock, Briefcase } from "lucide-react";
 import { DailyDigestBanner } from "@/components/dashboard/DailyDigestBanner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -74,7 +74,7 @@ function Dashboard() {
           <Briefcase className="h-3.5 w-3.5" />
           Pipeline by practice area
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
           {pipeline.isLoading && <SkeletonCards />}
           {pipeline.error && (
             <div className="col-span-full rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive-foreground">
@@ -87,34 +87,29 @@ function Dashboard() {
               const linkable = p.active;
               const body = (
                 <article
+                  title={p.tagline}
                   className={
-                    "h-full rounded-lg border border-border bg-card p-5 transition-colors " +
-                    (linkable ? "hover:border-primary/50 hover:bg-card/80" : "opacity-70")
+                    "h-full rounded-lg border border-border bg-card px-3 py-2.5 transition-colors " +
+                    (linkable ? "hover:border-primary/50 hover:bg-card/80" : "opacity-60")
                   }
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="font-display text-lg text-foreground">{p.label}</div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="font-display text-sm text-foreground truncate">{p.label}</div>
                     {!linkable && (
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                        Coming soon
+                      <span className="text-[9px] uppercase tracking-wider text-muted-foreground">
+                        Soon
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground line-clamp-2">{p.tagline}</p>
-                  <div className="mt-5 flex items-baseline gap-2">
-                    <span className="font-display text-4xl text-primary tabular-nums">
+                  <div className="mt-1.5 flex items-baseline gap-1.5">
+                    <span className="font-display text-2xl text-primary tabular-nums leading-none">
                       {stats.open}
                     </span>
-                    <span className="text-xs text-muted-foreground">open engagements</span>
+                    <span className="text-[11px] text-muted-foreground">open</span>
+                    <span className="ml-auto text-[11px] text-muted-foreground tabular-nums">
+                      {stats.closed}/{stats.total}
+                    </span>
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">
-                    {stats.closed} closed · {stats.total} total
-                  </div>
-                  {linkable && (
-                    <div className="mt-4 inline-flex items-center gap-1 text-xs text-primary">
-                      Open workspace <ArrowRight className="h-3 w-3" />
-                    </div>
-                  )}
                 </article>
               );
               return linkable ? (
@@ -167,8 +162,8 @@ function Dashboard() {
 function SkeletonCards() {
   return (
     <>
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="h-40 rounded-lg border border-border bg-card/60 animate-pulse" />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div key={i} className="h-14 rounded-lg border border-border bg-card/60 animate-pulse" />
       ))}
     </>
   );
