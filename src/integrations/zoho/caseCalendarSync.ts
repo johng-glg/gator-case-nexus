@@ -145,7 +145,7 @@ export async function syncAllOpenCases(): Promise<SyncCounts> {
   const api = makeZohoClient().as(SERVICE_ACTOR);
 
   const rows = await api.coql<ZohoRecord>(
-    `select ${SYNC_FIELDS.join(", ")} from ${MODULE} where Is_Closed = false`,
+    `select ${SYNC_FIELDS.join(", ")} from ${MODULE} where (Is_Closed = false)`,
   );
 
   const caseIds = rows.map((r) => r.id as string).filter(Boolean);
