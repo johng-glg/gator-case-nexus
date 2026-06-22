@@ -235,6 +235,12 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               where id is not null
               order by Name asc
               limit 200`;
+    case "ssdiCaseSearch":
+      return `select id, Case_Number, Current_Stage, Sub_Status, Deadline_Date
+              from SSDI_Cases
+              where Case_Number like ${safeLike(params.q)}
+              order by Modified_Time desc
+              limit 20`;
   }
 }
 
