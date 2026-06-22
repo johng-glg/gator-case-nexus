@@ -102,7 +102,7 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
                      Engagement, Engagement.Name, Assigned_Attorney
               from SSDI_Cases
               where Deadline_Date is not null and Is_Closed = false
-                and Assigned_Attorney = ${safeId(params.userId)}
+                and Assigned_Attorney.id = ${safeId(params.userId)}
               order by Deadline_Date asc
               limit 200`;
     case "upcomingHearings":
@@ -206,7 +206,7 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
     case "myEngagements":
       return `select ${ENGAGEMENT_COLS}
               from Engagements
-              where Assigned_Attorney = ${safeId(params.userId)}
+              where Assigned_Attorney.id = ${safeId(params.userId)}
               order by Modified_Time desc
               limit 200`;
     case "allContacts":
