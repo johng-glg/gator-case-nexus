@@ -89,6 +89,8 @@ export const createDocumentRequest = createServerFn({ method: "POST" })
       summary: `Requested document: ${data.label}.`,
       metadata: { requestId: row.id },
     });
+    const { notifySafe } = await import("@/integrations/messaging/notifyService.server");
+    await notifySafe({ caseId: data.caseId, trigger: { kind: "event", event: "documents-requested" } });
     return { request: row };
   });
 
@@ -329,6 +331,10 @@ export const recordUpload = createServerFn({ method: "POST" })
       summary: `${staff ? "Staff" : "Client"} uploaded: ${row.original_name}.`,
       metadata: { uploadId: row.id, requestId: row.request_id ?? null },
     });
+    if (data.requestId) {
+      const { notifySafe } = await import("@/integrations/messaging/notifyService.server");
+      await notifySafe({ caseId: data.caseId, trigger: { kind: "event", event: "documents-received" } });
+    }
     return { upload: row };
   });
 

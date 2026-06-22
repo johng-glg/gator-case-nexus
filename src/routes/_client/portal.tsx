@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyClientPortal } from "@/lib/portal.functions";
 import { ClientDocumentsSection } from "@/components/portal/ClientDocumentsSection";
+import { ClientPortalSettings } from "@/components/portal/ClientPortalSettings";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { LogOut, AlertTriangle, Calendar, Gavel, FileText, Clock } from "lucide-react";
@@ -144,6 +145,8 @@ function PortalPage() {
           ) : null}
 
           <ClientDocumentsSection caseId={data.caseId} />
+
+          <ClientPortalSettings />
 
           <section className="rounded-lg border border-border bg-card p-5">
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">

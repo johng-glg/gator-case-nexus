@@ -77,6 +77,48 @@ export type Database = {
         }
         Relationships: []
       }
+      client_messaging_consent: {
+        Row: {
+          client_id: string
+          email_consent_at: string | null
+          email_consent_source: string | null
+          email_consent_text: string | null
+          email_opted_out_at: string | null
+          sms_consent_text: string | null
+          sms_opt_in: boolean
+          sms_opt_in_at: string | null
+          sms_opt_in_source: string | null
+          sms_opted_out_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          email_consent_at?: string | null
+          email_consent_source?: string | null
+          email_consent_text?: string | null
+          email_opted_out_at?: string | null
+          sms_consent_text?: string | null
+          sms_opt_in?: boolean
+          sms_opt_in_at?: string | null
+          sms_opt_in_source?: string | null
+          sms_opted_out_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          email_consent_at?: string | null
+          email_consent_source?: string | null
+          email_consent_text?: string | null
+          email_opted_out_at?: string | null
+          sms_consent_text?: string | null
+          sms_opt_in?: boolean
+          sms_opt_in_at?: string | null
+          sms_opt_in_source?: string | null
+          sms_opted_out_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_portal_links: {
         Row: {
           created_at: string
@@ -199,6 +241,171 @@ export type Database = {
           },
         ]
       }
+      email_send_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message_id: string | null
+          metadata: Json | null
+          recipient_email: string
+          status: string
+          template_name: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          metadata?: Json | null
+          recipient_email: string
+          status: string
+          template_name: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          metadata?: Json | null
+          recipient_email?: string
+          status?: string
+          template_name?: string
+        }
+        Relationships: []
+      }
+      email_send_state: {
+        Row: {
+          auth_email_ttl_minutes: number
+          batch_size: number
+          id: number
+          retry_after_until: string | null
+          send_delay_ms: number
+          transactional_email_ttl_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          auth_email_ttl_minutes?: number
+          batch_size?: number
+          id?: number
+          retry_after_until?: string | null
+          send_delay_ms?: number
+          transactional_email_ttl_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          auth_email_ttl_minutes?: number
+          batch_size?: number
+          id?: number
+          retry_after_until?: string | null
+          send_delay_ms?: number
+          transactional_email_ttl_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      email_unsubscribe_tokens: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          token: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          token: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          token?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
+      held_messages: {
+        Row: {
+          body: string
+          case_id: string
+          channel: string
+          client_id: string | null
+          created_at: string
+          cta_label: string | null
+          cta_url: string | null
+          discarded_at: string | null
+          discarded_by: string | null
+          id: string
+          msg_key: string
+          reason: string
+          recipient_email: string
+          sent_at: string | null
+          sent_by: string | null
+          subject: string
+        }
+        Insert: {
+          body: string
+          case_id: string
+          channel?: string
+          client_id?: string | null
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          discarded_at?: string | null
+          discarded_by?: string | null
+          id?: string
+          msg_key: string
+          reason: string
+          recipient_email: string
+          sent_at?: string | null
+          sent_by?: string | null
+          subject: string
+        }
+        Update: {
+          body?: string
+          case_id?: string
+          channel?: string
+          client_id?: string | null
+          created_at?: string
+          cta_label?: string | null
+          cta_url?: string | null
+          discarded_at?: string | null
+          discarded_by?: string | null
+          id?: string
+          msg_key?: string
+          reason?: string
+          recipient_email?: string
+          sent_at?: string | null
+          sent_by?: string | null
+          subject?: string
+        }
+        Relationships: []
+      }
+      messaging_settings: {
+        Row: {
+          enabled_milestones: Json
+          id: boolean
+          sms_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          enabled_milestones?: Json
+          id?: boolean
+          sms_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          enabled_milestones?: Json
+          id?: boolean
+          sms_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ssdi_deadline_digests: {
         Row: {
           calendar_created: number | null
@@ -268,6 +475,30 @@ export type Database = {
           stage?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      suppressed_emails: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          metadata: Json | null
+          reason: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          metadata?: Json | null
+          reason: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          metadata?: Json | null
+          reason?: string
         }
         Relationships: []
       }
@@ -369,12 +600,37 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_email: {
+        Args: { message_id: number; queue_name: string }
+        Returns: boolean
+      }
+      enqueue_email: {
+        Args: { payload: Json; queue_name: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      move_to_dlq: {
+        Args: {
+          dlq_name: string
+          message_id: number
+          payload: Json
+          source_queue: string
+        }
+        Returns: number
+      }
+      read_email_batch: {
+        Args: { batch_size: number; queue_name: string; vt: number }
+        Returns: {
+          message: Json
+          msg_id: number
+          read_ct: number
+        }[]
       }
     }
     Enums: {

@@ -30,6 +30,10 @@ const ACTION_OPTIONS = [
   { value: "document.request.create", label: "Document requested" },
   { value: "document.request.cancel", label: "Document request canceled" },
   { value: "document.upload", label: "Document uploaded" },
+  { value: "message.sent", label: "Client email sent" },
+  { value: "message.held", label: "Client email held for review" },
+  { value: "message.discarded", label: "Client email discarded" },
+  { value: "consent.update", label: "Client consent updated" },
 ];
 
 function actionLabel(a: string): string {

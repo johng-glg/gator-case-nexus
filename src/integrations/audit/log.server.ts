@@ -21,7 +21,11 @@ export type ActivityAction =
   | "case.dates.update"
   | "document.request.create"
   | "document.request.cancel"
-  | "document.upload";
+  | "document.upload"
+  | "message.sent"
+  | "message.held"
+  | "message.discarded"
+  | "consent.update";
 
 export interface LogActivityInput {
   caseId?: string | null;
