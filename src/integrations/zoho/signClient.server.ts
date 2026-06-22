@@ -100,12 +100,14 @@ function makeFirmSignAdapter() {
 
 /** SSA-1696 / SSA-827 (+ optional SSA-1693) forms service, configured from env. */
 export function makeFormsService() {
-  const ssa1696TemplateId = process.env.ZOHO_SIGN_SSA1696_TEMPLATE_ID;
-  const ssa1696ActionId = process.env.ZOHO_SIGN_SSA1696_ACTION_ID;
-  const ssa827TemplateId = process.env.ZOHO_SIGN_SSA827_TEMPLATE_ID;
-  const ssa827ActionId = process.env.ZOHO_SIGN_SSA827_ACTION_ID;
-  const ssa1693TemplateId = process.env.ZOHO_SIGN_SSA1693_TEMPLATE_ID;
-  const ssa1693ActionId = process.env.ZOHO_SIGN_SSA1693_ACTION_ID;
+  // Trim — secret values sometimes get a trailing newline/space which Zoho's createdocument
+  // rejects (GET tolerates it, POST returns 9004 "No match found").
+  const ssa1696TemplateId = process.env.ZOHO_SIGN_SSA1696_TEMPLATE_ID?.trim();
+  const ssa1696ActionId = process.env.ZOHO_SIGN_SSA1696_ACTION_ID?.trim();
+  const ssa827TemplateId = process.env.ZOHO_SIGN_SSA827_TEMPLATE_ID?.trim();
+  const ssa827ActionId = process.env.ZOHO_SIGN_SSA827_ACTION_ID?.trim();
+  const ssa1693TemplateId = process.env.ZOHO_SIGN_SSA1693_TEMPLATE_ID?.trim();
+  const ssa1693ActionId = process.env.ZOHO_SIGN_SSA1693_ACTION_ID?.trim();
   if (!ssa1696TemplateId || !ssa1696ActionId || !ssa827TemplateId || !ssa827ActionId) {
     throw new Error(
       "Zoho Sign SSA intake forms are not configured: set ZOHO_SIGN_SSA1696_TEMPLATE_ID / _ACTION_ID and ZOHO_SIGN_SSA827_TEMPLATE_ID / _ACTION_ID.",
