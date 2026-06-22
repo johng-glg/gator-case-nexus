@@ -52,6 +52,8 @@ export interface FormsServiceDeps {
   sign: SignAdapter;
   forms: FormSpec[];
   now?: () => Date;
+  /** Optional post-signature hook (archive signed PDF + certificate to storage). */
+  archive?: (ctx: { caseId: string; code: string; requestId: string }) => Promise<void>;
 }
 
 export function createFormsService(deps: FormsServiceDeps) {
@@ -78,7 +80,7 @@ export function createFormsService(deps: FormsServiceDeps) {
   }
 
   /** Send one SSA form for signature and stamp the case. */
-  async function sendForm(userKey: string, caseId: string, code: string) {
+  async function sendForm(userKey: string, caseId: string, code: string, _opts?: { attested?: boolean }) {
     const api = deps.zoho.as(userKey);
     const spec = byCode(code);
 
@@ -149,6 +151,7 @@ export function createFormsService(deps: FormsServiceDeps) {
 export function gatorIntakeForms(env: {
   ssa1696TemplateId: string; ssa1696ActionId: string;
   ssa827TemplateId: string; ssa827ActionId: string;
+  ssa1693TemplateId?: string; ssa1693ActionId?: string;
 }): FormSpec[] {
   return [
     { code: "SSA-1696", label: "SSA-1696 (Appointment of Representative)", onIntake: true,

@@ -12,20 +12,10 @@
  * Field API names match the confirmed contract (SSDI_Cases, Tasks).
  */
 
-import { TRANSITIONS, canTransition, HOOKS, missingRequiredFieldsDetailed, type Stage, type DueRule, type MissingField } from "./lifecycle";
+import { TRANSITIONS, canTransition, HOOKS, normalizeStage, missingRequiredFieldsDetailed, type Stage, type DueRule, type MissingField } from "./lifecycle";
 import { computeAppealDeadline, daysUntil, isAtRisk, releaseExpiration, releaseExpiringSoon, asUTCDate, localToday } from "./deadlines";
 import type { ZohoClient, ZohoRecord } from "./zohoClient";
 import { SERVICE_ACTOR } from "./zohoClient";
-
-/** Thrown when a stage advance is missing required data. `missing` is structured for the UI. */
-export class RequiredFieldsError extends Error {
-  readonly missing: MissingField[];
-  constructor(readonly stage: string, missing: MissingField[]) {
-    super(`Stage "${stage}" requires: ${missing.map((m) => m.label).join(", ")}.`);
-    this.name = "RequiredFieldsError";
-    this.missing = missing;
-  }
-}
 
 const MODULE = "SSDI_Cases";
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -37,17 +27,28 @@ export interface CaseServiceDeps {
   now?: () => Date;
 }
 
+/** Thrown when a stage advance is missing required data. `missing` is structured for the UI. */
+export class RequiredFieldsError extends Error {
+  readonly missing: MissingField[];
+  constructor(readonly stage: string, missing: MissingField[]) {
+    super(`Stage "${stage}" requires: ${missing.map((m) => m.label).join(", ")}.`);
+    this.name = "RequiredFieldsError";
+    this.missing = missing;
+  }
+}
+
+
 const READ_FIELDS = [
   "Current_Stage", "Notice_Date", "Documented_Receipt_Date", "Date_Opened",
   "ALJ_Hearing_Scheduled_Date", "Notice_of_Award_Date", "Release_Signed_Date",
-  "SSA_Claim_Number", "Hearing_Type", // for stage-gate validation
+  "Assigned_Attorney",
 ];
 
 /** Fields the sweep/recompute read to re-derive the deadline + counts. */
 const DERIVE_FIELDS = [
-  "id", "Active_Deadline_Type", "Notice_Date", "Documented_Receipt_Date",
+  "id", "Case_Number", "Active_Deadline_Type", "Notice_Date", "Documented_Receipt_Date",
   "Deadline_Date", "Days_To_Deadline", "Deadline_At_Risk",
-  "Release_Signed_Date", "Release_Expiring_Soon",
+  "Release_Signed_Date", "Release_Expiring_Soon", "Assigned_Attorney", "Engagement",
 ];
 
 export function createCaseService(deps: CaseServiceDeps) {
@@ -76,7 +77,6 @@ export function createCaseService(deps: CaseServiceDeps) {
     const u: ZohoRecord = {};
     const tier = r.Active_Deadline_Type as string | undefined;
     const notice = r.Notice_Date as string | undefined;
-
     let deadlineISO: string | null = null;
     if (tier && tier !== "None" && notice) {
       deadlineISO = iso(computeAppealDeadline(notice, (r.Documented_Receipt_Date as string) ?? null));
@@ -84,7 +84,6 @@ export function createCaseService(deps: CaseServiceDeps) {
     } else if (r.Deadline_Date) {
       deadlineISO = r.Deadline_Date as string; // no tier/notice → keep stored, just re-count
     }
-
     if (deadlineISO) {
       const days = daysUntil(deadlineISO, t);
       const risk = isAtRisk(deadlineISO, 14, t);
@@ -104,16 +103,17 @@ export function createCaseService(deps: CaseServiceDeps) {
     const c = await api.getRecord<ZohoRecord>(MODULE, caseId, READ_FIELDS);
     if (!c) throw new Error(`SSDI case ${caseId} not found`);
 
-    const from = c.Current_Stage as Stage;
+    const from = normalizeStage(c.Current_Stage as string | undefined);
     if (!canTransition(from, toStage)) {
       throw new Error(`Invalid transition: "${from}" → "${toStage}". Allowed: ${TRANSITIONS[from]?.join(", ")}`);
     }
 
     const merged = { ...c, ...(opts?.fields ?? {}) };
 
-    // Stage-gate: block the move if a field the new stage requires is missing (structured for UI).
+    // Stage-gate: block the move when a field the new stage requires is missing.
     const missing = missingRequiredFieldsDetailed(toStage, merged);
     if (missing.length) throw new RequiredFieldsError(toStage, missing);
+
     const effects = HOOKS[toStage];
     const update: ZohoRecord = { id: caseId, Current_Stage: toStage, ...(opts?.fields ?? {}) };
 
@@ -131,12 +131,21 @@ export function createCaseService(deps: CaseServiceDeps) {
     await api.updateRecords(MODULE, [update]);
 
     if (effects?.tasks?.length) {
-      const tasks = effects.tasks.map((t) => ({
-        Subject: t.label,
-        Due_Date: resolveDate(t.due, { deadline, fields: merged }),
-        What_Id: { id: caseId },
-        $se_module: MODULE,
-      })).filter((t) => t.Due_Date);
+      // Lookup field on SSDI_Cases. Zoho returns either an object {id,name} or a bare id.
+      const aa = merged.Assigned_Attorney as { id?: string } | string | undefined;
+      const attorneyId = typeof aa === "string" ? aa : aa?.id;
+      const tasks = effects.tasks.map((t) => {
+        const task: ZohoRecord = {
+          Subject: t.label,
+          Due_Date: resolveDate(t.due, { deadline, fields: merged }),
+          What_Id: { id: caseId },
+          $se_module: MODULE,
+          Status: "Not Started",
+          Priority: "High",
+        };
+        if (attorneyId) task.Owner = { id: attorneyId };
+        return task;
+      }).filter((t) => t.Due_Date);
       if (tasks.length) await api.createRecords("Tasks", tasks);
     }
 
@@ -161,33 +170,81 @@ export function createCaseService(deps: CaseServiceDeps) {
     return { id: caseId, ...u };
   }
 
-  /** SERVICE cron: re-derive deadlines from Notice_Date + refresh counts/flags for all open cases. */
-  async function runDailyDeadlineSweep(): Promise<{ scanned: number; updated: number }> {
+  /** SERVICE cron: re-derive deadlines + return a digest of overdue / due-soon / release-expiring cases. */
+  async function runDailyDeadlineSweep(): Promise<{
+    scanned: number;
+    updated: number;
+    overdue: DigestRow[];
+    dueSoon: DigestRow[];
+    releaseExpiring: DigestRow[];
+  }> {
     const api = deps.zoho.as(SERVICE_ACTOR);
     const rows = await api.coql<ZohoRecord>(
       `select ${DERIVE_FIELDS.join(", ")}
        from ${MODULE}
-       where Is_Closed = false and (Notice_Date is not null or Deadline_Date is not null or Release_Signed_Date is not null)`,
+       where ((Is_Closed = false) and (((Notice_Date is not null) or (Deadline_Date is not null)) or (Release_Signed_Date is not null)))`,
     );
 
     const t = today();
     const updates: ZohoRecord[] = [];
+    const overdue: DigestRow[] = [];
+    const dueSoon: DigestRow[] = [];
+    const releaseExpiring: DigestRow[] = [];
+
     for (const r of rows) {
       const u = deadlineFieldUpdates(r, t);
-
       if (r.Release_Signed_Date) {
         const exp = iso(releaseExpiration(r.Release_Signed_Date as string));
         const soon = releaseExpiringSoon(r.Release_Signed_Date as string, 30, t);
         u.Release_Expiration_Date = exp;
         if (soon !== r.Release_Expiring_Soon) u.Release_Expiring_Soon = soon;
+        if (soon) releaseExpiring.push(toDigestRow(r, { kind: "release", date: exp }));
       }
-
       if (Object.keys(u).length) updates.push({ id: r.id as string, ...u });
+
+      const dl = (u.Deadline_Date ?? r.Deadline_Date) as string | undefined;
+      const days = typeof u.Days_To_Deadline === "number" ? u.Days_To_Deadline
+        : typeof r.Days_To_Deadline === "number" ? r.Days_To_Deadline as number
+        : null;
+      if (dl && typeof days === "number") {
+        if (days < 0) overdue.push(toDigestRow(r, { kind: "overdue", date: dl, days }));
+        else if (days <= 7) dueSoon.push(toDigestRow(r, { kind: "due_soon", date: dl, days }));
+      }
     }
 
     if (updates.length) await api.updateRecords(MODULE, updates);
-    return { scanned: rows.length, updated: updates.length };
+    overdue.sort((a, b) => (a.days ?? 0) - (b.days ?? 0));
+    dueSoon.sort((a, b) => (a.days ?? 0) - (b.days ?? 0));
+    return { scanned: rows.length, updated: updates.length, overdue, dueSoon, releaseExpiring };
   }
 
   return { advanceStage, recomputeDeadline, runDailyDeadlineSweep };
+}
+
+export interface DigestRow {
+  id: string;
+  caseNumber: string | null;
+  engagementId: string | null;
+  attorneyId: string | null;
+  attorneyName: string | null;
+  tier: string | null;
+  date: string;
+  days?: number;
+  kind: "overdue" | "due_soon" | "release";
+}
+
+function toDigestRow(r: ZohoRecord, x: { kind: DigestRow["kind"]; date: string; days?: number }): DigestRow {
+  const aa = r.Assigned_Attorney as { id?: string; name?: string } | string | undefined;
+  const eng = r.Engagement as { id?: string } | string | undefined;
+  return {
+    id: r.id as string,
+    caseNumber: (r.Case_Number as string) ?? null,
+    engagementId: typeof eng === "string" ? eng : eng?.id ?? null,
+    attorneyId: typeof aa === "string" ? aa : aa?.id ?? null,
+    attorneyName: typeof aa === "object" ? aa?.name ?? null : null,
+    tier: (r.Active_Deadline_Type as string) ?? null,
+    date: x.date,
+    days: x.days,
+    kind: x.kind,
+  };
 }

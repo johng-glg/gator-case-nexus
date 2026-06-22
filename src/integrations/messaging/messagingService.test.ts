@@ -9,7 +9,7 @@ const caseLabel = "SSDI-001";
 
 // 1. Known stage with no copy → skip("no-template")
 ok("unknown/internal stage → skip no-template", planDelivery({
-  trigger: { kind: "stage", stage: "Initial decision - pending" },
+  trigger: { kind: "stage", stage: "Initial decision pending" },
   consent: consentOk, settings: baseSettings, alreadyHandled: false, caseLabel,
 }).op === "skip");
 
@@ -23,7 +23,7 @@ ok("msgKey is event:documents-requested", a.msgKey === "event:documents-requeste
 
 // 3. Denial → hold for review
 const d = planDelivery({
-  trigger: { kind: "stage", stage: "Recon decision - denied" },
+  trigger: { kind: "stage", stage: "Recon decision denied" },
   consent: consentOk, settings: baseSettings, alreadyHandled: false, caseLabel,
 });
 ok("denial → hold(adverse-outcome)", d.op === "hold" && d.reason === "adverse-outcome");
@@ -50,7 +50,7 @@ const g = planDelivery({
 ok("disabled milestone → skip(milestone-disabled)", g.op === "skip" && g.reason === "milestone-disabled");
 
 const h = planDelivery({
-  trigger: { kind: "stage", stage: "ALJ decision - denied" },
+  trigger: { kind: "stage", stage: "ALJ decision denied" },
   consent: consentOk, settings: { enabledMilestones: [] }, alreadyHandled: false, caseLabel,
 });
 ok("disabled milestone but adverse → still hold", h.op === "hold");

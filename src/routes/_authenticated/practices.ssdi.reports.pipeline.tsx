@@ -83,7 +83,7 @@ function PipelineReportPage() {
       case "stage":
         return stage;
       case "phase":
-        return phaseForStage(stage)?.label ?? "Unknown";
+        return PHASES.find((p) => p.key === phaseForStage(stage))?.label ?? "Unknown";
       case "attorney":
         return attorneyOf(r);
       case "referral":

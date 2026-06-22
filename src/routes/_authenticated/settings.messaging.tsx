@@ -18,9 +18,9 @@ const HUMAN: Record<string, string> = {
   "stage:Application filed": "When the SSDI application is filed",
   "stage:Hearing scheduled": "When an ALJ hearing is scheduled",
   "stage:Award / NOA received": "When a Notice of Award is received",
-  "stage:Initial decision - approved": "On initial-level approval",
-  "stage:Recon decision - approved": "On reconsideration approval",
-  "stage:ALJ decision - approved": "On ALJ approval",
+  "stage:Initial decision approved": "On initial-level approval",
+  "stage:Recon decision approved": "On reconsideration approval",
+  "stage:ALJ decision approved": "On ALJ approval",
   "event:documents-requested": "When the firm requests documents from the client",
   "event:documents-received": "When the client uploads documents",
 };
