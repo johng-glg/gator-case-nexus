@@ -18,7 +18,10 @@ export type ActivityAction =
   | "task.reopen"
   | "task.reassign"
   | "portal.invite"
-  | "case.dates.update";
+  | "case.dates.update"
+  | "document.request.create"
+  | "document.request.cancel"
+  | "document.upload";
 
 export interface LogActivityInput {
   caseId?: string | null;

@@ -19,6 +19,9 @@ const ACTION_LABEL: Record<string, string> = {
   "task.reopen": "Task re-opened",
   "task.reassign": "Task reassigned",
   "portal.invite": "Client portal invite",
+  "document.request.create": "Document requested",
+  "document.request.cancel": "Document request canceled",
+  "document.upload": "Document uploaded",
 };
 
 function actionColor(action: string): string {
@@ -27,6 +30,7 @@ function actionColor(action: string): string {
   if (action.startsWith("cost.")) return "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30";
   if (action.startsWith("task.")) return "bg-muted text-foreground border-border";
   if (action === "portal.invite") return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30";
+  if (action.startsWith("document.")) return "bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/30";
   return "bg-muted text-muted-foreground border-border";
 }
 
