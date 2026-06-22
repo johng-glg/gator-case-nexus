@@ -186,5 +186,4 @@ export function createSsdiCaseOpener(zoho: ZohoClient, opts?: { now?: () => Date
     })]);
     return { caseId: idOf(res[0]) };
   };
-  };
 }
