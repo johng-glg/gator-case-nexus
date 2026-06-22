@@ -83,5 +83,36 @@ export function createZohoSignAdapter(cfg: ZohoSignAdapterConfig): SignAdapter {
       const signLink = req.sign_url ?? req.signing_url ?? undefined;
       return { requestId: String(requestId), signLink };
     },
+
+    /** Pull the signed PDF + completion certificate. Used to retain ≥ 3 years (SSA CPAS rule). */
+    async downloadCompleted(requestId: string): Promise<SignCompletedFile[]> {
+      const token = await cfg.getAccessToken();
+      const headers = { Authorization: `Zoho-oauthtoken ${token}` };
+      const out: SignCompletedFile[] = [];
+      // Signed PDF
+      const pdfRes = await fetch(`${host}/api/v1/requests/${requestId}/pdf`, { headers });
+      if (!pdfRes.ok) {
+        throw new Error(`Zoho Sign pdf download failed (${pdfRes.status})`);
+      }
+      out.push({
+        name: `${requestId}-signed.pdf`,
+        contentType: pdfRes.headers.get("content-type") ?? "application/pdf",
+        bytes: new Uint8Array(await pdfRes.arrayBuffer()),
+        kind: "signed",
+      });
+      // Completion certificate (audit trail) — endpoint varies by tenant; tolerate 404.
+      const certRes = await fetch(`${host}/api/v1/requests/${requestId}/certificate`, { headers });
+      if (certRes.ok) {
+        out.push({
+          name: `${requestId}-audit.pdf`,
+          contentType: certRes.headers.get("content-type") ?? "application/pdf",
+          bytes: new Uint8Array(await certRes.arrayBuffer()),
+          kind: "audit",
+        });
+      } else {
+        console.warn(`[zohoSignAdapter] audit certificate not available (${certRes.status}) for ${requestId}`);
+      }
+      return out;
+    },
   };
 }
