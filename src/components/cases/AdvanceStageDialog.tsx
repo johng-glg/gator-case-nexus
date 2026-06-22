@@ -242,7 +242,21 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialSt
                     Missing required: <strong>{missing.map((m) => m.label).join(", ")}</strong>
                   </p>
                 )}
-                {err && <p className="text-sm text-destructive">{err}</p>}
+                {err && (() => {
+                  const m = err.match(/requires:\s*(.+?)\.?$/);
+                  const labels = m ? m[1].split(",").map((s) => s.trim()).filter(Boolean) : [];
+                  if (labels.length) {
+                    return (
+                      <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+                        <div className="font-medium text-destructive">Cannot advance — required fields missing:</div>
+                        <ul className="mt-1 list-disc pl-5 text-destructive">
+                          {labels.map((l) => <li key={l}>{l}</li>)}
+                        </ul>
+                      </div>
+                    );
+                  }
+                  return <p className="text-sm text-destructive">{err}</p>;
+                })()}
               </>
             );
           })()}
