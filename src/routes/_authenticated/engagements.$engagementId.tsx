@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getContact, getEngagement, retainerSend, zohoQuery } from "@/lib/zoho.functions";
+import { getContact, getEngagement, retainerSend, retainerReset, zohoQuery } from "@/lib/zoho.functions";
 import { ChevronLeft, AlertTriangle, Loader2, Check, CircleDot, Circle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -21,12 +21,22 @@ function EngagementDetail() {
   const fetchContact = useServerFn(getContact);
   const runQuery = useServerFn(zohoQuery);
   const sendRetainerFn = useServerFn(retainerSend);
+  const resetRetainerFn = useServerFn(retainerReset);
   const queryClient = useQueryClient();
 
   const sendRetainer = useMutation({
     mutationFn: () => sendRetainerFn({ data: { engagementId } }),
     onSuccess: () => {
       toast.success("Retainer sent for signature");
+      queryClient.invalidateQueries({ queryKey: ["engagement", engagementId] });
+    },
+    onError: (err: unknown) => toast.error((err as Error).message),
+  });
+
+  const resetRetainer = useMutation({
+    mutationFn: () => resetRetainerFn({ data: { engagementId } }),
+    onSuccess: () => {
+      toast.success("Retainer tracking reset");
       queryClient.invalidateQueries({ queryKey: ["engagement", engagementId] });
     },
     onError: (err: unknown) => toast.error((err as Error).message),
@@ -149,6 +159,12 @@ function EngagementDetail() {
         signedDate={record.Retainer_Signed_Date ? String(record.Retainer_Signed_Date) : undefined}
         onSend={() => sendRetainer.mutate()}
         sending={sendRetainer.isPending}
+        onReset={() => {
+          if (confirm("Reset retainer tracking on this engagement? This clears Sent / Viewed / Signed timestamps so you can re-test.")) {
+            resetRetainer.mutate();
+          }
+        }}
+        resetting={resetRetainer.isPending}
       />
 
 
@@ -273,7 +289,7 @@ function Badge({ children }: { children: React.ReactNode }) {
 }
 
 function RetainerPanel({
-  status, link, sentDate, viewedDate, signedDate, onSend, sending,
+  status, link, sentDate, viewedDate, signedDate, onSend, sending, onReset, resetting,
 }: {
   status: string;
   link?: string;
@@ -282,6 +298,8 @@ function RetainerPanel({
   signedDate?: string;
   onSend: () => void;
   sending: boolean;
+  onReset?: () => void;
+  resetting?: boolean;
 }) {
   const STEPS = ["Not sent", "Sent", "Viewed", "Signed"] as const;
   const isError = status === "Declined" || status === "Expired";
@@ -306,17 +324,31 @@ function RetainerPanel({
             )}
           </div>
         </div>
-        {canSend && (
-          <button
-            type="button"
-            onClick={onSend}
-            disabled={sending}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-          >
-            {sending && <Loader2 className="h-3 w-3 animate-spin" />}
-            {sending ? "Sending…" : neverSent ? "Send retainer" : "Resend retainer"}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onReset && !neverSent && (
+            <button
+              type="button"
+              onClick={onReset}
+              disabled={resetting}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50"
+              title="Clear Sent / Viewed / Signed timestamps so you can re-test the retainer flow"
+            >
+              {resetting && <Loader2 className="h-3 w-3 animate-spin" />}
+              {resetting ? "Resetting…" : "Reset tracking"}
+            </button>
+          )}
+          {canSend && (
+            <button
+              type="button"
+              onClick={onSend}
+              disabled={sending}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {sending && <Loader2 className="h-3 w-3 animate-spin" />}
+              {sending ? "Sending…" : neverSent ? "Send retainer" : "Resend retainer"}
+            </button>
+          )}
+        </div>
       </div>
       <ol className="flex items-center w-full gap-1">
         {STEPS.map((step, i) => {
