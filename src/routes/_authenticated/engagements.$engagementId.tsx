@@ -324,17 +324,31 @@ function RetainerPanel({
             )}
           </div>
         </div>
-        {canSend && (
-          <button
-            type="button"
-            onClick={onSend}
-            disabled={sending}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-          >
-            {sending && <Loader2 className="h-3 w-3 animate-spin" />}
-            {sending ? "Sending…" : neverSent ? "Send retainer" : "Resend retainer"}
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {onReset && !neverSent && (
+            <button
+              type="button"
+              onClick={onReset}
+              disabled={resetting}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50"
+              title="Clear Sent / Viewed / Signed timestamps so you can re-test the retainer flow"
+            >
+              {resetting && <Loader2 className="h-3 w-3 animate-spin" />}
+              {resetting ? "Resetting…" : "Reset tracking"}
+            </button>
+          )}
+          {canSend && (
+            <button
+              type="button"
+              onClick={onSend}
+              disabled={sending}
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+            >
+              {sending && <Loader2 className="h-3 w-3 animate-spin" />}
+              {sending ? "Sending…" : neverSent ? "Send retainer" : "Resend retainer"}
+            </button>
+          )}
+        </div>
       </div>
       <ol className="flex items-center w-full gap-1">
         {STEPS.map((step, i) => {
