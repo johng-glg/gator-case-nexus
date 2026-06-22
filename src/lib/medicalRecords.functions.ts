@@ -1,8 +1,8 @@
 /**
- * medicalRecords.functions.ts — per-case Records_Requests CRUD + lifecycle actions.
+ * medicalRecords.functions.ts — per-case Record_Requests CRUD + lifecycle actions.
  *
  * Engine: src/integrations/zoho/medicalRecords.ts (pure, tested).
- * Storage: Zoho `Records_Requests` module, parent = SSDI_Cases via `SSDI_Case` lookup.
+ * Storage: Zoho `Record_Requests` module, parent = SSDI_Cases via `SSDI_Case` lookup.
  * Costs row is created on the parent Engagement when Fee_Paid_Date transitions empty → set.
  */
 import { createServerFn } from "@tanstack/react-start";
@@ -27,9 +27,11 @@ function ensureStaff(email: string | undefined | null) {
   }
 }
 
+// NOTE: In Zoho, the provider name is stored on the standard `Name` field.
+// We alias it to `Provider_Name` in memory so engine/UI code stays readable.
 const REQUEST_FIELDS = [
   "id",
-  "Provider_Name",
+  "Name",
   "Request_Status",
   "Requested_Date",
   "Last_Followup_Date",
@@ -41,6 +43,10 @@ const REQUEST_FIELDS = [
   "SSDI_Case",
 ] as const;
 
+function decorateRow<T extends { Name?: string | null }>(r: T): T & { Provider_Name: string | null } {
+  return { ...r, Provider_Name: r.Name ?? null };
+}
+
 const listInput = z.object({ caseId: z.string().min(1) });
 
 export const listCaseRequests = createServerFn({ method: "POST" })
@@ -51,9 +57,10 @@ export const listCaseRequests = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const api = makeZohoClient().as(context.userId);
 
-    const rows = await api.coql<RecordsRequest & { id: string }>(
-      `select ${REQUEST_FIELDS.join(", ")} from Records_Requests where SSDI_Case = ${data.caseId}`,
+    const rawRows = await api.coql<RecordsRequest & { id: string; Name?: string | null }>(
+      `select ${REQUEST_FIELDS.join(", ")} from Record_Requests where SSDI_Case = ${data.caseId}`,
     );
+    const rows = rawRows.map(decorateRow);
 
     const today = new Date();
     const decorated = rows.map((r) => ({
@@ -86,9 +93,9 @@ export const createRequest = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const api = makeZohoClient().as(context.userId);
 
-    const res = await api.createRecords("Records_Requests", [
+    const res = await api.createRecords("Record_Requests", [
       {
-        Provider_Name: data.providerName,
+        Name: data.providerName,
         Request_Status: "Not started",
         Followup_Count: 0,
         SSDI_Case: { id: data.caseId },
@@ -107,8 +114,8 @@ export const sendRequest = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const api = makeZohoClient().as(context.userId);
 
-    const r = await api.getRecord<RecordsRequest & { id: string; SSDI_Case?: { id: string } | string }>(
-      "Records_Requests",
+    const r = await api.getRecord<RecordsRequest & { id: string; Name?: string | null; SSDI_Case?: { id: string } | string }>(
+      "Record_Requests",
       data.requestId,
       [...REQUEST_FIELDS],
     );
@@ -128,7 +135,7 @@ export const sendRequest = createServerFn({ method: "POST" })
     }
 
     const today = new Date().toISOString().slice(0, 10);
-    await api.updateRecords("Records_Requests", [
+    await api.updateRecords("Record_Requests", [
       {
         id: data.requestId,
         Request_Status: "Requested",
@@ -149,8 +156,8 @@ export const logFollowup = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const api = makeZohoClient().as(context.userId);
 
-    const r = await api.getRecord<RecordsRequest & { id: string; SSDI_Case?: { id: string } | string }>(
-      "Records_Requests",
+    const r = await api.getRecord<RecordsRequest & { id: string; Name?: string | null; SSDI_Case?: { id: string } | string }>(
+      "Record_Requests",
       data.requestId,
       [...REQUEST_FIELDS],
     );
@@ -160,7 +167,7 @@ export const logFollowup = createServerFn({ method: "POST" })
     }
 
     const updates = applyFollowup(r);
-    await api.updateRecords("Records_Requests", [{ id: data.requestId, ...updates }]);
+    await api.updateRecords("Record_Requests", [{ id: data.requestId, ...updates }]);
 
     const caseId = (r.SSDI_Case && typeof r.SSDI_Case === "object") ? (r.SSDI_Case as { id?: string }).id : (r.SSDI_Case as unknown as string | undefined);
     if (caseId) {
@@ -171,7 +178,7 @@ export const logFollowup = createServerFn({ method: "POST" })
           actorUserId: context.userId,
           actorEmail: (context.claims?.email as string | undefined) ?? null,
           action: "records.followup",
-          summary: `Logged follow-up #${updates.Followup_Count} for ${r.Provider_Name ?? "provider"}`,
+          summary: `Logged follow-up #${updates.Followup_Count} for ${r.Name ?? "provider"}`,
           metadata: { requestId: data.requestId, count: updates.Followup_Count },
         });
       } catch (e) { console.error("[medicalRecords] audit failed", e); }
@@ -196,8 +203,8 @@ export const setRequestStatus = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const api = makeZohoClient().as(context.userId);
 
-    const r = await api.getRecord<RecordsRequest & { id: string; SSDI_Case?: { id: string } | string }>(
-      "Records_Requests",
+    const r = await api.getRecord<RecordsRequest & { id: string; Name?: string | null; SSDI_Case?: { id: string } | string }>(
+      "Record_Requests",
       data.requestId,
       [...REQUEST_FIELDS],
     );
@@ -221,7 +228,7 @@ export const setRequestStatus = createServerFn({ method: "POST" })
     const shouldPostCost = !feePaidBefore && feePaidNow && (data.feeAmount ?? r.Fee_Amount ?? 0) > 0;
     if (feePaidNow && !feePaidBefore) update.Fee_Paid_Date = today;
 
-    await api.updateRecords("Records_Requests", [update]);
+    await api.updateRecords("Record_Requests", [update]);
 
     const caseId = (r.SSDI_Case && typeof r.SSDI_Case === "object") ? (r.SSDI_Case as { id?: string }).id : (r.SSDI_Case as unknown as string | undefined);
 
@@ -235,7 +242,7 @@ export const setRequestStatus = createServerFn({ method: "POST" })
         try {
           await api.createRecords("Costs", [
             {
-              Name: `Medical records — ${r.Provider_Name ?? "provider"}`,
+              Name: `Medical records — ${r.Name ?? "provider"}`,
               Category: "Medical records",
               Amount: data.feeAmount ?? r.Fee_Amount ?? 0,
               Engagement: { id: engagementId },
@@ -255,7 +262,7 @@ export const setRequestStatus = createServerFn({ method: "POST" })
           actorUserId: context.userId,
           actorEmail: (context.claims?.email as string | undefined) ?? null,
           action: "records.status",
-          summary: `Records request for ${r.Provider_Name ?? "provider"}: ${r.Request_Status} → ${data.status}`,
+          summary: `Records request for ${r.Name ?? "provider"}: ${r.Request_Status} → ${data.status}`,
           metadata: { requestId: data.requestId, from: r.Request_Status, to: data.status, feePaid: feePaidNow },
         });
       } catch (e) { console.error("[medicalRecords] audit failed", e); }

@@ -1,7 +1,7 @@
 /**
  * Nightly Medical Records follow-up sweep.
  *
- * Pulls open Records_Requests, runs followupSweepUpdates() (engine), creates a Zoho
+ * Pulls open Record_Requests, runs followupSweepUpdates() (engine), creates a Zoho
  * Task per due request (deduped by What_Id), tallies stale rows, logs to
  * `public.medical_records_sweep_log`.
  *
@@ -38,14 +38,14 @@ export const Route = createFileRoute("/api/public/medical-records-sweep")({
 
           const rows = await api.coql<{
             id: string;
-            Provider_Name?: string;
+            Name?: string;
             Request_Status: "Not started" | "Requested" | "Followed up" | "Received" | "Unable to obtain" | "Cancelled";
             Requested_Date?: string | null;
             Last_Followup_Date?: string | null;
             Followup_Count?: number | null;
             SSDI_Case?: { id: string } | string | null;
           }>(
-            `select id, Provider_Name, Request_Status, Requested_Date, Last_Followup_Date, Followup_Count, SSDI_Case from Records_Requests where Request_Status in ('Requested','Followed up')`,
+            `select id, Name, Request_Status, Requested_Date, Last_Followup_Date, Followup_Count, SSDI_Case from Record_Requests where Request_Status in ('Requested','Followed up')`,
           );
 
           const today = new Date();
@@ -59,12 +59,12 @@ export const Route = createFileRoute("/api/public/medical-records-sweep")({
           const tasksToCreate = due
             .filter((r) => (seen.has(r.id) ? false : (seen.add(r.id), true)))
             .map((r) => ({
-              Subject: `Follow up: medical records — ${r.Provider_Name ?? "provider"}`,
+              Subject: `Follow up: medical records — ${r.Name ?? "provider"}`,
               Status: "Not Started",
               Priority: "High",
               Due_Date: today.toISOString().slice(0, 10),
               What_Id: { id: r.id },
-              $se_module: "Records_Requests",
+              $se_module: "Record_Requests",
             }));
 
           let tasksCreated = 0;
