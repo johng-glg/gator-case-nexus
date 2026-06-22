@@ -25,21 +25,21 @@ export const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
     { field: "Application_Filed_Date", label: "Application filed date", type: "date", required: true },
     { field: "SSA_Claim_Number", label: "SSA claim number", type: "text" },
   ],
-  "Initial decision - denied": [
+  "Initial decision denied": [
     { field: "Notice_Date", label: "Notice date (printed on the adverse notice)", type: "date", required: true },
     { field: "Initial_Decision_Date", label: "Initial decision date", type: "date", required: true },
   ],
-  "Initial decision - approved": [
+  "Initial decision approved": [
     { field: "Initial_Decision_Date", label: "Initial decision date", type: "date", required: true },
   ],
   "Reconsideration filed": [
     { field: "Recon_Filed_Date", label: "Reconsideration filed date", type: "date", required: true },
   ],
-  "Recon decision - denied": [
+  "Recon decision denied": [
     { field: "Notice_Date", label: "Notice date", type: "date", required: true },
     { field: "Recon_Decision_Date", label: "Reconsideration decision date", type: "date", required: true },
   ],
-  "Recon decision - approved": [
+  "Recon decision approved": [
     { field: "Recon_Decision_Date", label: "Reconsideration decision date", type: "date", required: true },
   ],
   "ALJ hearing requested": [
@@ -54,21 +54,21 @@ export const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
   "Hearing held": [
     { field: "ALJ_Hearing_Held_Date", label: "Hearing held date", type: "date", required: true },
   ],
-  "ALJ decision - denied": [
+  "ALJ decision denied": [
     { field: "Notice_Date", label: "Notice date", type: "date", required: true },
     { field: "ALJ_Decision_Date", label: "ALJ decision date", type: "date", required: true },
   ],
-  "ALJ decision - approved": [
+  "ALJ decision approved": [
     { field: "ALJ_Decision_Date", label: "ALJ decision date", type: "date", required: true },
   ],
   "Appeals Council requested": [
     { field: "Appeals_Council_Requested_Date", label: "Appeals Council requested date", type: "date", required: true },
   ],
-  "AC decision - denied": [
+  "AC decision denied": [
     { field: "Notice_Date", label: "Notice date", type: "date", required: true },
     { field: "AC_Decision_Date", label: "Appeals Council decision date", type: "date", required: true },
   ],
-  "AC decision - approved": [
+  "AC decision approved": [
     { field: "AC_Decision_Date", label: "Appeals Council decision date", type: "date", required: true },
   ],
   "Award / NOA received": [
@@ -88,10 +88,10 @@ export const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
 };
 
 const DENIED_STAGES = new Set<Stage>([
-  "Initial decision - denied",
-  "Recon decision - denied",
-  "ALJ decision - denied",
-  "AC decision - denied",
+  "Initial decision denied",
+  "Recon decision denied",
+  "ALJ decision denied",
+  "AC decision denied",
 ]);
 
 interface Props {

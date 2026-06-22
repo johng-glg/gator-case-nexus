@@ -63,19 +63,19 @@ export const MILESTONE_KEYS = [
   "stage:Application filed",
   "stage:Hearing scheduled",
   "stage:Award / NOA received",
-  "stage:Initial decision - approved",
-  "stage:Recon decision - approved",
-  "stage:ALJ decision - approved",
+  "stage:Initial decision approved",
+  "stage:Recon decision approved",
+  "stage:ALJ decision approved",
   "event:documents-requested",
   "event:documents-received",
 ] as const;
 
 /** Denial stages: never auto-send; always queue for attorney review. */
 const ADVERSE_STAGES = new Set<Stage>([
-  "Initial decision - denied",
-  "Recon decision - denied",
-  "ALJ decision - denied",
-  "AC decision - denied",
+  "Initial decision denied",
+  "Recon decision denied",
+  "ALJ decision denied",
+  "AC decision denied",
 ]);
 
 /** Compute the milestone key for a trigger. */
@@ -138,9 +138,9 @@ export function copyForTrigger(t: Trigger, ctx: { caseLabel: string; portalUrl?:
           "through next steps, including back pay and any remaining paperwork.",
         ...cta,
       };
-    case "Initial decision - approved":
-    case "Recon decision - approved":
-    case "ALJ decision - approved":
+    case "Initial decision approved":
+    case "Recon decision approved":
+    case "ALJ decision approved":
       return {
         subject: `Good news on your SSDI case — ${ctx.caseLabel}`,
         body:
@@ -148,10 +148,10 @@ export function copyForTrigger(t: Trigger, ctx: { caseLabel: string; portalUrl?:
         ...cta,
       };
     // Adverse outcomes — copy is still rendered, but `planDelivery` will HOLD for review.
-    case "Initial decision - denied":
-    case "Recon decision - denied":
-    case "ALJ decision - denied":
-    case "AC decision - denied":
+    case "Initial decision denied":
+    case "Recon decision denied":
+    case "ALJ decision denied":
+    case "AC decision denied":
       return {
         subject: `Update on your SSDI case — ${ctx.caseLabel}`,
         body:
