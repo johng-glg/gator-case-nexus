@@ -57,6 +57,8 @@ export interface SignAdapter {
   }): Promise<SignSendResult>;
   /** Fetch the signed PDF + completion certificate (for 3-yr retention). Optional. */
   downloadCompleted?(requestId: string): Promise<Array<{ kind: "signed" | "certificate"; bytes: Uint8Array; contentType: string }>>;
+  /** Recall (void) an in-flight request so the prior link can no longer be signed. Optional. */
+  recallRequest?(requestId: string): Promise<void>;
 }
 
 export interface RetainerServiceDeps {
@@ -87,11 +89,19 @@ export function createRetainerService(deps: RetainerServiceDeps) {
     const api = deps.zoho.as(userKey);
 
     const eng = await api.getRecord<ZohoRecord>(ENGAGEMENTS, engagementId, [
-      "Name", "Client", "Retainer_Status",
+      "Name", "Client", "Retainer_Status", "Retainer_ID",
     ]);
     if (!eng) throw new Error(`Engagement ${engagementId} not found`);
     if (eng.Retainer_Status === "Signed") {
       throw new Error(`Engagement ${engagementId} retainer is already Signed; not resending.`);
+    }
+
+    // If a prior request is in flight (Sent / Declined / Expired), recall it so the old link
+    // can no longer be signed. Best-effort: a failed recall (already-recalled/expired) must
+    // not block the resend.
+    const priorRequestId = typeof eng.Retainer_ID === "string" ? eng.Retainer_ID : undefined;
+    if (priorRequestId && deps.sign.recallRequest) {
+      try { await deps.sign.recallRequest(priorRequestId); } catch { /* ignore */ }
     }
 
     const clientId = lookupId(eng.Client);

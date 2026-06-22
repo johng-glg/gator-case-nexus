@@ -83,5 +83,17 @@ export function createZohoSignAdapter(cfg: ZohoSignAdapterConfig): SignAdapter {
       const signLink = req.sign_url ?? req.signing_url ?? undefined;
       return { requestId: String(requestId), signLink };
     },
+
+    async recallRequest(requestId: string): Promise<void> {
+      const token = await cfg.getAccessToken();
+      const res = await fetch(`${host}/api/v1/requests/${requestId}/recall`, {
+        method: "POST",
+        headers: { Authorization: `Zoho-oauthtoken ${token}` },
+      });
+      const json: any = await res.json().catch(() => ({}));
+      if (!res.ok || json?.status === "failure") {
+        throw new Error(`Zoho Sign recall failed (${res.status}): ${JSON.stringify(json)}`);
+      }
+    },
   };
 }
