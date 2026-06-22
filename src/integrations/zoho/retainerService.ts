@@ -15,7 +15,7 @@
  *      role (the client) and merge tags {{Client_Full_Name}} / {{Today_Date}}.
  *   2. Engagement fields: Retainer_Status (picklist: Not Sent | Sent | Viewed | Signed | Declined |
  *      Expired), Retainer_ID (single line), Retainer_Link (URL), Retainer_Sent (datetime),
- *      Retainer_Signed_Date (datetime). (Retainer_Status already exists.)
+ *      Retainer_Viewed (datetime), Retainer_Signed_Date (datetime). (Retainer_Status already exists.)
  *   3. A Sign webhook posting to your /webhooks/zoho-sign route → handleSignCompleted(payload).
  *
  * The actual Sign HTTP call lives behind SignAdapter so this orchestration stays testable and
@@ -141,7 +141,7 @@ export function createRetainerService(deps: RetainerServiceDeps) {
   /**
    * Zoho Sign webhook handler. Maps the request's terminal status to Retainer_Status on the
    * Engagement matched by Retainer_ID. Also stamps Retainer_Viewed on "viewed" events
-   * (non-terminal — Retainer_Status stays "Sent"). Returns what it did, or null if no match.
+   * and advances Retainer_Status to "Viewed". Returns what it did, or null if no match.
    */
   async function handleSignCompleted(payload: unknown): Promise<
     { engagementId: string; status?: RetainerStatus; viewed?: boolean } | null
