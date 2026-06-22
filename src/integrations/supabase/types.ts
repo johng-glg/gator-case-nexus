@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_event_links: {
+        Row: {
+          calendar_id: string
+          case_id: string
+          google_event_id: string
+          key: string
+          sig: string
+          updated_at: string
+        }
+        Insert: {
+          calendar_id: string
+          case_id: string
+          google_event_id: string
+          key: string
+          sig: string
+          updated_at?: string
+        }
+        Update: {
+          calendar_id?: string
+          case_id?: string
+          google_event_id?: string
+          key?: string
+          sig?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       case_activity_log: {
         Row: {
           action: string
@@ -174,6 +201,10 @@ export type Database = {
       }
       ssdi_deadline_digests: {
         Row: {
+          calendar_created: number | null
+          calendar_deleted: number | null
+          calendar_errors: number | null
+          calendar_updated: number | null
           created_at: string
           due_soon: Json
           error: string | null
@@ -185,6 +216,10 @@ export type Database = {
           updated: number
         }
         Insert: {
+          calendar_created?: number | null
+          calendar_deleted?: number | null
+          calendar_errors?: number | null
+          calendar_updated?: number | null
           created_at?: string
           due_soon?: Json
           error?: string | null
@@ -196,6 +231,10 @@ export type Database = {
           updated?: number
         }
         Update: {
+          calendar_created?: number | null
+          calendar_deleted?: number | null
+          calendar_errors?: number | null
+          calendar_updated?: number | null
           created_at?: string
           due_soon?: Json
           error?: string | null
