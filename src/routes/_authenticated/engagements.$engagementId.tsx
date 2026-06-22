@@ -347,6 +347,18 @@ function RetainerPanel({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {onMarkSigned && canMarkSigned && (
+            <button
+              type="button"
+              onClick={onMarkSigned}
+              disabled={markingSigned}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50"
+              title="Manually flip to Signed and open the case — use only if Zoho confirmed signing but the webhook didn't land"
+            >
+              {markingSigned && <Loader2 className="h-3 w-3 animate-spin" />}
+              {markingSigned ? "Marking…" : "Mark signed (admin)"}
+            </button>
+          )}
           {onReset && !neverSent && (
             <button
               type="button"
