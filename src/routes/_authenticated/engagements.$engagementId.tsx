@@ -308,6 +308,7 @@ function Badge({ children }: { children: React.ReactNode }) {
 
 function RetainerPanel({
   status, link, sentDate, viewedDate, signedDate, onSend, sending, onReset, resetting,
+  onMarkSigned, markingSigned,
 }: {
   status: string;
   link?: string;
@@ -318,6 +319,8 @@ function RetainerPanel({
   sending: boolean;
   onReset?: () => void;
   resetting?: boolean;
+  onMarkSigned?: () => void;
+  markingSigned?: boolean;
 }) {
   const STEPS = ["Not sent", "Sent", "Viewed", "Signed"] as const;
   const isError = status === "Declined" || status === "Expired";
@@ -325,6 +328,7 @@ function RetainerPanel({
   const normalized = status.toLowerCase();
   const canSend = normalized !== "signed";
   const neverSent = normalized === "not sent" || normalized === "";
+  const canMarkSigned = normalized === "sent" || normalized === "viewed";
 
   return (
     <section className="rounded-lg border border-border bg-card p-4">
