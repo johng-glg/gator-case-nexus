@@ -26,6 +26,17 @@ function safeEnum(v: unknown, allowed: readonly string[]): string {
   return `'${v.replace(/'/g, "''")}'`;
 }
 
+/** Sanitize a free-text search term for a COQL `like` clause. */
+function safeLike(v: unknown): string {
+  if (typeof v !== "string") throw new Error("Invalid search parameter.");
+  // Allow letters, numbers, dash, underscore, dot, slash, space. Cap length to keep COQL tight.
+  const cleaned = v.trim().slice(0, 40).replace(/[^A-Za-z0-9 _.\-/]/g, "");
+  if (!cleaned) throw new Error("Search term is empty.");
+  return `'%${cleaned}%'`;
+}
+
+
+
 export type QueryName =
   | "openCases"
   | "myOpenCases"
@@ -50,7 +61,8 @@ export type QueryName =
   | "allContacts"
   | "engagementsByContact"
   | "allLeads"
-  | "allReferrals";
+  | "allReferrals"
+  | "ssdiCaseSearch";
 
 
 
@@ -223,6 +235,12 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               where id is not null
               order by Name asc
               limit 200`;
+    case "ssdiCaseSearch":
+      return `select id, Case_Number, Current_Stage, Sub_Status, Deadline_Date
+              from SSDI_Cases
+              where Case_Number like ${safeLike(params.q)}
+              order by Modified_Time desc
+              limit 20`;
   }
 }
 

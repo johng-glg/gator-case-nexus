@@ -232,7 +232,20 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialSt
             </div>
           )}
 
-          {err && <p className="text-sm text-destructive">{err}</p>}
+          {(() => {
+            const missing = requirements.filter((r) => r.required && !fields[r.field]);
+            const showMissing = !!selected && missing.length > 0;
+            return (
+              <>
+                {showMissing && (
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    Missing required: <strong>{missing.map((m) => m.label).join(", ")}</strong>
+                  </p>
+                )}
+                {err && <p className="text-sm text-destructive">{err}</p>}
+              </>
+            );
+          })()}
         </div>
 
         <DialogFooter>

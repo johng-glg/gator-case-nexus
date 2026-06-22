@@ -430,6 +430,36 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_views: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          page: string
+          params: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          page: string
+          params?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          page?: string
+          params?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ssdi_deadline_digests: {
         Row: {
           calendar_created: number | null

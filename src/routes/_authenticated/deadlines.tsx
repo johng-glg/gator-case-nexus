@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { AlarmClock, FileWarning, Gavel, Search, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { SavedViewsBar } from "@/components/SavedViewsBar";
 
 export const Route = createFileRoute("/_authenticated/deadlines")({
   head: () => ({ meta: [{ title: "Deadlines — Gator" }] }),
@@ -131,13 +132,24 @@ function Deadlines() {
       .sort((a, b) => (a.days! - b.days!));
   }, [hearings.data]);
 
+  const viewParams = { bucket, mine, tier, search };
+  function applyView(p: typeof viewParams) {
+    setBucket((p.bucket as Bucket) ?? "all");
+    setMine(!!p.mine);
+    setTier((p.tier as string) ?? "all");
+    setSearch((p.search as string) ?? "");
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-8 py-5 space-y-8">
-      <div>
-        <h1 className="font-display text-2xl text-foreground">Deadlines</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Every appeal clock, hearing, and release expiring across open SSDI cases — soonest first.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-2xl text-foreground">Deadlines</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Every appeal clock, hearing, and release expiring across open SSDI cases — soonest first.
+          </p>
+        </div>
+        <SavedViewsBar page="deadlines" params={viewParams} onApply={applyView} />
       </div>
 
       {/* Urgency summary cards — click to filter */}

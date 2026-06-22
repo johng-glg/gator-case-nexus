@@ -17,6 +17,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as ClientPortalRouteImport } from './routes/_client/portal'
+import { Route as AuthenticatedTodayRouteImport } from './routes/_authenticated/today'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -93,6 +94,11 @@ const ClientPortalRoute = ClientPortalRouteImport.update({
   id: '/portal',
   path: '/portal',
   getParentRoute: () => ClientRouteRoute,
+} as any)
+const AuthenticatedTodayRoute = AuthenticatedTodayRouteImport.update({
+  id: '/today',
+  path: '/today',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
@@ -323,6 +329,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
+  '/today': typeof AuthenticatedTodayRoute
   '/portal': typeof ClientPortalRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
@@ -368,6 +375,7 @@ export interface FileRoutesByTo {
   '/connect-zoho': typeof AuthenticatedConnectZohoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
+  '/today': typeof AuthenticatedTodayRoute
   '/portal': typeof ClientPortalRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
@@ -416,6 +424,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
+  '/_authenticated/today': typeof AuthenticatedTodayRoute
   '/_client/portal': typeof ClientPortalRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/_authenticated/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
@@ -464,6 +473,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/deadlines'
     | '/settings'
+    | '/today'
     | '/portal'
     | '/email/unsubscribe'
     | '/clients/$clientId'
@@ -509,6 +519,7 @@ export interface FileRouteTypes {
     | '/connect-zoho'
     | '/dashboard'
     | '/deadlines'
+    | '/today'
     | '/portal'
     | '/email/unsubscribe'
     | '/clients/$clientId'
@@ -556,6 +567,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/deadlines'
     | '/_authenticated/settings'
+    | '/_authenticated/today'
     | '/_client/portal'
     | '/email/unsubscribe'
     | '/_authenticated/clients/$clientId'
@@ -670,6 +682,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/portal'
       preLoaderRoute: typeof ClientPortalRouteImport
       parentRoute: typeof ClientRouteRoute
+    }
+    '/_authenticated/today': {
+      id: '/_authenticated/today'
+      path: '/today'
+      fullPath: '/today'
+      preLoaderRoute: typeof AuthenticatedTodayRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
@@ -1023,6 +1042,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedDeadlinesRoute: typeof AuthenticatedDeadlinesRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRouteWithChildren
+  AuthenticatedTodayRoute: typeof AuthenticatedTodayRoute
   AuthenticatedClientsClientIdRoute: typeof AuthenticatedClientsClientIdRoute
   AuthenticatedEngagementsEngagementIdRoute: typeof AuthenticatedEngagementsEngagementIdRoute
   AuthenticatedLeadsLeadIdRoute: typeof AuthenticatedLeadsLeadIdRoute
@@ -1038,6 +1058,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedDeadlinesRoute: AuthenticatedDeadlinesRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRouteWithChildren,
+  AuthenticatedTodayRoute: AuthenticatedTodayRoute,
   AuthenticatedClientsClientIdRoute: AuthenticatedClientsClientIdRoute,
   AuthenticatedEngagementsEngagementIdRoute:
     AuthenticatedEngagementsEngagementIdRoute,
