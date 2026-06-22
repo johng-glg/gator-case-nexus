@@ -6,7 +6,7 @@ import { zohoQuery } from "@/lib/zoho.functions";
 import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { PRACTICES, practiceForEngagementType } from "@/practices/registry";
-import { AlarmClock, Briefcase } from "lucide-react";
+import { AlarmClock, Briefcase, Hourglass } from "lucide-react";
 import { DailyDigestBanner } from "@/components/dashboard/DailyDigestBanner";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
