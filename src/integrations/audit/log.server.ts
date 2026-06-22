@@ -27,7 +27,8 @@ export type ActivityAction =
   | "message.discarded"
   | "consent.update"
   | "records.followup"
-  | "records.status";
+  | "records.status"
+  | "lead.convert.override";
 
 
 export interface LogActivityInput {

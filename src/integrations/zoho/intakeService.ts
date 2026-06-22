@@ -102,19 +102,27 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
 
   const LEAD_FIELDS = [
     "First_Name", "Last_Name", "Email", "Mobile", "Phone", "Lead_Source", "Practice_Area",
-    "Street", "City", "State", "Zip_Code", "Lead_Status", "Converted_Contact",
+    "Street", "City", "State", "Zip_Code", "Lead_Status", "Converted_Contact", "Lead_Tier",
   ];
 
   /**
    * Convert a qualified Lead into Client + Engagement and mark it Converted. The case is opened
    * later, when the retainer is signed. Shared Leads pipeline is tagged by Practice_Area; only
    * built practices convert today.
+   *
+   * Gated by Lead_Tier: a Decline cannot convert unless `override.reason` is supplied (the caller
+   * is responsible for logging the override into case_activity_log).
    */
-  async function convertLead(userKey: string, leadId: string) {
+  async function convertLead(userKey: string, leadId: string, opts?: { override?: { reason: string } }) {
     const api = deps.zoho.as(userKey);
     const lead = await api.getRecord<ZohoRecord>("Leads", leadId, LEAD_FIELDS);
     if (!lead) throw new Error(`Lead ${leadId} not found`);
     if (lead.Converted_Contact) throw new Error(`Lead ${leadId} is already converted.`);
+
+    const tier = str(lead.Lead_Tier);
+    if (tier === "Decline" && !opts?.override?.reason) {
+      throw new Error("Lead screened as Decline. Provide an attorney override reason to convert.");
+    }
 
     const practice = str(lead.Practice_Area) ?? "SSDI";
     if (!BUILT_PRACTICES.has(practice)) {
@@ -142,8 +150,9 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
       id: leadId, Lead_Status: "Converted", Converted_Contact: { id: result.clientId },
     }]);
 
-    return { ...result, leadId, conflict };
+    return { ...result, leadId, conflict, override: opts?.override ?? null };
   }
+
 
   return { runConflictCheck, createIntake, convertLead };
 }
