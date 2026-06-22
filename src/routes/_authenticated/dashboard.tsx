@@ -148,6 +148,90 @@ function Dashboard() {
 
       <section className="mt-10">
         <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">
+          <Hourglass className="h-3.5 w-3.5" />
+          Pending engagements
+        </div>
+        <div className="rounded-lg border border-border bg-card">
+          {engagements.isLoading && (
+            <div className="h-12 m-3 rounded bg-muted/40 animate-pulse" />
+          )}
+          {engagements.error && (
+            <div className="p-4 text-sm text-destructive-foreground">
+              {(engagements.error as Error).message}
+            </div>
+          )}
+          {engagements.data && (
+            <>
+              <div className="flex items-baseline gap-3 p-5 border-b border-border">
+                <span className="font-display text-5xl tabular-nums text-primary">
+                  {pending.length}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  awaiting retainer or intake
+                </span>
+                <Link
+                  to="/engagements"
+                  className="ml-auto text-sm text-primary hover:underline"
+                >
+                  view all →
+                </Link>
+              </div>
+              {pending.length > 0 && (
+                <ul className="divide-y divide-border">
+                  {pending.slice(0, 5).map((r) => {
+                    const id = String(r.id ?? "");
+                    const name = String(r.Name ?? "Untitled");
+                    const type = String(r.Engagement_Type ?? "");
+                    const status = String(r.Engagement_Status ?? "");
+                    const retainer = String(r.Retainer_Status ?? "");
+                    const first = String(
+                      (r as Record<string, unknown>)["Client.First_Name"] ?? "",
+                    );
+                    const last = String(
+                      (r as Record<string, unknown>)["Client.Last_Name"] ?? "",
+                    );
+                    const client = `${first} ${last}`.trim();
+                    return (
+                      <li key={id}>
+                        <Link
+                          to="/engagements/$engagementId"
+                          params={{ engagementId: id }}
+                          className="flex items-center gap-3 px-5 py-3 text-sm hover:bg-card/60"
+                        >
+                          <span className="font-medium text-foreground truncate">
+                            {name}
+                          </span>
+                          {client && (
+                            <span className="text-muted-foreground truncate">
+                              · {client}
+                            </span>
+                          )}
+                          <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+                            {type && <span>{type}</span>}
+                            {status && (
+                              <span className="rounded bg-muted px-1.5 py-0.5">
+                                {status}
+                              </span>
+                            )}
+                            {retainer && (
+                              <span className="rounded border border-border px-1.5 py-0.5">
+                                Retainer: {retainer}
+                              </span>
+                            )}
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-muted-foreground mb-3">
           <AlarmClock className="h-3.5 w-3.5" />
           Firm-wide deadlines at risk
         </div>
