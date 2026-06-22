@@ -23,7 +23,6 @@
  * existing Deluge sign_mail_merge function — without touching this file.
  */
 
-import { localToday } from "./deadlines";
 import type { ZohoClient, ZohoRecord } from "./zohoClient";
 import { SERVICE_ACTOR } from "./zohoClient";
 
@@ -78,7 +77,10 @@ const lookupId = (v: unknown): string | undefined =>
   typeof v === "string" ? v : (v as { id?: string })?.id;
 
 export function createRetainerService(deps: RetainerServiceDeps) {
-  const now = () => (deps.now ? deps.now() : localToday());
+  // Real wall-clock for Retainer_Sent / _Viewed / _Signed_Date timestamps. Don't use
+  // localToday() here — that returns midnight UTC of today's Pacific date and Zoho would
+  // display it in org-local time as "yesterday 5pm".
+  const now = () => (deps.now ? deps.now() : new Date());
 
   /**
    * Send the retainer for the given Engagement. Reads the linked Client for name/email,

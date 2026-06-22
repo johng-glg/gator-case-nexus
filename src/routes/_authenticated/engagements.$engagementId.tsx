@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getContact, getEngagement, retainerSend, retainerReset, zohoQuery } from "@/lib/zoho.functions";
+import { getContact, getEngagement, retainerSend, retainerReset, retainerMarkSigned, zohoQuery } from "@/lib/zoho.functions";
 import { ChevronLeft, AlertTriangle, Loader2, Check, CircleDot, Circle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -22,6 +22,7 @@ function EngagementDetail() {
   const runQuery = useServerFn(zohoQuery);
   const sendRetainerFn = useServerFn(retainerSend);
   const resetRetainerFn = useServerFn(retainerReset);
+  const markSignedFn = useServerFn(retainerMarkSigned);
   const queryClient = useQueryClient();
 
   const sendRetainer = useMutation({
@@ -38,6 +39,16 @@ function EngagementDetail() {
     onSuccess: () => {
       toast.success("Retainer tracking reset");
       queryClient.invalidateQueries({ queryKey: ["engagement", engagementId] });
+    },
+    onError: (err: unknown) => toast.error((err as Error).message),
+  });
+
+  const markSigned = useMutation({
+    mutationFn: () => markSignedFn({ data: { engagementId } }),
+    onSuccess: () => {
+      toast.success("Retainer marked Signed — case opened");
+      queryClient.invalidateQueries({ queryKey: ["engagement", engagementId] });
+      queryClient.invalidateQueries({ queryKey: ["casesByEngagement", engagementId] });
     },
     onError: (err: unknown) => toast.error((err as Error).message),
   });
@@ -154,7 +165,7 @@ function EngagementDetail() {
       <RetainerPanel
         status={String(record.Retainer_Status ?? "Not sent")}
         link={record.Retainer_Link ? String(record.Retainer_Link) : undefined}
-        sentDate={record.Retainer_Sent_Date ? String(record.Retainer_Sent_Date) : undefined}
+        sentDate={record.Retainer_Sent ? String(record.Retainer_Sent) : undefined}
         viewedDate={record.Retainer_Viewed ? String(record.Retainer_Viewed) : undefined}
         signedDate={record.Retainer_Signed_Date ? String(record.Retainer_Signed_Date) : undefined}
         onSend={() => sendRetainer.mutate()}
@@ -165,7 +176,14 @@ function EngagementDetail() {
           }
         }}
         resetting={resetRetainer.isPending}
+        onMarkSigned={() => {
+          if (confirm("Mark this retainer as Signed and open the case? Use this only when Zoho Sign confirmed signing but the webhook didn't update the engagement.")) {
+            markSigned.mutate();
+          }
+        }}
+        markingSigned={markSigned.isPending}
       />
+
 
 
 
@@ -288,8 +306,16 @@ function Badge({ children }: { children: React.ReactNode }) {
   );
 }
 
+function fmtWhen(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso.slice(0, 10);
+  return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+
 function RetainerPanel({
   status, link, sentDate, viewedDate, signedDate, onSend, sending, onReset, resetting,
+  onMarkSigned, markingSigned,
 }: {
   status: string;
   link?: string;
@@ -300,6 +326,8 @@ function RetainerPanel({
   sending: boolean;
   onReset?: () => void;
   resetting?: boolean;
+  onMarkSigned?: () => void;
+  markingSigned?: boolean;
 }) {
   const STEPS = ["Not sent", "Sent", "Viewed", "Signed"] as const;
   const isError = status === "Declined" || status === "Expired";
@@ -307,6 +335,7 @@ function RetainerPanel({
   const normalized = status.toLowerCase();
   const canSend = normalized !== "signed";
   const neverSent = normalized === "not sent" || normalized === "";
+  const canMarkSigned = normalized === "sent" || normalized === "viewed";
 
   return (
     <section className="rounded-lg border border-border bg-card p-4">
@@ -314,9 +343,9 @@ function RetainerPanel({
         <div>
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Retainer</div>
           <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-            {sentDate && <span>Sent {sentDate.slice(0, 10)}</span>}
-            {viewedDate && <span>Viewed {viewedDate.slice(0, 10)}</span>}
-            {signedDate && <span>Signed {signedDate.slice(0, 10)}</span>}
+            {sentDate && <span>Sent {fmtWhen(sentDate)}</span>}
+            {viewedDate && <span>Viewed {fmtWhen(viewedDate)}</span>}
+            {signedDate && <span>Signed {fmtWhen(signedDate)}</span>}
             {link && (
               <a href={link} target="_blank" rel="noreferrer" className="text-primary hover:underline">
                 View document
@@ -325,6 +354,18 @@ function RetainerPanel({
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {onMarkSigned && canMarkSigned && (
+            <button
+              type="button"
+              onClick={onMarkSigned}
+              disabled={markingSigned}
+              className="inline-flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted disabled:opacity-50"
+              title="Manually flip to Signed and open the case — use only if Zoho confirmed signing but the webhook didn't land"
+            >
+              {markingSigned && <Loader2 className="h-3 w-3 animate-spin" />}
+              {markingSigned ? "Marking…" : "Mark signed (admin)"}
+            </button>
+          )}
           {onReset && !neverSent && (
             <button
               type="button"

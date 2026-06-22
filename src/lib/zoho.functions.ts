@@ -755,6 +755,31 @@ export const retainerReset = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/** Admin: manually flip a stuck engagement to Signed and open the SSDI case. Used to recover
+ *  engagements whose Zoho Sign webhook fired during an outage and won't be retried. Reuses the
+ *  full webhook code path by synthesizing a RequestCompleted payload from the stored Retainer_ID. */
+export const retainerMarkSigned = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => engagementIdInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase
+      .rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden");
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { makeRetainerService } = await import("@/integrations/zoho/signClient.server");
+    const eng = await makeZohoClient().as(context.userId)
+      .getRecord<{ Retainer_ID?: string }>("Engagements", data.engagementId, ["Retainer_ID"]);
+    const requestId = eng?.Retainer_ID;
+    if (!requestId) throw new Error("No Retainer_ID on this engagement — send a retainer first.");
+    const result = await makeRetainerService().handleSignCompleted({
+      requests: { request_id: requestId },
+      notifications: { operation_type: "RequestCompleted" },
+    });
+    return { ok: true, result };
+  });
+
+
+
 // ---------- SSA intake forms (Zoho Sign) ----------
 
 const sendFormInput = z.object({
