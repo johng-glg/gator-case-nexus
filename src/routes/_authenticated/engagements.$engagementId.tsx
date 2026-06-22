@@ -306,6 +306,13 @@ function Badge({ children }: { children: React.ReactNode }) {
   );
 }
 
+function fmtWhen(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return iso.slice(0, 10);
+  return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+
 function RetainerPanel({
   status, link, sentDate, viewedDate, signedDate, onSend, sending, onReset, resetting,
   onMarkSigned, markingSigned,
