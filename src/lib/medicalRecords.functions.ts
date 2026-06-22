@@ -178,7 +178,7 @@ export const logFollowup = createServerFn({ method: "POST" })
           actorUserId: context.userId,
           actorEmail: (context.claims?.email as string | undefined) ?? null,
           action: "records.followup",
-          summary: `Logged follow-up #${updates.Followup_Count} for ${r.Provider_Name ?? "provider"}`,
+          summary: `Logged follow-up #${updates.Followup_Count} for ${r.Name ?? "provider"}`,
           metadata: { requestId: data.requestId, count: updates.Followup_Count },
         });
       } catch (e) { console.error("[medicalRecords] audit failed", e); }
@@ -242,7 +242,7 @@ export const setRequestStatus = createServerFn({ method: "POST" })
         try {
           await api.createRecords("Costs", [
             {
-              Name: `Medical records — ${r.Provider_Name ?? "provider"}`,
+              Name: `Medical records — ${r.Name ?? "provider"}`,
               Category: "Medical records",
               Amount: data.feeAmount ?? r.Fee_Amount ?? 0,
               Engagement: { id: engagementId },
@@ -262,7 +262,7 @@ export const setRequestStatus = createServerFn({ method: "POST" })
           actorUserId: context.userId,
           actorEmail: (context.claims?.email as string | undefined) ?? null,
           action: "records.status",
-          summary: `Records request for ${r.Provider_Name ?? "provider"}: ${r.Request_Status} → ${data.status}`,
+          summary: `Records request for ${r.Name ?? "provider"}: ${r.Request_Status} → ${data.status}`,
           metadata: { requestId: data.requestId, from: r.Request_Status, to: data.status, feePaid: feePaidNow },
         });
       } catch (e) { console.error("[medicalRecords] audit failed", e); }
