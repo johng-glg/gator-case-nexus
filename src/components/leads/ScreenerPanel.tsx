@@ -253,9 +253,9 @@ export function ScreenerPanel({
             <span className="font-medium text-foreground">SMS consent (TCPA):</span> {SMS_CONSENT_TEXT}
           </span>
         </label>
-        {record?.SMS_Consent_At && (
+        {record && typeof record.SMS_Consent_At === "string" && record.SMS_Consent_At && (
           <div className="mt-1.5 text-[11px] text-emerald-700">
-            Recorded: {String(record.SMS_Consent_At).slice(0, 16).replace("T", " ")} UTC
+            Recorded: {record.SMS_Consent_At.slice(0, 16).replace("T", " ")} UTC
           </div>
         )}
       </div>
