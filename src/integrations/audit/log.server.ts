@@ -25,7 +25,10 @@ export type ActivityAction =
   | "message.sent"
   | "message.held"
   | "message.discarded"
-  | "consent.update";
+  | "consent.update"
+  | "records.followup"
+  | "records.status";
+
 
 export interface LogActivityInput {
   caseId?: string | null;

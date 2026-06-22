@@ -409,6 +409,36 @@ export type Database = {
         }
         Relationships: []
       }
+      medical_records_sweep_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          open_count: number
+          ran_at: string
+          stale_count: number
+          tasks_created: number
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          open_count?: number
+          ran_at?: string
+          stale_count?: number
+          tasks_created?: number
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          open_count?: number
+          ran_at?: string
+          stale_count?: number
+          tasks_created?: number
+        }
+        Relationships: []
+      }
       messaging_settings: {
         Row: {
           enabled_milestones: Json

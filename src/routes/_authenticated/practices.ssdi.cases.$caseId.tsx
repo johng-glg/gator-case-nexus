@@ -15,6 +15,8 @@ import { CostEntryForm, DeleteCostButton } from "@/components/cases/CostEntryFor
 import { InviteClientButton } from "@/components/cases/InviteClientButton";
 import { ActivityPanel } from "@/components/cases/ActivityPanel";
 import { DocumentRequestsPanel } from "@/components/cases/DocumentRequestsPanel";
+import { MedicalRecordsPanel } from "@/components/cases/MedicalRecordsPanel";
+
 import { MessagingPanel } from "@/components/cases/MessagingPanel";
 import { SsaFormsPanel } from "@/components/cases/SsaFormsPanel";
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
@@ -352,6 +354,8 @@ function CaseDetail() {
       </section>
 
       <SsaFormsPanel caseId={caseId} record={record as Record<string, unknown> | undefined} />
+
+      <MedicalRecordsPanel caseId={caseId} />
 
       <DocumentRequestsPanel caseId={caseId} engagementId={engagementId} />
 
