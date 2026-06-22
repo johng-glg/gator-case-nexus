@@ -608,6 +608,23 @@ export const retainerSend = createServerFn({ method: "POST" })
     return result;
   });
 
+// ---------- SSA intake forms (Zoho Sign) ----------
+
+const sendFormInput = z.object({
+  caseId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  code: z.enum(["SSA-1696", "SSA-827"]),
+});
+
+export const sendIntakeForm = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => sendFormInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeFormsService } = await import("@/integrations/zoho/signClient.server");
+    return makeFormsService().sendForm(context.userId, data.caseId, data.code);
+  });
+
+
+
 
 // ---------- Costs ----------
 
