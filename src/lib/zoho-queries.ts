@@ -250,16 +250,14 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
       const q = safeLike(params.q);
       return `select id, First_Name, Last_Name, Email, Phone
               from Contacts
-              where First_Name like ${q} or Last_Name like ${q} or Email like ${q}
-              order by Modified_Time desc
+              where (Last_Name like ${q}) or (First_Name like ${q}) or (Email like ${q})
               limit 10`;
     }
     case "leadSearch": {
       const q = safeLike(params.q);
       return `select id, First_Name, Last_Name, Email, Company, Lead_Status
               from Leads
-              where First_Name like ${q} or Last_Name like ${q} or Email like ${q} or Company like ${q}
-              order by Modified_Time desc
+              where (Last_Name like ${q}) or (First_Name like ${q}) or (Email like ${q}) or (Company like ${q})
               limit 10`;
     }
     case "engagementSearch": {
