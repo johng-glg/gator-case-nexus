@@ -174,6 +174,7 @@ export const getMyClientPortal = createServerFn({ method: "GET" })
     return {
       linked: true as const,
       email: link.email,
+      caseId: link.zoho_case_id,
       case: {
         caseNumber: (record.Case_Number as string | null) ?? null,
         currentStage: (record.Current_Stage as string | null) ?? null,
