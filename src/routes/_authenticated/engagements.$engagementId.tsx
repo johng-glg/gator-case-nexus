@@ -22,6 +22,7 @@ function EngagementDetail() {
   const runQuery = useServerFn(zohoQuery);
   const sendRetainerFn = useServerFn(retainerSend);
   const resetRetainerFn = useServerFn(retainerReset);
+  const markSignedFn = useServerFn(retainerMarkSigned);
   const queryClient = useQueryClient();
 
   const sendRetainer = useMutation({
