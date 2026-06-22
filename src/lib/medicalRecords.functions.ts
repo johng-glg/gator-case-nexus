@@ -57,9 +57,10 @@ export const listCaseRequests = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const api = makeZohoClient().as(context.userId);
 
-    const rows = await api.coql<RecordsRequest & { id: string }>(
+    const rawRows = await api.coql<RecordsRequest & { id: string; Name?: string | null }>(
       `select ${REQUEST_FIELDS.join(", ")} from Record_Requests where SSDI_Case = ${data.caseId}`,
     );
+    const rows = rawRows.map(decorateRow);
 
     const today = new Date();
     const decorated = rows.map((r) => ({
