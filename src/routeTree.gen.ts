@@ -37,6 +37,7 @@ import { Route as AuthenticatedLeadsLeadIdRouteImport } from './routes/_authenti
 import { Route as AuthenticatedEngagementsEngagementIdRouteImport } from './routes/_authenticated/engagements.$engagementId'
 import { Route as AuthenticatedClientsClientIdRouteImport } from './routes/_authenticated/clients.$clientId'
 import { Route as AuthenticatedPracticesSsdiIndexRouteImport } from './routes/_authenticated/practices.ssdi.index'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as ApiZohoConnectCallbackRouteImport } from './routes/api/zoho/connect/callback'
@@ -204,6 +205,12 @@ const AuthenticatedPracticesSsdiIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPracticesSsdiRoute,
   } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
   id: '/lovable/email/auth/webhook',
   path: '/lovable/email/auth/webhook',
@@ -299,6 +306,7 @@ export interface FileRoutesByFullPath {
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
   '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
   '/practices/ssdi/reports/outcomes': typeof AuthenticatedPracticesSsdiReportsOutcomesRoute
@@ -336,6 +344,7 @@ export interface FileRoutesByTo {
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiIndexRoute
   '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
   '/practices/ssdi/reports/outcomes': typeof AuthenticatedPracticesSsdiReportsOutcomesRoute
@@ -378,6 +387,7 @@ export interface FileRoutesById {
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/_authenticated/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
   '/_authenticated/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
   '/_authenticated/practices/ssdi/reports/outcomes': typeof AuthenticatedPracticesSsdiReportsOutcomesRoute
@@ -419,6 +429,7 @@ export interface FileRouteTypes {
     | '/api/zoho/connect/callback'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
+    | '/lovable/email/queue/process'
     | '/practices/ssdi/'
     | '/practices/ssdi/cases/$caseId'
     | '/practices/ssdi/reports/outcomes'
@@ -456,6 +467,7 @@ export interface FileRouteTypes {
     | '/api/zoho/connect/callback'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
+    | '/lovable/email/queue/process'
     | '/practices/ssdi'
     | '/practices/ssdi/cases/$caseId'
     | '/practices/ssdi/reports/outcomes'
@@ -497,6 +509,7 @@ export interface FileRouteTypes {
     | '/api/zoho/connect/callback'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
+    | '/lovable/email/queue/process'
     | '/_authenticated/practices/ssdi/'
     | '/_authenticated/practices/ssdi/cases/$caseId'
     | '/_authenticated/practices/ssdi/reports/outcomes'
@@ -517,6 +530,7 @@ export interface RootRouteChildren {
   ApiZohoConnectCallbackRoute: typeof ApiZohoConnectCallbackRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -716,6 +730,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/practices/ssdi/'
       preLoaderRoute: typeof AuthenticatedPracticesSsdiIndexRouteImport
       parentRoute: typeof AuthenticatedPracticesSsdiRoute
+    }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/lovable/email/auth/webhook': {
       id: '/lovable/email/auth/webhook'
@@ -930,6 +951,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiZohoConnectCallbackRoute: ApiZohoConnectCallbackRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
