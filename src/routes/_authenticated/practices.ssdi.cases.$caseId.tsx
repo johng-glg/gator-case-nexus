@@ -80,12 +80,13 @@ function CaseDetail() {
     enabled: !!engagementId,
     queryFn: () => runQuery({ data: { name: "engagementById", params: { engagementId: engagementId! } } }),
   });
-  const engagementRow = (engagementQ.data as Array<Record<string, unknown>> | undefined)?.[0];
+  const engagementRow = engagementQ.data?.rows?.[0] as Record<string, unknown> | undefined;
   const clientRef = engagementRow?.Client as
     | { id?: string; name?: string; First_Name?: string; Last_Name?: string }
     | string
     | undefined;
-  const clientId = typeof clientRef === "string" ? clientRef : clientRef?.id;
+  const dottedClientId = engagementRow?.["Client.id"] as string | undefined;
+  const clientId = typeof clientRef === "string" ? clientRef : (clientRef?.id ?? dottedClientId);
   // COQL returns lookup subfields as flat dotted keys (e.g. "Client.First_Name").
   const dottedFirst = engagementRow?.["Client.First_Name"] as string | undefined;
   const dottedLast = engagementRow?.["Client.Last_Name"] as string | undefined;
