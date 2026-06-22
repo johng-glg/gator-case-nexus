@@ -97,7 +97,13 @@ function UserCrmCard() {
   const connectMut = useMutation({
     mutationFn: async () => {
       const { url } = await fetchAuthUrl();
-      window.location.href = url;
+      // Zoho's consent screen refuses to render inside iframes (X-Frame-Options),
+      // which blanks the Lovable preview. Break out to the top window when possible.
+      try {
+        (window.top ?? window).location.assign(url);
+      } catch {
+        window.open(url, "_blank", "noopener");
+      }
     },
     onError: (e: any) => toast.error(e.message ?? "Failed to start Zoho auth"),
   });
