@@ -15,6 +15,7 @@ import { CostEntryForm, DeleteCostButton } from "@/components/cases/CostEntryFor
 import { InviteClientButton } from "@/components/cases/InviteClientButton";
 import { ActivityPanel } from "@/components/cases/ActivityPanel";
 import { DocumentRequestsPanel } from "@/components/cases/DocumentRequestsPanel";
+import { MessagingPanel } from "@/components/cases/MessagingPanel";
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
 import { useStageRequirements } from "@/hooks/use-stage-requirements";
 import { ChevronLeft, AlertTriangle, Download } from "lucide-react";
@@ -344,6 +345,8 @@ function CaseDetail() {
       </section>
 
       <DocumentRequestsPanel caseId={caseId} engagementId={engagementId} />
+
+      <MessagingPanel caseId={caseId} />
 
       <ActivityPanel caseId={caseId} engagementId={engagementId} />
 

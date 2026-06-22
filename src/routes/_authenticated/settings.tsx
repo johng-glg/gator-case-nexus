@@ -25,6 +25,7 @@ function SettingsLayout() {
           { to: "/settings/connections", label: "Connections", exact: false },
           { to: "/settings/deadline-sweep", label: "Deadline Sweep", exact: false },
           { to: "/settings/stage-requirements", label: "Stage Requirements", exact: false },
+          { to: "/settings/messaging", label: "Messaging", exact: false },
           { to: "/settings/trust-export", label: "Trust Export", exact: false },
           { to: "/settings/activity", label: "Activity Log", exact: false },
           { to: "/settings/changelog", label: "Change Log", exact: false },

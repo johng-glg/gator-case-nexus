@@ -243,6 +243,9 @@ export const caseAdvance = createServerFn({ method: "POST" })
     // Fire-and-forget calendar sync. Never block stage advance on calendar errors.
     const { syncCaseCalendarSafe } = await import("@/integrations/zoho/caseCalendarSync");
     await syncCaseCalendarSafe(data.caseId);
+    // Fire-and-forget client notify (email-only). Never block on messaging errors.
+    const { notifySafe } = await import("@/integrations/messaging/notifyService.server");
+    await notifySafe({ caseId: data.caseId, trigger: { kind: "stage", stage: data.toStage as never } });
     return result;
   });
 
