@@ -1,26 +1,22 @@
-## Goal
-Remove the "Zoho connected" pill in the top-right header and replace it with an inline global search box that shows results in a dropdown directly under the input (no modal).
+## Plan
 
-## Changes
+1. **Fix the COQL search templates**
+   - Update the global search queries to use COQL-safe syntax for text matching.
+   - Remove fragile multi-field `or` COQL clauses that are currently causing `SYNTAX_ERROR`.
+   - Keep searching cases, clients, leads, and engagements, but make each query valid and conservative.
 
-### 1. New component: `src/components/GlobalSearchBox.tsx`
-- Compact search input (icon + `placeholder="Search SSDI cases…"`), ~280px wide on desktop, collapses to icon-only on small screens.
-- Reuses the same `zohoQuery({ name: "ssdiCaseSearch", params: { q } })` server fn the command palette uses (already whitelisted).
-- Debounced 200ms; triggers when `q.trim().length >= 2`.
-- Renders a floating dropdown (absolute-positioned popover under the input) listing up to 8 results: `Case_Number` + `Current_Stage` muted.
-- Click result → `navigate({ to: "/practices/ssdi/cases/$id", params: { id } })` and clears/closes.
-- Closes on outside click, Escape, or selection. Arrow up/down + Enter for keyboard nav.
-- Shows "Searching…" / "No matches" / hidden states.
-- Keeps `⌘K` palette intact (separate concern; not removed).
+2. **Prevent search failures from blanking the app**
+   - Make the global search component tolerate individual module query failures.
+   - If one backend search fails, show available results from the other modules instead of crashing the page.
 
-### 2. `src/components/AppShell.tsx`
-- Delete the `ZohoStatusPill` component and its render at line 169.
-- Drop the now-unused `zohoConnected` prop from `Props` and the destructure (and remove unused `CheckCircle2`, `AlertTriangle` icons).
-- Render `<GlobalSearchBox />` in its place in the header (right-aligned, after the `userEmail` div).
+3. **Improve error visibility for future debugging**
+   - Add lightweight server-side logging of the whitelisted query name when a COQL call fails, without exposing sensitive data.
 
-### 3. Callers of `<AppShell>`
-- Find any place passing `zohoConnected={...}` and remove that prop. (Likely `_authenticated/route.tsx`.) The Zoho connection status is still surfaced via the Connect Zoho redirect flow elsewhere; we're only removing the header indicator per request.
+4. **Verify the fix**
+   - Recheck the edited query definitions and ensure the search dropdown no longer triggers the runtime error path.
 
-## Out of scope
-- No changes to `/connect-zoho` flow or backend.
-- `CommandPalette` (⌘K) stays as-is.
+## Technical details
+
+- Main files: `src/lib/zoho-queries.ts`, `src/lib/zoho.functions.ts`, and possibly `src/components/GlobalSearchBox.tsx`.
+- Likely root cause: Zoho COQL is rejecting one of the newly added search templates, especially the `OR`/`LIKE` search clauses.
+- The implementation will keep the existing inline dropdown behavior and only change the failing search logic.
