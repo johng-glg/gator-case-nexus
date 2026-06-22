@@ -157,7 +157,19 @@ export const getLead = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const record = await makeZohoClient()
       .as(context.userId)
-      .getRecord("Leads", data.leadId);
+      .getRecord("Leads", data.leadId, [
+        "First_Name", "Last_Name", "Email", "Phone", "Mobile", "Company",
+        "Lead_Source", "Lead_Status", "Practice_Area", "Description",
+        "Owner", "Created_Time", "Converted_Contact",
+        // Screener inputs
+        "Working_Above_SGA", "Monthly_Earnings", "Is_Blind", "Receiving_Treatment",
+        "Meets_12mo_Duration", "Claim_Type", "Date_Last_Insured", "Already_Represented",
+        "Date_of_Birth", "Current_Level", "Appeal_Deadline_Date", "Primary_Impairment",
+        // Screener outputs
+        "Lead_Tier", "Lead_Score", "Screener_Knockouts", "Is_Urgent",
+        // SMS consent (TCPA)
+        "SMS_Consent_At", "SMS_Consent_Text", "SMS_Consent_Source",
+      ]);
     return { record: record ? toJson<ZohoRow>(record) : null };
   });
 
@@ -175,6 +187,92 @@ export const updateLeadStatus = createServerFn({ method: "POST" })
       { id: data.leadId, Lead_Status: data.status },
     ]);
     return { ok: true };
+  });
+
+const screenerInput = z.object({
+  leadId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  input: z.object({
+    workingAboveSGA: z.boolean().optional(),
+    monthlyEarnings: z.number().nonnegative().optional(),
+    isBlind: z.boolean().optional(),
+    receivingTreatment: z.boolean().optional(),
+    meetsTwelveMonthDuration: z.boolean().optional(),
+    claimType: z.enum(["DIB", "SSI", "Concurrent", "Unknown"]).optional(),
+    dateLastInsured: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
+    alreadyRepresented: z.boolean().optional(),
+    age: z.number().int().min(0).max(120).optional(),
+    dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
+    currentLevel: z.enum([
+      "No application yet", "Initial pending", "Initial denied",
+      "Recon denied", "ALJ denied", "Other",
+    ]).optional(),
+    appealDeadlineDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().or(z.literal("")),
+    primaryImpairment: z.string().trim().max(500).optional().or(z.literal("")),
+  }),
+  smsConsent: z.object({
+    granted: z.boolean(),
+    text: z.string().trim().max(2000).optional(),
+    source: z.string().trim().max(100).optional(),
+  }).optional(),
+});
+
+export const saveLeadScreener = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => screenerInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { screenLead } = await import("@/integrations/zoho/leadScreening");
+
+    const i = data.input;
+    let age = i.age;
+    if (age === undefined && i.dateOfBirth) {
+      const dob = new Date(i.dateOfBirth + "T00:00:00Z");
+      const now = new Date();
+      age = now.getUTCFullYear() - dob.getUTCFullYear() -
+        (now < new Date(Date.UTC(now.getUTCFullYear(), dob.getUTCMonth(), dob.getUTCDate())) ? 1 : 0);
+    }
+
+    const result = screenLead({
+      workingAboveSGA: i.workingAboveSGA,
+      monthlyEarnings: i.monthlyEarnings,
+      isBlind: i.isBlind,
+      receivingTreatment: i.receivingTreatment,
+      meetsTwelveMonthDuration: i.meetsTwelveMonthDuration,
+      claimType: i.claimType,
+      dateLastInsured: i.dateLastInsured || undefined,
+      alreadyRepresented: i.alreadyRepresented,
+      age,
+      currentLevel: i.currentLevel,
+      appealDeadlineDate: i.appealDeadlineDate || undefined,
+    });
+
+    const payload: Record<string, unknown> = {
+      id: data.leadId,
+      Working_Above_SGA: i.workingAboveSGA ?? null,
+      Monthly_Earnings: i.monthlyEarnings ?? null,
+      Is_Blind: i.isBlind ?? null,
+      Receiving_Treatment: i.receivingTreatment ?? null,
+      Meets_12mo_Duration: i.meetsTwelveMonthDuration ?? null,
+      Claim_Type: i.claimType ?? null,
+      Date_Last_Insured: i.dateLastInsured || null,
+      Already_Represented: i.alreadyRepresented ?? null,
+      Date_of_Birth: i.dateOfBirth || null,
+      Current_Level: i.currentLevel ?? null,
+      Appeal_Deadline_Date: i.appealDeadlineDate || null,
+      Primary_Impairment: i.primaryImpairment || null,
+      Lead_Tier: result.tier,
+      Lead_Score: result.score,
+      Screener_Knockouts: result.knockouts.map((k) => `[${k.severity}] ${k.label}`).join("\n") || null,
+      Is_Urgent: result.urgent,
+    };
+    if (data.smsConsent?.granted) {
+      payload.SMS_Consent_At = new Date().toISOString();
+      payload.SMS_Consent_Text = data.smsConsent.text ?? null;
+      payload.SMS_Consent_Source = data.smsConsent.source ?? "app:screener";
+    }
+
+    await makeZohoClient().as(context.userId).updateRecords("Leads", [payload]);
+    return { result: toJson<Json>(result) };
   });
 
 const createLeadInput = z.object({
@@ -209,17 +307,34 @@ export const createLead = createServerFn({ method: "POST" })
     return { id };
   });
 
+const convertLeadInput = z.object({
+  leadId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  override: z.object({ reason: z.string().trim().min(5).max(500) }).optional(),
+});
+
 export const convertLead = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data) => leadIdInput.parse(data))
+  .inputValidator((data) => convertLeadInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const { createIntakeService } = await import("@/integrations/zoho/intakeService");
     const svc = createIntakeService({ zoho: makeZohoClient() });
-    const result = await svc.convertLead(context.userId, data.leadId);
+    const result = await svc.convertLead(context.userId, data.leadId, { override: data.override });
+    if (data.override) {
+      const { logCaseActivity } = await import("@/integrations/audit/log.server");
+      await logCaseActivity({
+        caseId: result.engagementId,
+        actorUserId: context.userId,
+        actorEmail: actorEmail(context.claims),
+        action: "lead.convert.override",
+        summary: `Converted a Decline-tier lead with override: ${data.override.reason}`,
+        metadata: { leadId: data.leadId, reason: data.override.reason },
+      });
+    }
     return toJson<{
       clientId: string; engagementId: string; leadId: string;
       conflict: { status: "Cleared" | "Conflict found"; matches: ZohoRow[] };
+      override: { reason: string } | null;
     }>(result);
   });
 
