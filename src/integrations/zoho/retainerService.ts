@@ -119,7 +119,7 @@ export function createRetainerService(deps: RetainerServiceDeps) {
       id: engagementId,
       Retainer_ID: result.requestId,
       Retainer_Link: result.signLink,
-      Retainer_Sent: isoDate(t),
+      Retainer_Sent: isoDateTime(t),
       Retainer_Status: "Sent" as RetainerStatus,
     }]);
 
