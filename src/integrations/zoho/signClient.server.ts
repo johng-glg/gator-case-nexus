@@ -188,8 +188,8 @@ export function makeRetainerService() {
   // Lazy-import to avoid a circular dep at module load. On retainer signature: open the
   // SSDI case, then auto-send SSA-1696 + SSA-827 to the client.
   const onRetainerSigned = async (ctx: { engagementId: string }) => {
-    const { createCaseOpener } = await import("./intakeService");
-    const { caseId } = await createCaseOpener({ zoho })(ctx);
+    const { createSsdiCaseOpener } = await import("./intakeService");
+    const { caseId } = await createSsdiCaseOpener(zoho)(ctx);
     if (!caseId) return;
     try {
       const forms = makeFormsService();

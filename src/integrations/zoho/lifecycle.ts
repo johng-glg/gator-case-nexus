@@ -163,6 +163,25 @@ export function missingRequiredFieldsDetailed(to: Stage, fields: Record<string, 
   return missingRequiredFields(to, fields).map((field) => ({ field, label: FIELD_LABELS[field] ?? field }));
 }
 
+export const CLOSURE_REASONS = ["Won","Lost","Withdrawn","Transferred","Client deceased","Conflict"] as const;
+export type ClosureReason = (typeof CLOSURE_REASONS)[number];
+
+export function normalizeStage(s: string | undefined | null): Stage {
+  if (!s) return "Retained";
+  const legacy: Record<string,string> = { "Intake":"Retained", "Retainer signed":"Retained" };
+  let v = legacy[s] ?? s;
+  v = v.replace(" decision - ", " decision ");
+  return v as Stage;
+}
+
+export interface DenialNextStep { nextStage: Stage; label: string; tier: string; dateField: string; }
+export const DENIAL_NEXT_STEP: Partial<Record<Stage, DenialNextStep>> = {
+  "Initial decision denied": { nextStage:"Reconsideration filed",    label:"File Reconsideration",   tier:"Reconsideration", dateField:"Recon_Filed_Date" },
+  "Recon decision denied":   { nextStage:"ALJ hearing requested",    label:"Request ALJ hearing",    tier:"ALJ Hearing",     dateField:"ALJ_Hearing_Requested_Date" },
+  "ALJ decision denied":     { nextStage:"Appeals Council requested", label:"Request Appeals Council", tier:"Appeals Council", dateField:"Appeals_Council_Requested_Date" },
+  "AC decision denied":      { nextStage:"Closed",                   label:"Federal court / close",  tier:"Federal Court",   dateField:"Closed_Date" },
+};
+
 /** High-level phases for the case-detail UI. The case sits in exactly one phase at a time;
  *  render these ~7 as the rail and expand only the active phase's sub-stages. No side-scroll. */
 export const PHASES: { key: string; label: string; stages: Stage[] }[] = [
@@ -175,11 +194,12 @@ export const PHASES: { key: string; label: string; stages: Stage[] }[] = [
   { key: "closed",  label: "Closed",            stages: ["Closed"] },
 ];
 
-export function phaseForStage(stage: Stage): string {
-  return PHASES.find((p) => p.stages.includes(stage))?.key ?? "intake";
+export function phaseForStage(stage: Stage | string): string {
+  return PHASES.find((p) => p.stages.includes(stage as Stage))?.key ?? "intake";
 }
 
 /** Index of the phase containing the stage (for "done / current / upcoming" styling). */
-export function phaseIndex(stage: Stage): number {
-  return Math.max(0, PHASES.findIndex((p) => p.stages.includes(stage)));
+export function phaseIndex(stage: Stage | string): number {
+  return Math.max(0, PHASES.findIndex((p) => p.stages.includes(stage as Stage)));
 }
+

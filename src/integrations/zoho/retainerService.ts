@@ -55,6 +55,8 @@ export interface SignAdapter {
     templateId?: string;
     actionId?: string;
   }): Promise<SignSendResult>;
+  /** Fetch the signed PDF + completion certificate (for 3-yr retention). Optional. */
+  downloadCompleted?(requestId: string): Promise<Array<{ kind: "signed" | "certificate"; bytes: Uint8Array; contentType: string }>>;
 }
 
 export interface RetainerServiceDeps {
