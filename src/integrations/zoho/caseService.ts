@@ -166,7 +166,7 @@ export function createCaseService(deps: CaseServiceDeps) {
     const rows = await api.coql<ZohoRecord>(
       `select ${DERIVE_FIELDS.join(", ")}
        from ${MODULE}
-       where Is_Closed = false and (Notice_Date is not null or Deadline_Date is not null or Release_Signed_Date is not null)`,
+       where ((Is_Closed = false) and (((Notice_Date is not null) or (Deadline_Date is not null)) or (Release_Signed_Date is not null)))`,
     );
 
     const t = today();
