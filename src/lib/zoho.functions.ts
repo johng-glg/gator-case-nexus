@@ -737,6 +737,24 @@ export const retainerSend = createServerFn({ method: "POST" })
     return result;
   });
 
+/** DEV/admin: clear retainer tracking fields so the engagement can be re-tested end-to-end. */
+export const retainerReset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => engagementIdInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    await makeZohoClient().as(context.userId).updateRecords("Engagements", [{
+      id: data.engagementId,
+      Retainer_Status: "Not sent",
+      Retainer_ID: null,
+      Retainer_Link: null,
+      Retainer_Sent: null,
+      Retainer_Viewed_Date: null,
+      Retainer_Signed_Date: null,
+    }]);
+    return { ok: true };
+  });
+
 // ---------- SSA intake forms (Zoho Sign) ----------
 
 const sendFormInput = z.object({
