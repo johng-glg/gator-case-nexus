@@ -1,27 +1,35 @@
 /**
- * intakeService.ts — new-client intake (Gator Law SSDI)
+ * intakeService.ts — new-client intake, lead conversion, and case-on-retainer-signed (Gator Law)
  *
- *   - runConflictCheck(userKey, {lastName, email}) — searches Contacts for prior representation;
- *     returns { status: "Cleared" | "Conflict found", matches }.
- *   - createIntake(userKey, payload) — creates Client (Contact) + Engagement (type=SSDI) +
- *     first SSDI Case, linked, AS the acting user. Records the conflict result on the Engagement.
+ *   - runConflictCheck(userKey, {lastName, email}) — searches Contacts for prior representation.
+ *   - createIntake(userKey, payload) — creates Client (Contact) + Engagement (type=SSDI), linked,
+ *     AS the acting user, recording the conflict result on the Engagement. **No case yet** — a case
+ *     is only opened once the retainer is signed (see createSsdiCaseOpener).
+ *   - convertLead(userKey, leadId) — the standard funnel: take a qualified Lead from the shared,
+ *     practice-tagged pipeline → conflict check → createIntake → stamp the Lead Converted + link the
+ *     new Contact. Retainer is then sent from the resulting Engagement.
+ *   - createSsdiCaseOpener(zoho) — returns the onRetainerSigned handler for retainerService: when an
+ *     SSDI engagement's retainer is signed, open the first SSDI Case (stage Intake) if none exists.
  *
- * Field API names per the confirmed contract. All writes are per-user (native attribution).
+ * Field API names per the confirmed contract. User writes are per-user (native attribution);
+ * the case-opener runs as SERVICE (it fires from the Sign webhook, which has no user session).
  */
+
 import { localToday } from "./deadlines";
 import type { ZohoClient, ZohoRecord } from "./zohoClient";
+import { SERVICE_ACTOR } from "./zohoClient";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
-
 /** Escape a single quote for a COQL string literal (double it). */
 const esc = (s: string) => s.replace(/'/g, "''");
-
 /** Drop undefined/empty keys so we never send blank values to Zoho. */
 const clean = (o: Record<string, unknown>): ZohoRecord =>
   Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined && v !== null && v !== "")) as ZohoRecord;
-
 /** Zoho create/update returns [{ code, details:{ id } }]; pull the id. */
 const idOf = (r: unknown): string => (r as { details?: { id?: string } })?.details?.id ?? "";
+const str = (v: unknown): string | undefined => (typeof v === "string" && v ? v : undefined);
+const lookupId = (v: unknown): string | undefined =>
+  typeof v === "string" ? v : (v as { id?: string })?.id;
 
 export interface IntakePayload {
   /** If converting an existing Contact (e.g. a Lead already became a Contact), pass its id. */
@@ -32,17 +40,14 @@ export interface IntakePayload {
     mailingStreet?: string; mailingCity?: string; mailingState?: string; mailingZip?: string;
   };
   conflict: { status: "Cleared" | "Conflict found"; note?: string };
-  ssdi: {
-    claimType?: "DIB (Title II)" | "SSI (Title XVI)" | "Concurrent";
-    onset?: string; lastWorked?: string; dli?: string;
-    disabilityType?: "Physical" | "Mental" | "Both";
-    primaryImpairment?: string; secondaryImpairments?: string; ssaClaimNumber?: string;
-  };
-  /** The acting staff member's Zoho user id (from the connect flow), for Conflict_Check_By + Assigned_Case_Manager. */
+  /** The acting staff member's Zoho user id (from the connect flow), for Conflict_Check_By. */
   actorZohoUserId?: string;
 }
 
 export interface ConflictMatch { id: string; First_Name?: string; Last_Name?: string; Email?: string; }
+
+/** Practices that can convert today. Others are queued until their module is built. */
+const BUILT_PRACTICES = new Set(["SSDI"]);
 
 export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }) {
   const today = () => iso(deps.now ? deps.now() : localToday());
@@ -62,7 +67,7 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
     return { status: matches.length ? "Conflict found" : "Cleared", matches };
   }
 
-  /** Create Client + Engagement + first SSDI Case (linked). Returns the three ids. */
+  /** Create Client + Engagement (NO case — that waits for a signed retainer). Returns the two ids. */
   async function createIntake(userKey: string, p: IntakePayload) {
     const api = deps.zoho.as(userKey);
     const t = today();
@@ -83,7 +88,7 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
       clientId = idOf(res[0]);
     }
 
-    // 2) Engagement (type = SSDI) — records the conflict result
+    // 2) Engagement (type = SSDI) — records the conflict result; retainer starts "Not sent"
     const engRes = await api.createRecords("Engagements", [clean({
       Name: `${p.client.lastName}, ${p.client.firstName} — SSDI`,
       Client: { id: clientId }, Engagement_Type: "SSDI", Engagement_Status: "Open",
@@ -92,144 +97,79 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
     })]);
     const engagementId = idOf(engRes[0]);
 
-    // NOTE: the SSDI Case is intentionally NOT created here. The case is
-    // opened when the retainer is signed (see retainerService onRetainerSigned).
-    // SSDI-specific intake details captured in the wizard are stashed on the
-    // Engagement so the case opener can copy them across at signing time.
-    void p.ssdi; void actor;
-
     return { clientId, engagementId };
   }
 
-
+  const LEAD_FIELDS = [
+    "First_Name", "Last_Name", "Email", "Mobile", "Phone", "Lead_Source", "Practice_Area",
+    "Street", "City", "State", "Zip_Code", "Lead_Status", "Converted_Contact",
+  ];
 
   /**
-   * Convert a Zoho Lead into Client + SSDI Engagement + first SSDI Case (linked) and
-   * stamp the Lead with Lead_Status="Converted" + Converted_Contact. Only SSDI is wired
-   * today; other practice areas throw a clear "coming soon" message.
+   * Convert a qualified Lead into Client + Engagement and mark it Converted. The case is opened
+   * later, when the retainer is signed. Shared Leads pipeline is tagged by Practice_Area; only
+   * built practices convert today.
    */
   async function convertLead(userKey: string, leadId: string) {
     const api = deps.zoho.as(userKey);
-    const lead = await api.getRecord<ZohoRecord>("Leads", leadId);
+    const lead = await api.getRecord<ZohoRecord>("Leads", leadId, LEAD_FIELDS);
     if (!lead) throw new Error(`Lead ${leadId} not found`);
+    if (lead.Converted_Contact) throw new Error(`Lead ${leadId} is already converted.`);
 
-    const practice = (lead.Practice_Area as string | undefined) ?? "";
-    if (practice !== "SSDI") {
-      throw new Error(
-        `only SSDI conversion is built today; coming for ${practice || "this practice"}`,
-      );
-    }
-    if (lead.Converted_Contact) throw new Error("lead is already converted");
-
-    const lastName = (lead.Last_Name as string | undefined)?.trim();
-    if (!lastName) throw new Error("lead has no last name; cannot convert");
-    const firstName = ((lead.First_Name as string | undefined) ?? "").trim();
-    const email = lead.Email as string | undefined;
-
-    // Conflict check on existing Contacts (Last_Name or Email).
-    const clauses: string[] = [];
-    if (lastName) clauses.push(`Last_Name = '${esc(lastName)}'`);
-    if (email) clauses.push(`Email = '${esc(email)}'`);
-    const matches = clauses.length
-      ? await api.coql<ConflictMatch>(
-          `select id, First_Name, Last_Name, Email from Contacts where ${clauses.join(" or ")}`,
-        )
-      : [];
-    const conflict = {
-      status: (matches.length ? "Conflict found" : "Cleared") as "Cleared" | "Conflict found",
-      matches,
-    };
-    const t = today();
-    const actor = undefined as { id: string } | undefined; // optional
-
-    // If an existing Contact matches by email, reuse it instead of creating a duplicate.
-    const emailMatch = email
-      ? matches.find((m) => (m.Email ?? "").toLowerCase() === email.toLowerCase())
-      : undefined;
-
-    let clientId: string;
-    if (emailMatch) {
-      clientId = emailMatch.id;
-    } else {
-      const cRes = await api.createRecords("Contacts", [clean({
-        First_Name: firstName, Last_Name: lastName,
-        Email: email, Mobile: lead.Mobile, Home_Phone: lead.Phone,
-        Contact_Type: "Client", Lead_Source: lead.Lead_Source,
-        Mailing_Street: lead.Street, Mailing_City: lead.City,
-        Mailing_State: lead.State, Mailing_Zip: lead.Zip_Code,
-      })]);
-      clientId = idOf(cRes[0]);
+    const practice = str(lead.Practice_Area) ?? "SSDI";
+    if (!BUILT_PRACTICES.has(practice)) {
+      throw new Error(`Lead ${leadId} is a ${practice} lead; only SSDI conversion is built today.`);
     }
 
-    // Engagement (SSDI)
-    const engRes = await api.createRecords("Engagements", [clean({
-      Name: `${lastName}, ${firstName || ""} — SSDI`.replace(/, —/, " —"),
-      Client: { id: clientId }, Engagement_Type: "SSDI", Engagement_Status: "Open",
-      Open_Date: t, Retainer_Status: "Not sent",
-      Conflict_Check_Status: conflict.status, Conflict_Check_Date: t, Conflict_Check_By: actor,
-    })]);
-    const engagementId = idOf(engRes[0]);
+    const lastName = str(lead.Last_Name);
+    const firstName = str(lead.First_Name) ?? "";
+    if (!lastName) throw new Error(`Lead ${leadId} has no last name; cannot convert.`);
 
-    // Stamp the Lead
+    const conflict = await runConflictCheck(userKey, { lastName, email: str(lead.Email) });
+
+    const result = await createIntake(userKey, {
+      client: {
+        firstName, lastName,
+        email: str(lead.Email), mobile: str(lead.Mobile), homePhone: str(lead.Phone),
+        leadSource: str(lead.Lead_Source),
+        mailingStreet: str(lead.Street), mailingCity: str(lead.City),
+        mailingState: str(lead.State), mailingZip: str(lead.Zip_Code),
+      },
+      conflict: { status: conflict.status },
+    });
+
     await api.updateRecords("Leads", [{
-      id: leadId,
-      Lead_Status: "Converted",
-      Converted_Contact: { id: clientId },
+      id: leadId, Lead_Status: "Converted", Converted_Contact: { id: result.clientId },
     }]);
 
-    // NOTE: the SSDI Case is intentionally NOT created here. The case is
-    // opened when the retainer is signed (see retainerService onRetainerSigned).
-    return { clientId, engagementId, leadId, conflict };
+    return { ...result, leadId, conflict };
   }
 
   return { runConflictCheck, createIntake, convertLead };
 }
 
 /**
- * Open the practice-specific Case for an Engagement once its retainer is Signed.
- * Currently wired for SSDI; other practice areas log and skip until built.
- *
- * Runs as the SERVICE actor (called from the Sign webhook — no user session).
- * Idempotent: if a Case already exists for the Engagement, does nothing.
+ * Returns the onRetainerSigned handler for retainerService: when an SSDI engagement's retainer is
+ * signed, open the first SSDI Case at stage "Retained" (assigned to the engagement owner). Idempotent
+ * — won't open a second case if one already exists. Runs as SERVICE (webhook has no user session).
  */
-export function createCaseOpener(deps: { zoho: ZohoClient; now?: () => Date }) {
-  const today = () => iso(deps.now ? deps.now() : localToday());
-  return async function openCaseForEngagement({ engagementId }: { engagementId: string }): Promise<{ caseId: string | null }> {
-    const { SERVICE_ACTOR } = await import("./zohoClient");
-    const svc = deps.zoho.as(SERVICE_ACTOR);
-    const eng = await svc.getRecord<ZohoRecord>("Engagements", engagementId, [
-      "Name", "Client", "Engagement_Type",
-    ]);
-    if (!eng) return { caseId: null };
-    const type = String(eng.Engagement_Type ?? "");
+export function createSsdiCaseOpener(zoho: ZohoClient, opts?: { now?: () => Date }) {
+  const today = () => iso(opts?.now ? opts.now() : localToday());
+  return async ({ engagementId }: { engagementId: string }): Promise<{ caseId?: string }> => {
+    const api = zoho.as(SERVICE_ACTOR);
+    const eng = await api.getRecord<ZohoRecord>("Engagements", engagementId, ["Engagement_Type", "Owner"]);
+    if (!eng || eng.Engagement_Type !== "SSDI") return {}; // only SSDI opens an SSDI case
 
-    if (type !== "SSDI") {
-      console.log(`[caseOpener] skipping ${engagementId}: practice "${type}" not built yet`);
-      return { caseId: null };
-    }
-
-    // Idempotency: skip if a case already exists for this engagement.
-    const existing = await svc.coql<ZohoRecord>(
-      `select id from SSDI_Cases where Engagement = '${engagementId}'`,
+    const existing = await api.coql<ZohoRecord>(
+      `select id from SSDI_Cases where Engagement = ${engagementId}`, // lookup filter = bare id
     );
-    if (existing[0]?.id) return { caseId: existing[0].id as string };
+    if (existing.length) return { caseId: existing[0].id as string }; // already opened → no-op
 
-    const clientId = (eng.Client as { id?: string } | undefined)?.id;
-    let clientName = "";
-    if (clientId) {
-      const c = await svc.getRecord<ZohoRecord>("Contacts", clientId, ["First_Name", "Last_Name"]);
-      clientName = [c?.Last_Name, c?.First_Name].filter(Boolean).join(", ");
-    }
-    const name = clientName ? `${clientName} — SSDI` : (eng.Name as string) || "SSDI Case";
-
-    const res = await svc.createRecords("SSDI_Cases", [clean({
-      Name: name,
-      Engagement: { id: engagementId },
-      Current_Stage: "Retained",
-      Date_Opened: today(),
+    const ownerId = lookupId(eng.Owner);
+    const res = await api.createRecords("SSDI_Cases", [clean({
+      Engagement: { id: engagementId }, Current_Stage: "Retained", Date_Opened: today(),
+      Assigned_Case_Manager: ownerId ? { id: ownerId } : undefined,
     })]);
-    const caseId = (res[0] as { details?: { id?: string } })?.details?.id ?? null;
-    return { caseId };
+    return { caseId: idOf(res[0]) };
   };
 }
-

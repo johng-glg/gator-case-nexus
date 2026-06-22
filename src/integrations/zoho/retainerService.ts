@@ -14,7 +14,7 @@
  *   1. A Zoho Sign template built from "Gator Law SSDI Retainer.docx" with one SIGN recipient
  *      role (the client) and merge tags {{Client_Full_Name}} / {{Today_Date}}.
  *   2. Engagement fields: Retainer_Status (picklist: Not sent | Sent | Signed | Declined |
- *      Expired), Retainer_ID (single line), Retainer_Link (URL), Retainer_Sent_Date (datetime),
+ *      Expired), Retainer_ID (single line), Retainer_Link (URL), Retainer_Sent (date),
  *      Retainer_Signed_Date (datetime). (Retainer_Status already exists.)
  *   3. A Sign webhook posting to your /webhooks/zoho-sign route → handleSignCompleted(payload).
  *
@@ -31,7 +31,7 @@ const ENGAGEMENTS = "Engagements";
 const CONTACTS = "Contacts";
 
 /** Engagement.Retainer_Status values. */
-export type RetainerStatus = "Not sent" | "Sent" | "Viewed" | "Signed" | "Declined" | "Expired";
+export type RetainerStatus = "Not sent" | "Sent" | "Signed" | "Declined" | "Expired";
 
 export interface SignSendResult {
   /** Zoho Sign request id — persisted to Engagement.Retainer_ID; the webhook joins back on it. */
@@ -40,24 +40,9 @@ export interface SignSendResult {
   signLink?: string;
 }
 
-/** One archivable file pulled back from Zoho Sign after a request completes. */
-export interface SignCompletedFile {
-  /** Suggested filename, e.g. "SSA-1696-signed.pdf" or "SSA-1696-audit.pdf". */
-  name: string;
-  /** application/pdf for the signed PDF + audit certificate. */
-  contentType: string;
-  bytes: Uint8Array;
-  /** "signed" = the completed PDF; "audit" = the Zoho Sign completion certificate. */
-  kind: "signed" | "audit";
-}
-
 /** The firm's e-sign transport. One implementation = one Sign connection for the whole firm. */
 export interface SignAdapter {
   sendTemplate(input: {
-    /** Optional per-call template override; falls back to the adapter's default template. */
-    templateId?: string;
-    /** Optional per-call signer action id override; falls back to the adapter's default. */
-    actionId?: string;
     recipient: { name: string; email: string };
     /** Merge values for the template's tags (e.g. Client_Full_Name, Today_Date). */
     mergeData: Record<string, string>;
@@ -65,20 +50,24 @@ export interface SignAdapter {
     note?: string;
     /** Your CRM record id, echoed into Sign so the webhook can be correlated if needed. */
     reference?: string;
+    /** Per-call overrides — when sending a NON-default template (e.g. SSA-1696/827).
+     *  If omitted, the adapter uses its configured default (the retainer template). */
+    templateId?: string;
+    actionId?: string;
   }): Promise<SignSendResult>;
-  /** Optional: pull the signed PDF + completion certificate for ≥ 3-year retention. */
-  downloadCompleted?(requestId: string): Promise<SignCompletedFile[]>;
 }
 
 export interface RetainerServiceDeps {
   zoho: ZohoClient;
   sign: SignAdapter;
   now?: () => Date;
-  /** Called after the Engagement flips to Signed — opens the practice-specific Case. */
+  /** Fired once, when an engagement's retainer transitions to Signed. Wire to open the case
+   *  (see createSsdiCaseOpener in intakeService). Optional; errors here don't unwind the flip. */
   onRetainerSigned?: (ctx: { engagementId: string }) => Promise<void>;
 }
 
 const isoDateTime = (d: Date) => d.toISOString().slice(0, 19) + "+00:00";
+const isoDate = (d: Date) => d.toISOString().slice(0, 10); // Retainer_Sent is a Date field
 const esc = (s: string) => s.replace(/'/g, "''");
 /** Zoho create/update returns [{ details:{ id } }] etc.; pull the lookup id whether bare or object. */
 const lookupId = (v: unknown): string | undefined =>
@@ -128,7 +117,7 @@ export function createRetainerService(deps: RetainerServiceDeps) {
       id: engagementId,
       Retainer_ID: result.requestId,
       Retainer_Link: result.signLink,
-      Retainer_Sent_Date: isoDateTime(t),
+      Retainer_Sent: isoDate(t),
       Retainer_Status: "Sent" as RetainerStatus,
     }]);
 
@@ -152,27 +141,15 @@ export function createRetainerService(deps: RetainerServiceDeps) {
     );
     const eng = rows[0];
     if (!eng?.id) return null;
-
-    // Don't downgrade a terminal status (Signed/Declined/Expired) to Viewed if
-    // a later notification arrives out of order.
-    const current = String(eng.Retainer_Status ?? "");
-    const isTerminal = current === "Signed" || current === "Declined" || current === "Expired";
-    if (evt.status === "Viewed" && isTerminal) {
-      return { engagementId: eng.id as string, status: current as RetainerStatus };
-    }
+    if (eng.Retainer_Status === evt.status) return null; // duplicate webhook → no-op (idempotent)
 
     const update: ZohoRecord = { id: eng.id as string, Retainer_Status: evt.status };
     if (evt.status === "Signed") update.Retainer_Signed_Date = isoDateTime(now());
-    if (evt.status === "Viewed") update.Retainer_Viewed_Date = isoDateTime(now());
     await svc.updateRecords(ENGAGEMENTS, [update]);
 
+    // Open the case only on the transition INTO Signed (idempotent at the opener too).
     if (evt.status === "Signed" && deps.onRetainerSigned) {
-      try {
-        await deps.onRetainerSigned({ engagementId: eng.id as string });
-      } catch (err) {
-        // Don't fail the webhook if case opening errors; log so it can be retried.
-        console.error("[retainerService] onRetainerSigned failed", err);
-      }
+      await deps.onRetainerSigned({ engagementId: eng.id as string });
     }
 
     return { engagementId: eng.id as string, status: evt.status };
@@ -192,21 +169,17 @@ export function parseSignWebhook(payload: unknown): { requestId?: string; status
   const req = p.requests ?? p.request ?? p.notifications?.requests ?? p;
   const requestId =
     req?.request_id ?? req?.requestId ?? p.request_id ?? undefined;
-  // Only trust the notification event name. request_status / per-action fields
-  // fire on "viewed" / per-signer events and would prematurely mark Signed.
+  // Zoho Sign puts the event in notifications.operation_type (e.g. "RequestCompleted").
   const raw: string | undefined =
-    p.notifications?.operation_type ?? p.operation_type ?? p.action_type ?? undefined;
+    p.notifications?.operation_type ?? p.operation_type ?? p.action_type ??
+    req?.request_status ?? req?.status ?? undefined;
   if (!requestId || !raw) return null;
 
-  const key = String(raw).toLowerCase().replace(/[_\s-]/g, "");
-  // Terminal events only. "RequestSigned" fires per-signer and is NOT terminal for
-  // multi-signer requests — wait for "RequestCompleted". Single-signer retainers
-  // still emit RequestCompleted, so this is safe.
-  if (key === "requestcompleted" || key === "completed")       return { requestId, status: "Signed" };
-  if (key === "requestdeclined"  || key === "declined")        return { requestId, status: "Declined" };
-  if (key === "requestexpired"   || key === "expired")         return { requestId, status: "Expired" };
-  if (key === "requestrecalled"  || key === "recalled" ||
-      key === "requestwithdrawn" || key === "withdrawn")       return { requestId, status: "Not sent" as RetainerStatus };
-  if (key === "requestviewed"    || key === "viewed")          return { requestId, status: "Viewed" };
+  const key = String(raw).toLowerCase();
+  // terminal statuses we care about; everything else (viewed/sent/inprogress) is ignored
+  if (key.includes("complete") || key === "signed") return { requestId, status: "Signed" };
+  if (key.includes("declin"))                        return { requestId, status: "Declined" };
+  if (key.includes("expire"))                        return { requestId, status: "Expired" };
+  if (key.includes("recall") || key.includes("withdraw")) return { requestId, status: "Not sent" as RetainerStatus };
   return { requestId, status: undefined };
 }

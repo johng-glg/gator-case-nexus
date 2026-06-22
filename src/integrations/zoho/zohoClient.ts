@@ -37,16 +37,10 @@ export const DEFAULT_SCOPES = [
   // add "ZohoSign.documents.ALL" when wiring e-sign
 ];
 
-/** Persisted refresh tokens, keyed by actor (user id, or SERVICE). App supplies the impl.
- *  Optional access-token cache methods let multiple stateless worker isolates share one
- *  short-lived access token per actor, avoiding Zoho's refresh-token rate limit
- *  (~10 access-token mints per refresh token per 10 minutes).
- */
+/** Persisted refresh tokens, keyed by actor (user id, or SERVICE). App supplies the impl. */
 export interface ZohoTokenStore {
   getRefreshToken(actorKey: string): Promise<string | null>;
   setRefreshToken(actorKey: string, refreshToken: string): Promise<void>;
-  getCachedAccessToken?(actorKey: string): Promise<{ token: string; expiresAt: number } | null>;
-  setCachedAccessToken?(actorKey: string, token: string, expiresAt: number): Promise<void>;
 }
 
 export interface ZohoConfig {
@@ -119,39 +113,14 @@ export function createZohoClient(cfg: ZohoConfig) {
     });
     const json = (await res.json()) as TokenResponse;
     if (!json.access_token) throw new ZohoError(`Token refresh failed: ${json.error ?? "unknown"}`, res.status, json);
-    const expiresAt = Date.now() + (json.expires_in ?? 3600) * 1000 - 60_000;
-    accessCache.set(actorKey, { token: json.access_token, exp: expiresAt });
-    // Persist to shared cache so other worker isolates don't re-mint.
-    // Best-effort: failures here must not break the request.
-    if (cfg.tokenStore.setCachedAccessToken) {
-      try { await cfg.tokenStore.setCachedAccessToken(actorKey, json.access_token, expiresAt); } catch { /* ignore */ }
-    }
+    accessCache.set(actorKey, { token: json.access_token, exp: Date.now() + (json.expires_in ?? 3600) * 1000 - 60_000 });
     return json.access_token;
   }
-
-  // In-flight refresh dedup per actor — so 5 parallel queries on a cold isolate
-  // result in ONE refresh call, not 5.
-  const inFlight = new Map<string, Promise<string>>();
 
   async function accessToken(actorKey: string): Promise<string> {
     const c = accessCache.get(actorKey);
     if (c && c.exp > Date.now()) return c.token;
-    // Try the shared DB cache before hitting Zoho's token endpoint.
-    if (cfg.tokenStore.getCachedAccessToken) {
-      try {
-        const shared = await cfg.tokenStore.getCachedAccessToken(actorKey);
-        if (shared && shared.expiresAt > Date.now()) {
-          accessCache.set(actorKey, { token: shared.token, exp: shared.expiresAt });
-          return shared.token;
-        }
-      } catch { /* fall through to refresh */ }
-    }
-    let pending = inFlight.get(actorKey);
-    if (!pending) {
-      pending = refreshAccessToken(actorKey).finally(() => inFlight.delete(actorKey));
-      inFlight.set(actorKey, pending);
-    }
-    return pending;
+    return refreshAccessToken(actorKey);
   }
 
   /** Core request with one automatic retry on 401 (stale token). */
@@ -168,22 +137,9 @@ export function createZohoClient(cfg: ZohoConfig) {
 
     let res = await doFetch(await accessToken(actorKey));
     if (res.status === 401) res = await doFetch(await refreshAccessToken(actorKey));
-    if (res.status === 204) return { data: [], info: {} } as T;  // normalize no-content
+    if (res.status === 204) return undefined as T;            // no content
     const json = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      const detail = (() => {
-        try {
-          const j = json as { data?: Array<{ code?: string; message?: string; details?: unknown }>; message?: string; code?: string };
-          if (Array.isArray(j.data) && j.data[0]) {
-            const d = j.data[0];
-            return `${d.code ?? ""} ${d.message ?? ""} ${d.details ? JSON.stringify(d.details) : ""}`.trim();
-          }
-          if (j.message) return `${j.code ?? ""} ${j.message}`.trim();
-          return JSON.stringify(json);
-        } catch { return ""; }
-      })();
-      throw new ZohoError(`Zoho ${method} ${path} → ${res.status}${detail ? `: ${detail}` : ""}`, res.status, json);
-    }
+    if (!res.ok) throw new ZohoError(`Zoho ${method} ${path} → ${res.status}`, res.status, json);
     return json as T;
   }
 
@@ -200,10 +156,10 @@ export function createZohoClient(cfg: ZohoConfig) {
       async coql<T = ZohoRecord>(selectQuery: string): Promise<T[]> {
         const out: T[] = [];
         let offset = 0;
-        const base = selectQuery.replace(/\s+limit\s+\d+(\s*,\s*\d+|\s+offset\s+\d+)?\s*$/i, "").trim();
+        const base = selectQuery.replace(/\s+limit\s+\d+(\s+offset\s+\d+)?\s*$/i, "").trim();
         // guard against accidental huge pulls
         for (let page = 0; page < 100; page++) {
-          const q = `${base} limit ${offset}, 200`;
+          const q = `${base} limit 200 offset ${offset}`;
           const r = await request<{ data?: T[]; info?: { more_records?: boolean } }>(
             actorKey, "POST", "/coql", { select_query: q },
           );
@@ -217,33 +173,9 @@ export function createZohoClient(cfg: ZohoConfig) {
 
       async getRecord<T = ZohoRecord>(module: string, id: string, fields?: string[]): Promise<T | null> {
         const f = fields?.length ? `?fields=${encodeURIComponent(fields.join(","))}` : "";
-        const r = await request<{ data?: T[] } | undefined>(actorKey, "GET", `/${module}/${id}${f}`);
-        return r?.data?.[0] ?? null;
+        const r = await request<{ data?: T[] }>(actorKey, "GET", `/${module}/${id}${f}`);
+        return r.data?.[0] ?? null;
       },
-
-      /** Fetch a related-list (e.g. Tasks under SSDI_Cases/{id}/Tasks). */
-      async getRelated<T = ZohoRecord>(module: string, id: string, relatedList: string, fields?: string[]): Promise<T[]> {
-        const f = fields?.length ? `?fields=${encodeURIComponent(fields.join(","))}` : "";
-        const r = await request<{ data?: T[] } | undefined>(actorKey, "GET", `/${module}/${id}/${relatedList}${f}`);
-        return r?.data ?? [];
-      },
-
-      /** Current Zoho user id for this actor's tokens. */
-      async currentUserId(): Promise<string | null> {
-        const r = await request<{ users?: Array<{ id?: string }> }>(actorKey, "GET", "/users?type=CurrentUser");
-        return r?.users?.[0]?.id ?? null;
-      },
-
-      /** List active Zoho users (for task assignment, etc.). */
-      async listActiveUsers(): Promise<Array<{ id: string; full_name: string; email: string }>> {
-        const r = await request<{ users?: Array<{ id?: string; full_name?: string; email?: string }> }>(
-          actorKey, "GET", "/users?type=ActiveUsers",
-        );
-        return (r?.users ?? [])
-          .filter((u) => !!u.id)
-          .map((u) => ({ id: u.id!, full_name: u.full_name ?? u.email ?? u.id!, email: u.email ?? "" }));
-      },
-
 
       /** Create up to any number of records; chunked to 100/call. Attributed to this actor. */
       async createRecords(module: string, records: ZohoRecord[]): Promise<unknown[]> {

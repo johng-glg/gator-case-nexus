@@ -14,16 +14,6 @@
  * All dates handled in UTC to avoid timezone drift. Pass/return Date objects at UTC midnight.
  */
 
-/** Federal holidays — DATES FEDERAL OFFICES ARE CLOSED (observed). MAINTAIN ANNUALLY. */
-const FEDERAL_HOLIDAYS: ReadonlySet<string> = new Set([
-  // 2026
-  "2026-01-01", "2026-01-19", "2026-02-16", "2026-05-25", "2026-06-19",
-  "2026-07-03", "2026-09-07", "2026-10-12", "2026-11-11", "2026-11-26", "2026-12-25",
-  // 2027
-  "2027-01-01", "2027-01-18", "2027-02-15", "2027-05-31", "2027-06-18",
-  "2027-07-05", "2027-09-06", "2027-10-11", "2027-11-11", "2027-11-25", "2027-12-24", "2027-12-31",
-]);
-
 const DAY_MS = 86_400_000;
 
 /** Build a UTC-midnight Date from a Y-M-D string or Date. */
@@ -43,11 +33,64 @@ function addDays(d: Date, n: number): Date {
   return new Date(d.getTime() + n * DAY_MS);
 }
 
+// ---- Federal holidays, computed for ANY year (no annual maintenance) ----
+// The 11 U.S. federal holidays with the observed-shift rule (Sat → Fri before, Sun → Mon after).
+// Replaces the old hardcoded 2026-2027 set so deadlines in any year roll correctly.
+
+/** nth (1-based) `weekday` (0=Sun..6=Sat) of month0 (0=Jan), as a UTC-midnight Date. */
+function nthWeekday(year: number, month0: number, weekday: number, n: number): Date {
+  const first = new Date(Date.UTC(year, month0, 1));
+  const offset = (weekday - first.getUTCDay() + 7) % 7;
+  return new Date(Date.UTC(year, month0, 1 + offset + (n - 1) * 7));
+}
+/** last `weekday` of month0, as a UTC-midnight Date. */
+function lastWeekday(year: number, month0: number, weekday: number): Date {
+  const lastDay = new Date(Date.UTC(year, month0 + 1, 0));
+  const offset = (lastDay.getUTCDay() - weekday + 7) % 7;
+  return new Date(Date.UTC(year, month0 + 1, 0 - offset));
+}
+/** Observed date for a fixed-date holiday: Sat → Fri before, Sun → Mon after. */
+function observed(d: Date): Date {
+  const dow = d.getUTCDay();
+  if (dow === 6) return addDays(d, -1);
+  if (dow === 0) return addDays(d, 1);
+  return d;
+}
+
+const _holidayCache = new Map<number, ReadonlySet<string>>();
+/** ISO dates federal offices are closed in `year` (observed). */
+function federalHolidays(year: number): ReadonlySet<string> {
+  const cached = _holidayCache.get(year);
+  if (cached) return cached;
+  const s = new Set<string>();
+  const fixed = (m0: number, day: number) => s.add(isoDay(observed(new Date(Date.UTC(year, m0, day)))));
+  fixed(0, 1);                                     // New Year's Day
+  s.add(isoDay(nthWeekday(year, 0, 1, 3)));        // MLK — 3rd Mon Jan
+  s.add(isoDay(nthWeekday(year, 1, 1, 3)));        // Washington's Birthday — 3rd Mon Feb
+  s.add(isoDay(lastWeekday(year, 4, 1)));          // Memorial Day — last Mon May
+  fixed(5, 19);                                    // Juneteenth
+  fixed(6, 4);                                     // Independence Day
+  s.add(isoDay(nthWeekday(year, 8, 1, 1)));        // Labor Day — 1st Mon Sep
+  s.add(isoDay(nthWeekday(year, 9, 1, 2)));        // Columbus Day — 2nd Mon Oct
+  fixed(10, 11);                                   // Veterans Day
+  s.add(isoDay(nthWeekday(year, 10, 4, 4)));       // Thanksgiving — 4th Thu Nov
+  fixed(11, 25);                                   // Christmas
+  // Year boundary: next year's New Year observed on Dec 31 of THIS year (when Jan 1 next = Saturday).
+  if (new Date(Date.UTC(year + 1, 0, 1)).getUTCDay() === 6) s.add(isoDay(new Date(Date.UTC(year, 11, 31))));
+  _holidayCache.set(year, s);
+  return s;
+}
+
+/** Is this date an observed federal holiday? */
+export function isFederalHoliday(d: Date): boolean {
+  return federalHolidays(d.getUTCFullYear()).has(isoDay(d));
+}
+
 /** Saturday, Sunday, or a federal holiday. */
 export function isFederalNonWorkDay(d: Date): boolean {
   const day = d.getUTCDay(); // 0 = Sun, 6 = Sat
   if (day === 0 || day === 6) return true;
-  return FEDERAL_HOLIDAYS.has(isoDay(d));
+  return isFederalHoliday(d);
 }
 
 /** 20 CFR 404.3(b): if the last day is a non-work day, roll to the next working day. */
@@ -71,30 +114,15 @@ export function computeAppealDeadline(
   return rollForward(raw); // only the final endpoint rolls
 }
 
-/**
- * Firm-local "today" as a UTC-midnight Date.
- *
- * The server runs in UTC. After ~4-5pm Pacific the UTC date has already rolled to
- * "tomorrow", which would make a deadline tool read one day short. We anchor "today"
- * to America/Los_Angeles so the countdown matches the firm's wall clock.
- */
-export function localToday(zone = "America/Los_Angeles"): Date {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: zone, year: "numeric", month: "2-digit", day: "2-digit",
-  }).formatToParts(new Date());
-  const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
-  return new Date(Date.UTC(get("year"), get("month") - 1, get("day")));
-}
-
-/** Whole days from today (firm-local) until the deadline. Negative = past due. */
-export function daysUntil(deadline: Date | string, today: Date = localToday()): number {
+/** Whole days from today (UTC) until the deadline. Negative = past due. */
+export function daysUntil(deadline: Date | string, today: Date = new Date()): number {
   const t = asUTCDate(today);
   const d = asUTCDate(deadline);
   return Math.round((d.getTime() - t.getTime()) / DAY_MS);
 }
 
 /** At risk when the deadline is within `thresholdDays` (default 14) and not past. */
-export function isAtRisk(deadline: Date | string, thresholdDays = 14, today: Date = localToday()): boolean {
+export function isAtRisk(deadline: Date | string, thresholdDays = 14, today: Date = new Date()): boolean {
   const n = daysUntil(deadline, today);
   return n >= 0 && n <= thresholdDays;
 }
@@ -106,7 +134,7 @@ export function releaseExpiration(signedDate: Date | string): Date {
 }
 
 /** Release expiring soon (default within 30 days). */
-export function releaseExpiringSoon(signedDate: Date | string, withinDays = 30, today: Date = localToday()): boolean {
+export function releaseExpiringSoon(signedDate: Date | string, withinDays = 30, today: Date = new Date()): boolean {
   const n = daysUntil(releaseExpiration(signedDate), today);
   return n >= 0 && n <= withinDays;
 }
@@ -116,10 +144,17 @@ export type AppealTier = "Reconsideration" | "ALJ Hearing" | "Appeals Council" |
 
 export function nextAppealTier(stage: string): AppealTier {
   switch (stage) {
-    case "Initial decision - denied": return "Reconsideration";
-    case "Recon decision - denied":   return "ALJ Hearing";
-    case "ALJ decision - denied":     return "Appeals Council";
-    case "AC decision - denied":      return "Federal Court";
-    default:                          return "None";
+    case "Initial decision denied": return "Reconsideration";
+    case "Recon decision denied":   return "ALJ Hearing";
+    case "ALJ decision denied":     return "Appeals Council";
+    case "AC decision denied":      return "Federal Court";
+    default:                        return "None";
   }
+}
+
+/** Today's date in a timezone, as a UTC-midnight Date — so date-only countdowns don't drift.
+ *  Use this for "today" everywhere instead of new Date() (which is the server's UTC date). */
+export function localToday(timeZone = "America/Los_Angeles"): Date {
+  const ymd = new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  return asUTCDate(ymd);
 }
