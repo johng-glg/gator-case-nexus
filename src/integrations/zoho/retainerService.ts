@@ -43,6 +43,10 @@ export interface SignSendResult {
 /** The firm's e-sign transport. One implementation = one Sign connection for the whole firm. */
 export interface SignAdapter {
   sendTemplate(input: {
+    /** Optional per-call template override; falls back to the adapter's default template. */
+    templateId?: string;
+    /** Optional per-call signer action id override; falls back to the adapter's default. */
+    actionId?: string;
     recipient: { name: string; email: string };
     /** Merge values for the template's tags (e.g. Client_Full_Name, Today_Date). */
     mergeData: Record<string, string>;
