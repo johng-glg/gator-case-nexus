@@ -29,7 +29,7 @@ function mockSign() {
 }
 
 (async () => {
-  // ---- sendIntakeForms sends both, with the right templates ----
+  // ---- sendIntakeForms only auto-sends SSA-1696 (827 is manual + needs attestation) ----
   {
     const { zoho, calls } = mockZoho({
       K1: { Engagement: { id: "E1" }, SSA1696_Status: "Not sent", SSA827_Status: "Not sent" },
@@ -40,15 +40,29 @@ function mockSign() {
     const svc = createFormsService({ zoho, sign, forms: FORMS, now: NOW });
     const res = await svc.sendIntakeForms("u", "K1");
 
-    ok("sends two intake forms", res.length === 2);
+    ok("onIntake sends only SSA-1696", res.length === 1 && res[0].code === "SSA-1696");
     ok("1696 used its template + action", sent.find((s) => s.templateId === "T1696" && s.actionId === "A1696"));
-    ok("827 used its template + action", sent.find((s) => s.templateId === "T827" && s.actionId === "A827"));
+    ok("827 NOT auto-sent on intake", !sent.find((s) => s.templateId === "T827"));
     ok("signer resolved via case→eng→client", sent[0].recipient.email === "jane@x.com" && sent[0].recipient.name === "Jane Doe");
 
     const upd1696 = calls.find((c) => c.op === "update" && c.recs[0].SSA1696_Status)?.recs[0];
     ok("1696 case stamped Sent + request id + sent date", upd1696.SSA1696_Status === "Sent" && upd1696.SSA1696_Request_ID?.startsWith("REQ") && upd1696.SSA1696_Sent_Date === "2026-06-20");
-    const upd827 = calls.find((c) => c.op === "update" && c.recs[0].SSA827_Status)?.recs[0];
-    ok("827 case stamped Sent", upd827.SSA827_Status === "Sent");
+  }
+
+  // ---- SSA-827 manual send requires attested=true ----
+  {
+    const { zoho } = mockZoho({
+      K1: { Engagement: { id: "E1" }, SSA827_Status: "Not sent" },
+      E1: { Client: { id: "C1" } },
+      C1: { First_Name: "Jane", Last_Name: "Doe", Email: "jane@x.com" },
+    });
+    const { sign } = mockSign();
+    const svc = createFormsService({ zoho, sign, forms: FORMS, now: NOW });
+    let threw = false;
+    try { await svc.sendForm("u", "K1", "SSA-827"); } catch { threw = true; }
+    ok("SSA-827 rejected without attestation", threw);
+    const r = await svc.sendForm("u", "K1", "SSA-827", { attested: true });
+    ok("SSA-827 accepted with attestation", r.code === "SSA-827");
   }
 
   // ---- refuse to resend a signed form ----

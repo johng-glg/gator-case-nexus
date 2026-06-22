@@ -40,6 +40,17 @@ export interface SignSendResult {
   signLink?: string;
 }
 
+/** One archivable file pulled back from Zoho Sign after a request completes. */
+export interface SignCompletedFile {
+  /** Suggested filename, e.g. "SSA-1696-signed.pdf" or "SSA-1696-audit.pdf". */
+  name: string;
+  /** application/pdf for the signed PDF + audit certificate. */
+  contentType: string;
+  bytes: Uint8Array;
+  /** "signed" = the completed PDF; "audit" = the Zoho Sign completion certificate. */
+  kind: "signed" | "audit";
+}
+
 /** The firm's e-sign transport. One implementation = one Sign connection for the whole firm. */
 export interface SignAdapter {
   sendTemplate(input: {
@@ -55,6 +66,8 @@ export interface SignAdapter {
     /** Your CRM record id, echoed into Sign so the webhook can be correlated if needed. */
     reference?: string;
   }): Promise<SignSendResult>;
+  /** Optional: pull the signed PDF + completion certificate for ≥ 3-year retention. */
+  downloadCompleted?(requestId: string): Promise<SignCompletedFile[]>;
 }
 
 export interface RetainerServiceDeps {
