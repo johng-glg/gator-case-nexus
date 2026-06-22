@@ -50,9 +50,12 @@ export function createZohoSignAdapter(cfg: ZohoSignAdapterConfig): SignAdapter {
 
       const templateId = input.templateId ?? cfg.templateId;
       const actionId = input.actionId ?? cfg.signActionId;
-      const data = {
+      // Only include field_data when we actually have merge values that match the template.
+      // Sending an unknown tag makes Zoho return 9004 "No match found".
+      const hasMerge = Object.keys(field_text_data).length > 0;
+      const data: Record<string, unknown> = {
         templates: {
-          field_data: { field_text_data },
+          ...(hasMerge ? { field_data: { field_text_data } } : {}),
           actions: [{
             action_id: actionId,
             action_type: "SIGN",
