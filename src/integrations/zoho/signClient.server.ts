@@ -114,10 +114,6 @@ export function makeFormsService() {
     sign: makeFirmSignAdapter(),
     forms: gatorIntakeForms({ ssa1696TemplateId, ssa1696ActionId, ssa827TemplateId, ssa827ActionId }),
   });
-    zoho: makeZohoClient(),
-    sign: makeFirmSignAdapter(),
-    forms: gatorIntakeForms({ ssa1696TemplateId, ssa1696ActionId, ssa827TemplateId, ssa827ActionId }),
-  });
 }
 
 /** Build the retainer service with the firm Sign adapter + per-user CRM client. */
