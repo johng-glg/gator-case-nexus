@@ -51,8 +51,12 @@ function LeadDetail() {
     onError: (e: any) => toast.error(e.message ?? "Failed to update"),
   });
 
+  const [overrideOpen, setOverrideOpen] = useState(false);
+  const [overrideReason, setOverrideReason] = useState("");
+
   const convert = useMutation({
-    mutationFn: () => convertFn({ data: { leadId } }),
+    mutationFn: (override?: { reason: string }) =>
+      convertFn({ data: { leadId, override } }),
     onSuccess: (res) => {
       toast.success("Converted to engagement");
       qc.invalidateQueries({ queryKey: ["allLeads"] });
@@ -72,7 +76,10 @@ function LeadDetail() {
   const status = String(rec.Lead_Status ?? "");
   const owner = (rec.Owner as { name?: string } | null)?.name ?? "—";
   const converted = !!rec.Converted_Contact;
-  const canConvert = status === "Qualified" && !converted;
+  const tier = (rec.Lead_Tier as string | undefined) ?? "";
+  const isDecline = tier === "Decline";
+  const isScreened = tier === "Strong" || tier === "Marginal";
+  const canConvert = isScreened && !converted;
   const isSSDI = practice === "SSDI";
 
   return (
@@ -116,6 +123,8 @@ function LeadDetail() {
         )}
       </section>
 
+      {isSSDI && <ScreenerPanel leadId={leadId} record={rec} alreadyConverted={converted} />}
+
       <section className="rounded-lg border border-border bg-card p-5 space-y-4">
         <div className="flex items-baseline justify-between gap-3 flex-wrap">
           <div>
@@ -142,32 +151,64 @@ function LeadDetail() {
           </div>
         </div>
 
-        <div className="border-t border-border pt-4 flex items-center justify-between gap-3 flex-wrap">
+        <div className="border-t border-border pt-4 space-y-3">
           <div className="text-sm text-muted-foreground">
             {converted ? (
               <>This lead is already <span className="text-emerald-600 font-medium">Converted</span>.</>
+            ) : !isSSDI ? (
+              `Conversion for ${practice || "this practice"} is coming with that practice area.`
+            ) : isDecline ? (
+              <span className="inline-flex items-center gap-1 text-rose-700">
+                <AlertTriangle className="h-3.5 w-3.5" />
+                Screener returned <strong>Decline</strong>. Convert requires an attorney override with a reason.
+              </span>
             ) : canConvert ? (
-              isSSDI ? "Ready to convert into a Client + SSDI Engagement."
-                : `Conversion for ${practice || "this practice"} is coming with that practice area.`
+              "Ready to convert into a Client + SSDI Engagement."
             ) : (
-              "Mark the lead Qualified to enable conversion."
+              "Complete the screener (tier must be Strong or Marginal) to enable conversion."
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => convert.mutate()}
-            disabled={!canConvert || !isSSDI || convert.isPending}
-            title={!isSSDI && canConvert ? `Conversion for ${practice} is coming with that practice area.` : undefined}
-            className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-40"
-          >
-            {convert.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowRight className="h-3 w-3" />}
-            {convert.isPending ? "Converting…" : "Convert to engagement"}
-          </button>
+
+          <div className="flex items-center justify-end gap-2 flex-wrap">
+            {isDecline && !converted && isSSDI && (
+              <button type="button" onClick={() => setOverrideOpen((o) => !o)}
+                className="rounded-md border border-rose-500/40 bg-rose-500/5 px-3 py-1.5 text-xs text-rose-700 hover:bg-rose-500/10">
+                {overrideOpen ? "Cancel override" : "Override and convert…"}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() =>
+                isDecline
+                  ? convert.mutate({ reason: overrideReason.trim() })
+                  : convert.mutate(undefined)
+              }
+              disabled={
+                !isSSDI || converted || convert.isPending ||
+                (isDecline ? !overrideOpen || overrideReason.trim().length < 5 : !canConvert)
+              }
+              className="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:opacity-90 disabled:opacity-40"
+            >
+              {convert.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : <ArrowRight className="h-3 w-3" />}
+              {convert.isPending ? "Converting…" : isDecline ? "Convert with override" : "Convert to engagement"}
+            </button>
+          </div>
+
+          {overrideOpen && (
+            <textarea
+              value={overrideReason}
+              onChange={(e) => setOverrideReason(e.target.value)}
+              placeholder="Reason for overriding the Decline tier (logged to case activity)…"
+              rows={2}
+              className="w-full rounded-md border border-border bg-background p-2 text-xs"
+            />
+          )}
         </div>
       </section>
     </div>
   );
 }
+
 
 function Field({ label, value }: { label: string; value: unknown }) {
   const v = value === null || value === undefined || value === "" ? "—" : String(value);
