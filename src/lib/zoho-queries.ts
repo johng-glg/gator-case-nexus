@@ -33,6 +33,9 @@ function safeLike(v: unknown): string {
   const cleaned = v.trim().slice(0, 40).replace(/[^A-Za-z0-9 _.\-/]/g, "");
   if (!cleaned) throw new Error("Search term is empty.");
   return `'%${cleaned}%'`;
+}
+
+
 
 export type QueryName =
   | "openCases"
