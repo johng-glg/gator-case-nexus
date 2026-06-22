@@ -114,7 +114,7 @@ export const sendRequest = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const api = makeZohoClient().as(context.userId);
 
-    const r = await api.getRecord<RecordsRequest & { id: string; SSDI_Case?: { id: string } | string }>(
+    const r = await api.getRecord<RecordsRequest & { id: string; Name?: string | null; SSDI_Case?: { id: string } | string }>(
       "Record_Requests",
       data.requestId,
       [...REQUEST_FIELDS],
@@ -156,7 +156,7 @@ export const logFollowup = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const api = makeZohoClient().as(context.userId);
 
-    const r = await api.getRecord<RecordsRequest & { id: string; SSDI_Case?: { id: string } | string }>(
+    const r = await api.getRecord<RecordsRequest & { id: string; Name?: string | null; SSDI_Case?: { id: string } | string }>(
       "Record_Requests",
       data.requestId,
       [...REQUEST_FIELDS],
@@ -203,7 +203,7 @@ export const setRequestStatus = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const api = makeZohoClient().as(context.userId);
 
-    const r = await api.getRecord<RecordsRequest & { id: string; SSDI_Case?: { id: string } | string }>(
+    const r = await api.getRecord<RecordsRequest & { id: string; Name?: string | null; SSDI_Case?: { id: string } | string }>(
       "Record_Requests",
       data.requestId,
       [...REQUEST_FIELDS],
