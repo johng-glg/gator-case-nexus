@@ -52,3 +52,16 @@ export function tcpaFee(gross: number): number {
 
 /** Guardian referral fee per claim/case (from attorney's fees). */
 export const REFERRAL_FEE = 500;
+
+/** Reconcile the firm's actual SSDI payment against what the fee math expects (from the NOA). */
+export interface SsdiFeeReconciliation {
+  backPay: number; expectedFee: number; userFee: number; expectedNet: number;
+  actualPaidToFirm: number; shortfall: number; matches: boolean;
+}
+export function reconcileSsdiFee(args: { backPay: number; actualPaidToFirm: number }): SsdiFeeReconciliation {
+  const expectedFee = ssdiProjectedFee(args.backPay);
+  const userFee = ssdiUserFee(expectedFee);
+  const expectedNet = expectedFee - userFee;
+  const shortfall = Math.round((expectedNet - args.actualPaidToFirm) * 100) / 100;
+  return { backPay: args.backPay, expectedFee, userFee, expectedNet, actualPaidToFirm: args.actualPaidToFirm, shortfall, matches: Math.abs(shortfall) < 0.01 };
+}
