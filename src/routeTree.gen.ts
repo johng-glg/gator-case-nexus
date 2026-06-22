@@ -14,6 +14,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ClientRouteRouteImport } from './routes/_client/route'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as ClientPortalRouteImport } from './routes/_client/portal'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
@@ -23,6 +24,7 @@ import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authen
 import { Route as AuthenticatedLeadsIndexRouteImport } from './routes/_authenticated/leads.index'
 import { Route as AuthenticatedEngagementsIndexRouteImport } from './routes/_authenticated/engagements.index'
 import { Route as AuthenticatedClientsIndexRouteImport } from './routes/_authenticated/clients.index'
+import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicDeadlineSweepRouteImport } from './routes/api/public/deadline-sweep'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings.users'
 import { Route as AuthenticatedSettingsTrustExportRouteImport } from './routes/_authenticated/settings.trust-export'
@@ -37,6 +39,8 @@ import { Route as AuthenticatedLeadsLeadIdRouteImport } from './routes/_authenti
 import { Route as AuthenticatedEngagementsEngagementIdRouteImport } from './routes/_authenticated/engagements.$engagementId'
 import { Route as AuthenticatedClientsClientIdRouteImport } from './routes/_authenticated/clients.$clientId'
 import { Route as AuthenticatedPracticesSsdiIndexRouteImport } from './routes/_authenticated/practices.ssdi.index'
+import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -71,6 +75,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
+  id: '/email/unsubscribe',
+  path: '/email/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ClientPortalRoute = ClientPortalRouteImport.update({
@@ -122,6 +131,11 @@ const AuthenticatedClientsIndexRoute =
     path: '/clients/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
+  id: '/lovable/email/suppression',
+  path: '/lovable/email/suppression',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicDeadlineSweepRoute = ApiPublicDeadlineSweepRouteImport.update({
   id: '/api/public/deadline-sweep',
   path: '/api/public/deadline-sweep',
@@ -205,6 +219,18 @@ const AuthenticatedPracticesSsdiIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedPracticesSsdiRoute,
   } as any)
+const LovableEmailTransactionalSendRoute =
+  LovableEmailTransactionalSendRouteImport.update({
+    id: '/lovable/email/transactional/send',
+    path: '/lovable/email/transactional/send',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LovableEmailQueueProcessRoute =
   LovableEmailQueueProcessRouteImport.update({
     id: '/lovable/email/queue/process',
@@ -284,6 +310,7 @@ export interface FileRoutesByFullPath {
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/portal': typeof ClientPortalRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
   '/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
@@ -297,6 +324,7 @@ export interface FileRoutesByFullPath {
   '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
   '/engagements/': typeof AuthenticatedEngagementsIndexRoute
   '/leads/': typeof AuthenticatedLeadsIndexRoute
@@ -307,6 +335,8 @@ export interface FileRoutesByFullPath {
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
   '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
   '/practices/ssdi/reports/outcomes': typeof AuthenticatedPracticesSsdiReportsOutcomesRoute
@@ -323,6 +353,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/portal': typeof ClientPortalRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
   '/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
@@ -335,6 +366,7 @@ export interface FileRoutesByTo {
   '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
   '/engagements': typeof AuthenticatedEngagementsIndexRoute
   '/leads': typeof AuthenticatedLeadsIndexRoute
@@ -345,6 +377,8 @@ export interface FileRoutesByTo {
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/practices/ssdi': typeof AuthenticatedPracticesSsdiIndexRoute
   '/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
   '/practices/ssdi/reports/outcomes': typeof AuthenticatedPracticesSsdiReportsOutcomesRoute
@@ -365,6 +399,7 @@ export interface FileRoutesById {
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_client/portal': typeof ClientPortalRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/_authenticated/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/_authenticated/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
   '/_authenticated/leads/$leadId': typeof AuthenticatedLeadsLeadIdRoute
@@ -378,6 +413,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
   '/_authenticated/engagements/': typeof AuthenticatedEngagementsIndexRoute
   '/_authenticated/leads/': typeof AuthenticatedLeadsIndexRoute
@@ -388,6 +424,8 @@ export interface FileRoutesById {
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/_authenticated/practices/ssdi/': typeof AuthenticatedPracticesSsdiIndexRoute
   '/_authenticated/practices/ssdi/cases/$caseId': typeof AuthenticatedPracticesSsdiCasesCaseIdRouteWithChildren
   '/_authenticated/practices/ssdi/reports/outcomes': typeof AuthenticatedPracticesSsdiReportsOutcomesRoute
@@ -407,6 +445,7 @@ export interface FileRouteTypes {
     | '/deadlines'
     | '/settings'
     | '/portal'
+    | '/email/unsubscribe'
     | '/clients/$clientId'
     | '/engagements/$engagementId'
     | '/leads/$leadId'
@@ -420,6 +459,7 @@ export interface FileRouteTypes {
     | '/settings/trust-export'
     | '/settings/users'
     | '/api/public/deadline-sweep'
+    | '/lovable/email/suppression'
     | '/clients/'
     | '/engagements/'
     | '/leads/'
@@ -430,6 +470,8 @@ export interface FileRouteTypes {
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
     | '/practices/ssdi/'
     | '/practices/ssdi/cases/$caseId'
     | '/practices/ssdi/reports/outcomes'
@@ -446,6 +488,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/deadlines'
     | '/portal'
+    | '/email/unsubscribe'
     | '/clients/$clientId'
     | '/engagements/$engagementId'
     | '/leads/$leadId'
@@ -458,6 +501,7 @@ export interface FileRouteTypes {
     | '/settings/trust-export'
     | '/settings/users'
     | '/api/public/deadline-sweep'
+    | '/lovable/email/suppression'
     | '/clients'
     | '/engagements'
     | '/leads'
@@ -468,6 +512,8 @@ export interface FileRouteTypes {
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
     | '/practices/ssdi'
     | '/practices/ssdi/cases/$caseId'
     | '/practices/ssdi/reports/outcomes'
@@ -487,6 +533,7 @@ export interface FileRouteTypes {
     | '/_authenticated/deadlines'
     | '/_authenticated/settings'
     | '/_client/portal'
+    | '/email/unsubscribe'
     | '/_authenticated/clients/$clientId'
     | '/_authenticated/engagements/$engagementId'
     | '/_authenticated/leads/$leadId'
@@ -500,6 +547,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/trust-export'
     | '/_authenticated/settings/users'
     | '/api/public/deadline-sweep'
+    | '/lovable/email/suppression'
     | '/_authenticated/clients/'
     | '/_authenticated/engagements/'
     | '/_authenticated/leads/'
@@ -510,6 +558,8 @@ export interface FileRouteTypes {
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
     | '/_authenticated/practices/ssdi/'
     | '/_authenticated/practices/ssdi/cases/$caseId'
     | '/_authenticated/practices/ssdi/reports/outcomes'
@@ -525,12 +575,16 @@ export interface RootRouteChildren {
   ClientRouteRoute: typeof ClientRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ClientAuthRoute: typeof ClientAuthRoute
+  EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   ApiPublicDeadlineSweepRoute: typeof ApiPublicDeadlineSweepRoute
+  LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   ApiPublicWebhooksZohoSignRoute: typeof ApiPublicWebhooksZohoSignRoute
   ApiZohoConnectCallbackRoute: typeof ApiZohoConnectCallbackRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
+  LovableEmailTransactionalSendRoute: typeof LovableEmailTransactionalSendRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -568,6 +622,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/email/unsubscribe': {
+      id: '/email/unsubscribe'
+      path: '/email/unsubscribe'
+      fullPath: '/email/unsubscribe'
+      preLoaderRoute: typeof EmailUnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_client/portal': {
@@ -632,6 +693,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/clients/'
       preLoaderRoute: typeof AuthenticatedClientsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/lovable/email/suppression': {
+      id: '/lovable/email/suppression'
+      path: '/lovable/email/suppression'
+      fullPath: '/lovable/email/suppression'
+      preLoaderRoute: typeof LovableEmailSuppressionRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/deadline-sweep': {
       id: '/api/public/deadline-sweep'
@@ -730,6 +798,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/practices/ssdi/'
       preLoaderRoute: typeof AuthenticatedPracticesSsdiIndexRouteImport
       parentRoute: typeof AuthenticatedPracticesSsdiRoute
+    }
+    '/lovable/email/transactional/send': {
+      id: '/lovable/email/transactional/send'
+      path: '/lovable/email/transactional/send'
+      fullPath: '/lovable/email/transactional/send'
+      preLoaderRoute: typeof LovableEmailTransactionalSendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/lovable/email/queue/process': {
       id: '/lovable/email/queue/process'
@@ -946,12 +1028,16 @@ const rootRouteChildren: RootRouteChildren = {
   ClientRouteRoute: ClientRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ClientAuthRoute: ClientAuthRoute,
+  EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   ApiPublicDeadlineSweepRoute: ApiPublicDeadlineSweepRoute,
+  LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   ApiPublicWebhooksZohoSignRoute: ApiPublicWebhooksZohoSignRoute,
   ApiZohoConnectCallbackRoute: ApiZohoConnectCallbackRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
+  LovableEmailTransactionalSendRoute: LovableEmailTransactionalSendRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
