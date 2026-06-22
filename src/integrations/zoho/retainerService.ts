@@ -23,7 +23,6 @@
  * existing Deluge sign_mail_merge function — without touching this file.
  */
 
-import { localToday } from "./deadlines";
 import type { ZohoClient, ZohoRecord } from "./zohoClient";
 import { SERVICE_ACTOR } from "./zohoClient";
 
