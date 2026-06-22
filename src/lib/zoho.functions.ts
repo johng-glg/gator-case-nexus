@@ -51,6 +51,9 @@ const queryInput = z.object({
     "allLeads",
     "allReferrals",
     "ssdiCaseSearch",
+    "contactSearch",
+    "leadSearch",
+    "engagementSearch",
   ]),
   params: z.record(z.string(), z.unknown()).optional(),
 });
