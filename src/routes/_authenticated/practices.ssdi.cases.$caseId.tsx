@@ -86,12 +86,17 @@ function CaseDetail() {
     | string
     | undefined;
   const clientId = typeof clientRef === "string" ? clientRef : clientRef?.id;
+  // COQL returns lookup subfields as flat dotted keys (e.g. "Client.First_Name").
+  const dottedFirst = engagementRow?.["Client.First_Name"] as string | undefined;
+  const dottedLast = engagementRow?.["Client.Last_Name"] as string | undefined;
+  const dottedName = [dottedFirst, dottedLast].filter(Boolean).join(" ").trim() || undefined;
   const clientName =
-    typeof clientRef === "object"
+    dottedName ??
+    (typeof clientRef === "object"
       ? clientRef?.name ??
         ([clientRef?.First_Name, clientRef?.Last_Name].filter(Boolean).join(" ").trim() ||
           undefined)
-      : undefined;
+      : undefined);
 
   async function onAdvance(toStage: string, fields: Record<string, unknown>) {
     const result = await advance({ data: { caseId, toStage, fields } });
