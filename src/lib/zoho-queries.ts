@@ -62,7 +62,10 @@ export type QueryName =
   | "engagementsByContact"
   | "allLeads"
   | "allReferrals"
-  | "ssdiCaseSearch";
+  | "ssdiCaseSearch"
+  | "contactSearch"
+  | "leadSearch"
+  | "engagementSearch";
 
 
 
@@ -235,12 +238,39 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               where id is not null
               order by Name asc
               limit 200`;
-    case "ssdiCaseSearch":
+    case "ssdiCaseSearch": {
+      const q = safeLike(params.q);
       return `select id, Case_Number, Current_Stage, Sub_Status, Deadline_Date
               from SSDI_Cases
-              where Case_Number like ${safeLike(params.q)}
+              where Case_Number like ${q}
               order by Modified_Time desc
-              limit 20`;
+              limit 10`;
+    }
+    case "contactSearch": {
+      const q = safeLike(params.q);
+      return `select id, First_Name, Last_Name, Email, Phone
+              from Contacts
+              where First_Name like ${q} or Last_Name like ${q} or Email like ${q}
+              order by Modified_Time desc
+              limit 10`;
+    }
+    case "leadSearch": {
+      const q = safeLike(params.q);
+      return `select id, First_Name, Last_Name, Email, Company, Lead_Status
+              from Leads
+              where First_Name like ${q} or Last_Name like ${q} or Email like ${q} or Company like ${q}
+              order by Modified_Time desc
+              limit 10`;
+    }
+    case "engagementSearch": {
+      const q = safeLike(params.q);
+      return `select id, Name, Engagement_Type, Engagement_Status,
+                     Client.First_Name, Client.Last_Name
+              from Engagements
+              where Name like ${q}
+              order by Modified_Time desc
+              limit 10`;
+    }
   }
 }
 
