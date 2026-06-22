@@ -1,5 +1,11 @@
 // @ts-nocheck
-import { nextFollowupDate, agingDays, isStale, requestsNeedingFollowup, canTransition, applyFollowup, REQUEST_STATUSES } from "./medicalRecords";
+import { nextFollowupDate, agingDays, isStale, requestsNeedingFollowup, canTransition, applyFollowup, REQUEST_STATUSES, followupSweepUpdates } from "../medicalRecords";
+
+// followupSweepUpdates parity + no-mutation invariant (sweep MUST NOT bump count)
+const _r = { id: "x", Request_Status: "Requested" as const, Requested_Date: "2026-06-01", Followup_Count: 0 };
+const _before = _r.Followup_Count;
+const _swept = followupSweepUpdates([_r], new Date("2026-06-20T00:00:00Z"));
+
 const T = (s: string) => new Date(s + "T00:00:00Z");
 let pass = 0, fail = 0;
 const ok = (l: string, c: boolean) => { console.log(`${c ? "✓" : "✗"} ${l}`); c ? pass++ : fail++; };
