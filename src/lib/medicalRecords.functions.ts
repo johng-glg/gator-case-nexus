@@ -1,8 +1,8 @@
 /**
- * medicalRecords.functions.ts — per-case Records_Requests CRUD + lifecycle actions.
+ * medicalRecords.functions.ts — per-case Record_Requests CRUD + lifecycle actions.
  *
  * Engine: src/integrations/zoho/medicalRecords.ts (pure, tested).
- * Storage: Zoho `Records_Requests` module, parent = SSDI_Cases via `SSDI_Case` lookup.
+ * Storage: Zoho `Record_Requests` module, parent = SSDI_Cases via `SSDI_Case` lookup.
  * Costs row is created on the parent Engagement when Fee_Paid_Date transitions empty → set.
  */
 import { createServerFn } from "@tanstack/react-start";
@@ -52,7 +52,7 @@ export const listCaseRequests = createServerFn({ method: "POST" })
     const api = makeZohoClient().as(context.userId);
 
     const rows = await api.coql<RecordsRequest & { id: string }>(
-      `select ${REQUEST_FIELDS.join(", ")} from Records_Requests where SSDI_Case = ${data.caseId}`,
+      `select ${REQUEST_FIELDS.join(", ")} from Record_Requests where SSDI_Case = ${data.caseId}`,
     );
 
     const today = new Date();
@@ -86,7 +86,7 @@ export const createRequest = createServerFn({ method: "POST" })
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const api = makeZohoClient().as(context.userId);
 
-    const res = await api.createRecords("Records_Requests", [
+    const res = await api.createRecords("Record_Requests", [
       {
         Provider_Name: data.providerName,
         Request_Status: "Not started",
@@ -108,7 +108,7 @@ export const sendRequest = createServerFn({ method: "POST" })
     const api = makeZohoClient().as(context.userId);
 
     const r = await api.getRecord<RecordsRequest & { id: string; SSDI_Case?: { id: string } | string }>(
-      "Records_Requests",
+      "Record_Requests",
       data.requestId,
       [...REQUEST_FIELDS],
     );
@@ -128,7 +128,7 @@ export const sendRequest = createServerFn({ method: "POST" })
     }
 
     const today = new Date().toISOString().slice(0, 10);
-    await api.updateRecords("Records_Requests", [
+    await api.updateRecords("Record_Requests", [
       {
         id: data.requestId,
         Request_Status: "Requested",
@@ -150,7 +150,7 @@ export const logFollowup = createServerFn({ method: "POST" })
     const api = makeZohoClient().as(context.userId);
 
     const r = await api.getRecord<RecordsRequest & { id: string; SSDI_Case?: { id: string } | string }>(
-      "Records_Requests",
+      "Record_Requests",
       data.requestId,
       [...REQUEST_FIELDS],
     );
@@ -160,7 +160,7 @@ export const logFollowup = createServerFn({ method: "POST" })
     }
 
     const updates = applyFollowup(r);
-    await api.updateRecords("Records_Requests", [{ id: data.requestId, ...updates }]);
+    await api.updateRecords("Record_Requests", [{ id: data.requestId, ...updates }]);
 
     const caseId = (r.SSDI_Case && typeof r.SSDI_Case === "object") ? (r.SSDI_Case as { id?: string }).id : (r.SSDI_Case as unknown as string | undefined);
     if (caseId) {
@@ -197,7 +197,7 @@ export const setRequestStatus = createServerFn({ method: "POST" })
     const api = makeZohoClient().as(context.userId);
 
     const r = await api.getRecord<RecordsRequest & { id: string; SSDI_Case?: { id: string } | string }>(
-      "Records_Requests",
+      "Record_Requests",
       data.requestId,
       [...REQUEST_FIELDS],
     );
@@ -221,7 +221,7 @@ export const setRequestStatus = createServerFn({ method: "POST" })
     const shouldPostCost = !feePaidBefore && feePaidNow && (data.feeAmount ?? r.Fee_Amount ?? 0) > 0;
     if (feePaidNow && !feePaidBefore) update.Fee_Paid_Date = today;
 
-    await api.updateRecords("Records_Requests", [update]);
+    await api.updateRecords("Record_Requests", [update]);
 
     const caseId = (r.SSDI_Case && typeof r.SSDI_Case === "object") ? (r.SSDI_Case as { id?: string }).id : (r.SSDI_Case as unknown as string | undefined);
 
