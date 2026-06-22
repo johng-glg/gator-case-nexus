@@ -9,12 +9,17 @@
  */
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, RefreshCw, Pencil, Check, X } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, RefreshCw, Pencil, Check, X, CalendarCheck2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { caseRecomputeDeadline, updateCaseDates } from "@/lib/zoho.functions";
+import {
+  caseRecomputeDeadline,
+  updateCaseDates,
+  getCaseCalendarStatus,
+  resyncCaseCalendar,
+} from "@/lib/zoho.functions";
 
 type CaseRecord = Record<string, unknown>;
 
@@ -37,6 +42,16 @@ export function DeadlinePanel({ caseId, record }: Props) {
   const qc = useQueryClient();
   const recompute = useServerFn(caseRecomputeDeadline);
   const updateDates = useServerFn(updateCaseDates);
+  const fetchCalStatus = useServerFn(getCaseCalendarStatus);
+  const resyncCal = useServerFn(resyncCaseCalendar);
+
+  const calStatusQ = useQuery({
+    queryKey: ["case-calendar-status", caseId],
+    queryFn: () => fetchCalStatus({ data: { caseId } }),
+    staleTime: 60_000,
+  });
+  const onCalendar = (calStatusQ.data?.keys ?? []).includes(`deadline:${caseId}`);
+  const calConfigured = calStatusQ.data?.calendarConfigured ?? false;
 
   const [editing, setEditing] = useState<"notice" | "receipt" | null>(null);
   const [draft, setDraft] = useState<string>("");
@@ -58,6 +73,7 @@ export function DeadlinePanel({ caseId, record }: Props) {
   async function invalidate() {
     await Promise.all([
       qc.invalidateQueries({ queryKey: ["case", caseId] }),
+      qc.invalidateQueries({ queryKey: ["case-calendar-status", caseId] }),
       qc.invalidateQueries({ queryKey: ["deadlinesAtRisk"] }),
       qc.invalidateQueries({ queryKey: ["deadlinesAll"] }),
       qc.invalidateQueries({ queryKey: ["ssdi-cases"] }),
@@ -71,6 +87,24 @@ export function DeadlinePanel({ caseId, record }: Props) {
       await recompute({ data: { caseId } });
       await invalidate();
       toast.success("Deadline recomputed.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onResyncCalendar() {
+    setBusy(true);
+    try {
+      const counts = await resyncCal({ data: { caseId } });
+      await invalidate();
+      const parts: string[] = [];
+      if (counts.created) parts.push(`${counts.created} created`);
+      if (counts.updated) parts.push(`${counts.updated} updated`);
+      if (counts.deleted) parts.push(`${counts.deleted} deleted`);
+      toast.success(parts.length ? `Calendar synced: ${parts.join(", ")}.` : "Calendar already in sync.");
+      if (counts.errors) toast.warning(`${counts.errors} calendar error${counts.errors === 1 ? "" : "s"} — see logs.`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
