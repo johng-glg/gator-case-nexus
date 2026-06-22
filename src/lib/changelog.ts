@@ -11,6 +11,18 @@ export type ChangelogEntry = {
  */
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    date: "2026-06-22",
+    title: "SSDI: secure document request & upload flow",
+    summary:
+      "Attorneys can request specific documents from clients; clients drag-drop the files into their portal and the firm sees them instantly.",
+    changes: [
+      "New 'Document requests' panel on the case page: create a request (label + optional instructions), upload files ad-hoc, download anything received, cancel open requests.",
+      "Client portal now shows a 'Documents' section listing pending requests with one-tap upload, plus a history of what they've sent.",
+      "Files land in a private Lovable Cloud bucket (case-documents); access goes through short-lived signed URLs (50 MB cap per file).",
+      "Every request, cancel, and upload is recorded in the activity log and surfaces in the firm-wide audit feed.",
+    ],
+  },
+  {
     date: "2026-06-21",
     title: "SSDI: case activity log (audit trail)",
     summary:

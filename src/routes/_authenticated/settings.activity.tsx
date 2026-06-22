@@ -27,6 +27,9 @@ const ACTION_OPTIONS = [
   { value: "task.reopen", label: "Task re-opened" },
   { value: "task.reassign", label: "Task reassigned" },
   { value: "portal.invite", label: "Client portal invite" },
+  { value: "document.request.create", label: "Document requested" },
+  { value: "document.request.cancel", label: "Document request canceled" },
+  { value: "document.upload", label: "Document uploaded" },
 ];
 
 function actionLabel(a: string): string {

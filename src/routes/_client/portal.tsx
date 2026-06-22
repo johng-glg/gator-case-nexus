@@ -143,6 +143,8 @@ function PortalPage() {
             </section>
           ) : null}
 
+          <ClientDocumentsSection caseId={data.caseId} />
+
           <section className="rounded-lg border border-border bg-card p-5">
             <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
               <Calendar className="h-3.5 w-3.5" /> Your attorney
