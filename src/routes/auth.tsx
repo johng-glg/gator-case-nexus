@@ -52,25 +52,23 @@ function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm rounded-lg border border-primary/30 bg-primary p-8">
         <div className="text-center mb-8">
           <img src={gatorLogo.url} alt="Gator" className="mx-auto h-28 w-auto" />
-          <p className="mt-3 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          <p className="mt-3 text-xs uppercase tracking-[0.18em] text-primary-foreground/80">
             Case platform
           </p>
         </div>
-        <div className="rounded-lg border border-primary/30 bg-primary p-6">
-          <Button
-            className="w-full bg-[#C9A84C] hover:bg-[#b8983f] text-[#1a3c2a] font-semibold shadow"
-            onClick={signIn}
-            disabled={busy}
-          >
-            {busy ? "Signing in…" : "Continue with Google"}
-          </Button>
-          <p className="mt-4 text-center text-xs text-primary-foreground/80">
-            Restricted to @{ALLOWED_DOMAIN} accounts.
-          </p>
-        </div>
+        <Button
+          className="w-full bg-[#C9A84C] hover:bg-[#b8983f] text-[#1a3c2a] font-semibold shadow"
+          onClick={signIn}
+          disabled={busy}
+        >
+          {busy ? "Signing in…" : "Continue with Google"}
+        </Button>
+        <p className="mt-4 text-center text-xs text-primary-foreground/80">
+          Restricted to @{ALLOWED_DOMAIN} accounts.
+        </p>
       </div>
     </div>
   );
