@@ -77,6 +77,30 @@ export type Database = {
         }
         Relationships: []
       }
+      case_document_status: {
+        Row: {
+          case_id: string
+          doc_code: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          case_id: string
+          doc_code: string
+          status: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          case_id?: string
+          doc_code?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       client_messaging_consent: {
         Row: {
           client_id: string
