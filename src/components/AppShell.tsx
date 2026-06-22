@@ -14,10 +14,12 @@ import {
   Settings,
   Menu,
   X,
+  Sun,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { PRACTICES } from "@/practices/registry";
+import { CommandPalette } from "@/components/CommandPalette";
 
 interface Props {
   userEmail: string;
@@ -29,6 +31,7 @@ interface Props {
 
 const FIRM_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/today", label: "Today", icon: Sun },
   { to: "/leads", label: "Leads", icon: UserPlus },
   { to: "/clients", label: "Clients", icon: Users },
   { to: "/engagements", label: "Engagements", icon: Briefcase },
