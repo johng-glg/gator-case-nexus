@@ -7,6 +7,7 @@ import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import gatorLogo from "@/assets/gator-logo.png.asset.json";
 
 const ALLOWED_DOMAIN = "gatorlawpc.com";
 
