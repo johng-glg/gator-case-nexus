@@ -43,3 +43,7 @@ ok("applyFollowup bumps count + stamps date + status", upd.Followup_Count === 1 
 ok("six statuses defined", REQUEST_STATUSES.length === 6);
 
 console.log(`\n${pass} passed, ${fail} failed`); if (fail) process.exit(1);
+
+ok("followupSweepUpdates returns the due open requests", _swept.length === 1 && _swept[0].id === "x");
+ok("followupSweepUpdates does NOT mutate Followup_Count", _r.Followup_Count === _before);
+
