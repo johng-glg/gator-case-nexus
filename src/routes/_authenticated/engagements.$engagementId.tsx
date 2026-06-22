@@ -43,6 +43,16 @@ function EngagementDetail() {
     onError: (err: unknown) => toast.error((err as Error).message),
   });
 
+  const markSigned = useMutation({
+    mutationFn: () => markSignedFn({ data: { engagementId } }),
+    onSuccess: () => {
+      toast.success("Retainer marked Signed — case opened");
+      queryClient.invalidateQueries({ queryKey: ["engagement", engagementId] });
+      queryClient.invalidateQueries({ queryKey: ["casesByEngagement", engagementId] });
+    },
+    onError: (err: unknown) => toast.error((err as Error).message),
+  });
+
 
   const validId = ID_RE.test(engagementId);
 
