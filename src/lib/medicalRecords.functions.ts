@@ -114,7 +114,7 @@ export const sendRequest = createServerFn({ method: "POST" })
     );
     if (!r) throw new Error("Records request not found.");
 
-    const sc: unknown = r.SSDI_Case; const caseId = sc const caseId = typeof r.SSDI_Case === "object" ? r.SSDI_Case?.id : r.SSDI_Case;const caseId = typeof r.SSDI_Case === "object" ? r.SSDI_Case?.id : r.SSDI_Case; typeof sc === "object" ? (sc as { id?: string }).id : (sc as string | undefined);
+    const caseId = (r.SSDI_Case && typeof r.SSDI_Case === "object") ? (r.SSDI_Case as { id?: string }).id : (r.SSDI_Case as unknown as string | undefined);
     if (!caseId) throw new Error("Request is not attached to a case.");
 
     // 827 gate
@@ -162,7 +162,7 @@ export const logFollowup = createServerFn({ method: "POST" })
     const updates = applyFollowup(r);
     await api.updateRecords("Records_Requests", [{ id: data.requestId, ...updates }]);
 
-    const sc: unknown = r.SSDI_Case; const caseId = sc const caseId = typeof r.SSDI_Case === "object" ? r.SSDI_Case?.id : r.SSDI_Case;const caseId = typeof r.SSDI_Case === "object" ? r.SSDI_Case?.id : r.SSDI_Case; typeof sc === "object" ? (sc as { id?: string }).id : (sc as string | undefined);
+    const caseId = (r.SSDI_Case && typeof r.SSDI_Case === "object") ? (r.SSDI_Case as { id?: string }).id : (r.SSDI_Case as unknown as string | undefined);
     if (caseId) {
       try {
         const { logCaseActivity } = await import("@/integrations/audit/log.server");
@@ -223,7 +223,7 @@ export const setRequestStatus = createServerFn({ method: "POST" })
 
     await api.updateRecords("Records_Requests", [update]);
 
-    const sc: unknown = r.SSDI_Case; const caseId = sc const caseId = typeof r.SSDI_Case === "object" ? r.SSDI_Case?.id : r.SSDI_Case;const caseId = typeof r.SSDI_Case === "object" ? r.SSDI_Case?.id : r.SSDI_Case; typeof sc === "object" ? (sc as { id?: string }).id : (sc as string | undefined);
+    const caseId = (r.SSDI_Case && typeof r.SSDI_Case === "object") ? (r.SSDI_Case as { id?: string }).id : (r.SSDI_Case as unknown as string | undefined);
 
     if (shouldPostCost && caseId) {
       // Find parent Engagement for this SSDI_Case to attach the cost.
