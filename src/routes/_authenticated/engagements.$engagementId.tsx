@@ -165,7 +165,7 @@ function EngagementDetail() {
       <RetainerPanel
         status={String(record.Retainer_Status ?? "Not sent")}
         link={record.Retainer_Link ? String(record.Retainer_Link) : undefined}
-        sentDate={record.Retainer_Sent_Date ? String(record.Retainer_Sent_Date) : undefined}
+        sentDate={record.Retainer_Sent ? String(record.Retainer_Sent) : undefined}
         viewedDate={record.Retainer_Viewed ? String(record.Retainer_Viewed) : undefined}
         signedDate={record.Retainer_Signed_Date ? String(record.Retainer_Signed_Date) : undefined}
         onSend={() => sendRetainer.mutate()}
@@ -176,7 +176,14 @@ function EngagementDetail() {
           }
         }}
         resetting={resetRetainer.isPending}
+        onMarkSigned={() => {
+          if (confirm("Mark this retainer as Signed and open the case? Use this only when Zoho Sign confirmed signing but the webhook didn't update the engagement.")) {
+            markSigned.mutate();
+          }
+        }}
+        markingSigned={markSigned.isPending}
       />
+
 
 
 
