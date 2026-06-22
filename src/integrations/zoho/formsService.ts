@@ -111,7 +111,8 @@ export function createFormsService(deps: FormsServiceDeps) {
     const res = await deps.sign.sendTemplate({
       templateId: spec.templateId, actionId: spec.actionId,
       recipient: { name: signer.fullName, email: signer.email },
-      mergeData: { Client_Full_Name: signer.fullName, Today_Date: isoDate(t) },
+      // SSA templates are pre-printed PDFs — no merge tags to fill from our side.
+      mergeData: {},
       note: `Please review and sign your ${spec.label}.`,
       reference: caseId,
     });
