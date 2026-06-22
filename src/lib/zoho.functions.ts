@@ -612,7 +612,9 @@ export const retainerSend = createServerFn({ method: "POST" })
 
 const sendFormInput = z.object({
   caseId: z.string().regex(/^[A-Za-z0-9_]+$/),
-  code: z.enum(["SSA-1696", "SSA-827"]),
+  code: z.enum(["SSA-1696", "SSA-827", "SSA-1693"]),
+  /** SSA-827 requires the attorney to confirm the SSA attestation procedure was followed. */
+  attested: z.boolean().optional(),
 });
 
 export const sendIntakeForm = createServerFn({ method: "POST" })
@@ -620,7 +622,9 @@ export const sendIntakeForm = createServerFn({ method: "POST" })
   .inputValidator((data) => sendFormInput.parse(data))
   .handler(async ({ data, context }) => {
     const { makeFormsService } = await import("@/integrations/zoho/signClient.server");
-    return makeFormsService().sendForm(context.userId, data.caseId, data.code);
+    return makeFormsService().sendForm(context.userId, data.caseId, data.code, {
+      attested: data.attested,
+    });
   });
 
 

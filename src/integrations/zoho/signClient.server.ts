@@ -98,21 +98,57 @@ function makeFirmSignAdapter() {
   });
 }
 
-/** SSA-1696 / SSA-827 forms service, configured from env. */
+/** SSA-1696 / SSA-827 (+ optional SSA-1693) forms service, configured from env. */
 export function makeFormsService() {
   const ssa1696TemplateId = process.env.ZOHO_SIGN_SSA1696_TEMPLATE_ID;
   const ssa1696ActionId = process.env.ZOHO_SIGN_SSA1696_ACTION_ID;
   const ssa827TemplateId = process.env.ZOHO_SIGN_SSA827_TEMPLATE_ID;
   const ssa827ActionId = process.env.ZOHO_SIGN_SSA827_ACTION_ID;
+  const ssa1693TemplateId = process.env.ZOHO_SIGN_SSA1693_TEMPLATE_ID;
+  const ssa1693ActionId = process.env.ZOHO_SIGN_SSA1693_ACTION_ID;
   if (!ssa1696TemplateId || !ssa1696ActionId || !ssa827TemplateId || !ssa827ActionId) {
     throw new Error(
       "Zoho Sign SSA intake forms are not configured: set ZOHO_SIGN_SSA1696_TEMPLATE_ID / _ACTION_ID and ZOHO_SIGN_SSA827_TEMPLATE_ID / _ACTION_ID.",
     );
   }
+  const sign = makeFirmSignAdapter();
   return createFormsService({
     zoho: makeZohoClient(),
-    sign: makeFirmSignAdapter(),
-    forms: gatorIntakeForms({ ssa1696TemplateId, ssa1696ActionId, ssa827TemplateId, ssa827ActionId }),
+    sign,
+    forms: gatorIntakeForms({
+      ssa1696TemplateId, ssa1696ActionId,
+      ssa827TemplateId, ssa827ActionId,
+      ssa1693TemplateId, ssa1693ActionId,
+    }),
+    archive: async ({ caseId, code, requestId }) => {
+      if (!sign.downloadCompleted) return;
+      const files = await sign.downloadCompleted(requestId);
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      for (const f of files) {
+        const safeCode = code.replace(/[^A-Za-z0-9-]/g, "_");
+        const storagePath = `cases/${caseId}/ssa-forms/${safeCode}-${requestId}-${f.kind}.pdf`;
+        const up = await supabaseAdmin.storage.from("case-documents").upload(storagePath, f.bytes, {
+          contentType: f.contentType, upsert: true,
+        });
+        if (up.error) {
+          console.error("[forms-archive] storage upload failed", { storagePath, err: up.error.message });
+          continue;
+        }
+        const { error: insErr } = await supabaseAdmin.from("document_uploads").insert({
+          case_id: caseId,
+          request_id: null,
+          storage_path: storagePath,
+          original_name: `${code} — ${f.kind === "signed" ? "signed PDF" : "audit certificate"}.pdf`,
+          size_bytes: f.bytes.byteLength,
+          mime_type: f.contentType,
+          uploaded_by_user: null,
+          uploaded_by_email: "zoho-sign@system",
+        });
+        if (insErr && !/duplicate key/i.test(insErr.message)) {
+          console.error("[forms-archive] document_uploads insert failed", insErr.message);
+        }
+      }
+    },
   });
 }
 
