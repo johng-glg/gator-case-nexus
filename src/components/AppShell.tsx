@@ -7,8 +7,6 @@ import {
   Briefcase,
   AlarmClock,
   LogOut,
-  CheckCircle2,
-  AlertTriangle,
   Scale,
   Lock,
   Settings,
@@ -20,10 +18,10 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { PRACTICES } from "@/practices/registry";
 import { CommandPalette } from "@/components/CommandPalette";
+import { GlobalSearchBox } from "@/components/GlobalSearchBox";
 
 interface Props {
   userEmail: string;
-  zohoConnected: boolean;
   onSignOut: () => void;
   signingOut: boolean;
   children: ReactNode;
@@ -39,7 +37,7 @@ const FIRM_NAV = [
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
-export function AppShell({ userEmail, zohoConnected, onSignOut, signingOut, children }: Props) {
+export function AppShell({ userEmail, onSignOut, signingOut, children }: Props) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [navOpen, setNavOpen] = useState(false);
 
@@ -166,7 +164,7 @@ export function AppShell({ userEmail, zohoConnected, onSignOut, signingOut, chil
             <Menu className="h-5 w-5" />
           </button>
           <div className="text-sm text-muted-foreground truncate flex-1 min-w-0">{userEmail}</div>
-          <ZohoStatusPill connected={zohoConnected} />
+          <GlobalSearchBox />
         </header>
         <main className="flex-1 overflow-auto">{children}</main>
       </div>
@@ -202,24 +200,3 @@ function NavLink({ to, active, children }: { to: string; active: boolean; childr
   );
 }
 
-function ZohoStatusPill({ connected }: { connected: boolean }) {
-  if (connected) {
-    return (
-      <div className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-border bg-background/60 px-2.5 py-1 text-xs text-muted-foreground">
-        <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-        <span className="hidden sm:inline">Zoho connected</span>
-        <span className="sm:hidden">Zoho</span>
-      </div>
-    );
-  }
-  return (
-    <Link
-      to="/connect-zoho"
-      className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-destructive/50 bg-destructive/10 px-2.5 py-1 text-xs text-destructive-foreground hover:bg-destructive/20"
-    >
-      <AlertTriangle className="h-3.5 w-3.5" />
-      <span className="hidden sm:inline">Connect Zoho</span>
-      <span className="sm:hidden">Connect</span>
-    </Link>
-  );
-}

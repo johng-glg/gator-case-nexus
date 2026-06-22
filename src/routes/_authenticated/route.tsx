@@ -60,7 +60,6 @@ function AuthedLayout() {
   return (
     <AppShell
       userEmail={user.email ?? ""}
-      zohoConnected={!!status.data?.connected}
       onSignOut={signOut}
       signingOut={signingOut}
     >
