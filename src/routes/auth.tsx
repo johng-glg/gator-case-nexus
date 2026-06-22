@@ -59,11 +59,15 @@ function AuthPage() {
             Case platform
           </p>
         </div>
-        <div className="rounded-lg border border-border bg-card p-6">
-          <Button className="w-full" onClick={signIn} disabled={busy}>
+        <div className="rounded-lg border border-primary/30 bg-primary p-6">
+          <Button
+            className="w-full bg-[#C9A84C] hover:bg-[#b8983f] text-[#1a3c2a] font-semibold shadow"
+            onClick={signIn}
+            disabled={busy}
+          >
             {busy ? "Signing in…" : "Continue with Google"}
           </Button>
-          <p className="mt-4 text-center text-xs text-muted-foreground">
+          <p className="mt-4 text-center text-xs text-primary-foreground/80">
             Restricted to @{ALLOWED_DOMAIN} accounts.
           </p>
         </div>
