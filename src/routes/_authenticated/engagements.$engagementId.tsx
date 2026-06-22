@@ -155,7 +155,7 @@ function EngagementDetail() {
         status={String(record.Retainer_Status ?? "Not sent")}
         link={record.Retainer_Link ? String(record.Retainer_Link) : undefined}
         sentDate={record.Retainer_Sent_Date ? String(record.Retainer_Sent_Date) : undefined}
-        viewedDate={record.Retainer_Viewed_Date ? String(record.Retainer_Viewed_Date) : undefined}
+        viewedDate={record.Retainer_Viewed ? String(record.Retainer_Viewed) : undefined}
         signedDate={record.Retainer_Signed_Date ? String(record.Retainer_Signed_Date) : undefined}
         onSend={() => sendRetainer.mutate()}
         sending={sendRetainer.isPending}
