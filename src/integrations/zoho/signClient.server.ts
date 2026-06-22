@@ -10,6 +10,7 @@
  */
 import { createZohoSignAdapter, type ZohoSignAdapterConfig } from "./zohoSignAdapter";
 import { createRetainerService } from "./retainerService";
+import { createFormsService, gatorIntakeForms } from "./formsService";
 import { makeZohoClient } from "./client.server";
 
 const ACCOUNTS_HOSTS: Record<string, string> = {
@@ -108,8 +109,11 @@ export function makeFormsService() {
       "Zoho Sign SSA intake forms are not configured: set ZOHO_SIGN_SSA1696_TEMPLATE_ID / _ACTION_ID and ZOHO_SIGN_SSA827_TEMPLATE_ID / _ACTION_ID.",
     );
   }
-  const { createFormsService, gatorIntakeForms } = require("./formsService") as typeof import("./formsService");
   return createFormsService({
+    zoho: makeZohoClient(),
+    sign: makeFirmSignAdapter(),
+    forms: gatorIntakeForms({ ssa1696TemplateId, ssa1696ActionId, ssa827TemplateId, ssa827ActionId }),
+  });
     zoho: makeZohoClient(),
     sign: makeFirmSignAdapter(),
     forms: gatorIntakeForms({ ssa1696TemplateId, ssa1696ActionId, ssa827TemplateId, ssa827ActionId }),
