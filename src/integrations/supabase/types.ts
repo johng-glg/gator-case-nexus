@@ -83,6 +83,95 @@ export type Database = {
         }
         Relationships: []
       }
+      document_requests: {
+        Row: {
+          canceled_at: string | null
+          case_id: string
+          created_at: string
+          created_by: string | null
+          created_by_email: string | null
+          engagement_id: string | null
+          fulfilled_at: string | null
+          id: string
+          instructions: string | null
+          label: string
+          status: string
+        }
+        Insert: {
+          canceled_at?: string | null
+          case_id: string
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          engagement_id?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          instructions?: string | null
+          label: string
+          status?: string
+        }
+        Update: {
+          canceled_at?: string | null
+          case_id?: string
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          engagement_id?: string | null
+          fulfilled_at?: string | null
+          id?: string
+          instructions?: string | null
+          label?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      document_uploads: {
+        Row: {
+          case_id: string
+          id: string
+          mime_type: string | null
+          original_name: string
+          request_id: string | null
+          size_bytes: number | null
+          storage_path: string
+          uploaded_at: string
+          uploaded_by_email: string | null
+          uploaded_by_user: string | null
+        }
+        Insert: {
+          case_id: string
+          id?: string
+          mime_type?: string | null
+          original_name: string
+          request_id?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          uploaded_at?: string
+          uploaded_by_email?: string | null
+          uploaded_by_user?: string | null
+        }
+        Update: {
+          case_id?: string
+          id?: string
+          mime_type?: string | null
+          original_name?: string
+          request_id?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          uploaded_at?: string
+          uploaded_by_email?: string | null
+          uploaded_by_user?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_uploads_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "document_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ssdi_deadline_digests: {
         Row: {
           created_at: string
