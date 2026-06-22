@@ -27,9 +27,11 @@ function ensureStaff(email: string | undefined | null) {
   }
 }
 
+// NOTE: In Zoho, the provider name is stored on the standard `Name` field.
+// We alias it to `Provider_Name` in memory so engine/UI code stays readable.
 const REQUEST_FIELDS = [
   "id",
-  "Provider_Name",
+  "Name",
   "Request_Status",
   "Requested_Date",
   "Last_Followup_Date",
@@ -40,6 +42,10 @@ const REQUEST_FIELDS = [
   "Fee_Paid_Date",
   "SSDI_Case",
 ] as const;
+
+function decorateRow<T extends { Name?: string | null }>(r: T): T & { Provider_Name: string | null } {
+  return { ...r, Provider_Name: r.Name ?? null };
+}
 
 const listInput = z.object({ caseId: z.string().min(1) });
 
