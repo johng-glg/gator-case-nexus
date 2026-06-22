@@ -51,10 +51,18 @@ export const Route = createFileRoute("/api/public/webhooks/zoho-sign")({
         }
 
         try {
-          const { makeRetainerService } = await import("@/integrations/zoho/signClient.server");
-          const result = await makeRetainerService().handleSignCompleted(payload);
+          const { makeRetainerService, makeFormsService } = await import("@/integrations/zoho/signClient.server");
+          const retainerResult = await makeRetainerService().handleSignCompleted(payload);
+          let formsResult: { caseId: string; code: string; status: string } | null = null;
+          try {
+            formsResult = await makeFormsService().handleFormSigned(payload);
+          } catch (err) {
+            // Forms env may not be configured yet; don't block retainer flow.
+            console.warn("[zoho-sign webhook] forms handler skipped:", String(err));
+          }
+          const result = retainerResult ?? formsResult;
           if (result) {
-            console.log("[zoho-sign webhook]", result);
+            console.log("[zoho-sign webhook]", { retainerResult, formsResult });
           } else {
             // Diagnostic: surface the shape so we can see why parse/match failed.
             const p = (payload ?? {}) as Record<string, any>;
@@ -67,7 +75,7 @@ export const Route = createFileRoute("/api/public/webhooks/zoho-sign")({
               request_status: req?.request_status ?? null,
             });
           }
-          return Response.json({ ok: true, result }, { status: 200 });
+          return Response.json({ ok: true, retainerResult, formsResult }, { status: 200 });
         } catch (err) {
           console.error("[zoho-sign webhook] error", err);
           // Still 200 so Zoho marks delivered; failures show up in logs.

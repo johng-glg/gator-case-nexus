@@ -16,6 +16,7 @@ import { InviteClientButton } from "@/components/cases/InviteClientButton";
 import { ActivityPanel } from "@/components/cases/ActivityPanel";
 import { DocumentRequestsPanel } from "@/components/cases/DocumentRequestsPanel";
 import { MessagingPanel } from "@/components/cases/MessagingPanel";
+import { SsaFormsPanel } from "@/components/cases/SsaFormsPanel";
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
 import { useStageRequirements } from "@/hooks/use-stage-requirements";
 import { ChevronLeft, AlertTriangle, Download } from "lucide-react";
@@ -343,6 +344,8 @@ function CaseDetail() {
           </table>
         </div>
       </section>
+
+      <SsaFormsPanel caseId={caseId} record={record as Record<string, unknown> | undefined} />
 
       <DocumentRequestsPanel caseId={caseId} engagementId={engagementId} />
 

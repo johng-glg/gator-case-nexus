@@ -10,6 +10,7 @@
  */
 import { createZohoSignAdapter, type ZohoSignAdapterConfig } from "./zohoSignAdapter";
 import { createRetainerService } from "./retainerService";
+import { createFormsService, gatorIntakeForms } from "./formsService";
 import { makeZohoClient } from "./client.server";
 
 const ACCOUNTS_HOSTS: Record<string, string> = {
@@ -79,7 +80,8 @@ async function getFirmSignAccessToken(): Promise<string> {
 }
 
 /** Build the retainer service with the firm Sign adapter + per-user CRM client. */
-export function makeRetainerService() {
+/** Build the firm SignAdapter once (reused by retainer + forms). */
+function makeFirmSignAdapter() {
   const templateId = process.env.ZOHO_SIGN_TEMPLATE_ID;
   const signActionId = process.env.ZOHO_SIGN_ACTION_ID;
   if (!templateId || !signActionId) {
@@ -88,17 +90,48 @@ export function makeRetainerService() {
     );
   }
   const dc = (process.env.ZOHO_DC ?? "us") as ZohoSignAdapterConfig["dc"];
-  const sign = createZohoSignAdapter({
+  return createZohoSignAdapter({
     getAccessToken: getFirmSignAccessToken,
     templateId,
     signActionId,
     dc,
   });
+}
+
+/** SSA-1696 / SSA-827 forms service, configured from env. */
+export function makeFormsService() {
+  const ssa1696TemplateId = process.env.ZOHO_SIGN_SSA1696_TEMPLATE_ID;
+  const ssa1696ActionId = process.env.ZOHO_SIGN_SSA1696_ACTION_ID;
+  const ssa827TemplateId = process.env.ZOHO_SIGN_SSA827_TEMPLATE_ID;
+  const ssa827ActionId = process.env.ZOHO_SIGN_SSA827_ACTION_ID;
+  if (!ssa1696TemplateId || !ssa1696ActionId || !ssa827TemplateId || !ssa827ActionId) {
+    throw new Error(
+      "Zoho Sign SSA intake forms are not configured: set ZOHO_SIGN_SSA1696_TEMPLATE_ID / _ACTION_ID and ZOHO_SIGN_SSA827_TEMPLATE_ID / _ACTION_ID.",
+    );
+  }
+  return createFormsService({
+    zoho: makeZohoClient(),
+    sign: makeFirmSignAdapter(),
+    forms: gatorIntakeForms({ ssa1696TemplateId, ssa1696ActionId, ssa827TemplateId, ssa827ActionId }),
+  });
+}
+
+/** Build the retainer service with the firm Sign adapter + per-user CRM client. */
+export function makeRetainerService() {
+  const sign = makeFirmSignAdapter();
   const zoho = makeZohoClient();
-  // Lazy-import to avoid a circular dep at module load.
+  // Lazy-import to avoid a circular dep at module load. On retainer signature: open the
+  // SSDI case, then auto-send SSA-1696 + SSA-827 to the client.
   const onRetainerSigned = async (ctx: { engagementId: string }) => {
     const { createCaseOpener } = await import("./intakeService");
-    await createCaseOpener({ zoho })(ctx);
+    const { caseId } = await createCaseOpener({ zoho })(ctx);
+    if (!caseId) return;
+    try {
+      const forms = makeFormsService();
+      await forms.sendIntakeForms("SERVICE", caseId);
+    } catch (err) {
+      console.error("[signClient] sendIntakeForms failed", err);
+    }
   };
   return createRetainerService({ zoho, sign, onRetainerSigned });
 }

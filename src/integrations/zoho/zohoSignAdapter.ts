@@ -48,11 +48,13 @@ export function createZohoSignAdapter(cfg: ZohoSignAdapterConfig): SignAdapter {
       const field_text_data: Record<string, string> = {};
       for (const [k, v] of Object.entries(input.mergeData)) field_text_data[mapKey(k)] = v;
 
+      const templateId = input.templateId ?? cfg.templateId;
+      const actionId = input.actionId ?? cfg.signActionId;
       const data = {
         templates: {
           field_data: { field_text_data },
           actions: [{
-            action_id: cfg.signActionId,
+            action_id: actionId,
             action_type: "SIGN",
             recipient_name: input.recipient.name,
             recipient_email: input.recipient.email,
@@ -65,7 +67,7 @@ export function createZohoSignAdapter(cfg: ZohoSignAdapterConfig): SignAdapter {
       form.append("data", JSON.stringify(data));
 
       const token = await cfg.getAccessToken();
-      const res = await fetch(`${host}/api/v1/templates/${cfg.templateId}/createdocument`, {
+      const res = await fetch(`${host}/api/v1/templates/${templateId}/createdocument`, {
         method: "POST",
         headers: { Authorization: `Zoho-oauthtoken ${token}` }, // let fetch set multipart boundary
         body: form,
