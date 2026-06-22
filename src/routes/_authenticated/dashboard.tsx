@@ -162,8 +162,8 @@ function Dashboard() {
 function SkeletonCards() {
   return (
     <>
-      {[0, 1, 2].map((i) => (
-        <div key={i} className="h-40 rounded-lg border border-border bg-card/60 animate-pulse" />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <div key={i} className="h-14 rounded-lg border border-border bg-card/60 animate-pulse" />
       ))}
     </>
   );
