@@ -27,6 +27,7 @@ import { Route as AuthenticatedLeadsIndexRouteImport } from './routes/_authentic
 import { Route as AuthenticatedEngagementsIndexRouteImport } from './routes/_authenticated/engagements.index'
 import { Route as AuthenticatedClientsIndexRouteImport } from './routes/_authenticated/clients.index'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
+import { Route as ApiPublicMedicalRecordsSweepRouteImport } from './routes/api/public/medical-records-sweep'
 import { Route as ApiPublicDeadlineSweepRouteImport } from './routes/api/public/deadline-sweep'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings.users'
 import { Route as AuthenticatedSettingsTrustExportRouteImport } from './routes/_authenticated/settings.trust-export'
@@ -149,6 +150,12 @@ const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   path: '/lovable/email/suppression',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicMedicalRecordsSweepRoute =
+  ApiPublicMedicalRecordsSweepRouteImport.update({
+    id: '/api/public/medical-records-sweep',
+    path: '/api/public/medical-records-sweep',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicDeadlineSweepRoute = ApiPublicDeadlineSweepRouteImport.update({
   id: '/api/public/deadline-sweep',
   path: '/api/public/deadline-sweep',
@@ -346,6 +353,7 @@ export interface FileRoutesByFullPath {
   '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
+  '/api/public/medical-records-sweep': typeof ApiPublicMedicalRecordsSweepRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/clients/': typeof AuthenticatedClientsIndexRoute
   '/engagements/': typeof AuthenticatedEngagementsIndexRoute
@@ -391,6 +399,7 @@ export interface FileRoutesByTo {
   '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
+  '/api/public/medical-records-sweep': typeof ApiPublicMedicalRecordsSweepRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/clients': typeof AuthenticatedClientsIndexRoute
   '/engagements': typeof AuthenticatedEngagementsIndexRoute
@@ -441,6 +450,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
+  '/api/public/medical-records-sweep': typeof ApiPublicMedicalRecordsSweepRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/clients/': typeof AuthenticatedClientsIndexRoute
   '/_authenticated/engagements/': typeof AuthenticatedEngagementsIndexRoute
@@ -490,6 +500,7 @@ export interface FileRouteTypes {
     | '/settings/trust-export'
     | '/settings/users'
     | '/api/public/deadline-sweep'
+    | '/api/public/medical-records-sweep'
     | '/lovable/email/suppression'
     | '/clients/'
     | '/engagements/'
@@ -535,6 +546,7 @@ export interface FileRouteTypes {
     | '/settings/trust-export'
     | '/settings/users'
     | '/api/public/deadline-sweep'
+    | '/api/public/medical-records-sweep'
     | '/lovable/email/suppression'
     | '/clients'
     | '/engagements'
@@ -584,6 +596,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/trust-export'
     | '/_authenticated/settings/users'
     | '/api/public/deadline-sweep'
+    | '/api/public/medical-records-sweep'
     | '/lovable/email/suppression'
     | '/_authenticated/clients/'
     | '/_authenticated/engagements/'
@@ -615,6 +628,7 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   ApiPublicDeadlineSweepRoute: typeof ApiPublicDeadlineSweepRoute
+  ApiPublicMedicalRecordsSweepRoute: typeof ApiPublicMedicalRecordsSweepRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   ApiPublicWebhooksZohoSignRoute: typeof ApiPublicWebhooksZohoSignRoute
   ApiZohoConnectCallbackRoute: typeof ApiZohoConnectCallbackRoute
@@ -751,6 +765,13 @@ declare module '@tanstack/react-router' {
       path: '/lovable/email/suppression'
       fullPath: '/lovable/email/suppression'
       preLoaderRoute: typeof LovableEmailSuppressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/medical-records-sweep': {
+      id: '/api/public/medical-records-sweep'
+      path: '/api/public/medical-records-sweep'
+      fullPath: '/api/public/medical-records-sweep'
+      preLoaderRoute: typeof ApiPublicMedicalRecordsSweepRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/deadline-sweep': {
@@ -1094,6 +1115,7 @@ const rootRouteChildren: RootRouteChildren = {
   UnsubscribeRoute: UnsubscribeRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   ApiPublicDeadlineSweepRoute: ApiPublicDeadlineSweepRoute,
+  ApiPublicMedicalRecordsSweepRoute: ApiPublicMedicalRecordsSweepRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   ApiPublicWebhooksZohoSignRoute: ApiPublicWebhooksZohoSignRoute,
   ApiZohoConnectCallbackRoute: ApiZohoConnectCallbackRoute,
