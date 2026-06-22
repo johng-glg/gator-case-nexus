@@ -355,6 +355,8 @@ function CaseDetail() {
 
       <SsaFormsPanel caseId={caseId} record={record as Record<string, unknown> | undefined} />
 
+      <MedicalRecordsPanel caseId={caseId} />
+
       <DocumentRequestsPanel caseId={caseId} engagementId={engagementId} />
 
       <MessagingPanel caseId={caseId} />
