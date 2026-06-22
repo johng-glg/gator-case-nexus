@@ -138,7 +138,7 @@ export function createRetainerService(deps: RetainerServiceDeps) {
 
   /**
    * Zoho Sign webhook handler. Maps the request's terminal status to Retainer_Status on the
-   * Engagement matched by Retainer_ID. Also stamps Retainer_Viewed_Date on "viewed" events
+   * Engagement matched by Retainer_ID. Also stamps Retainer_Viewed on "viewed" events
    * (non-terminal — Retainer_Status stays "Sent"). Returns what it did, or null if no match.
    */
   async function handleSignCompleted(payload: unknown): Promise<
@@ -150,15 +150,15 @@ export function createRetainerService(deps: RetainerServiceDeps) {
 
     const svc = deps.zoho.as(SERVICE_ACTOR);
     const rows = await svc.coql<ZohoRecord>(
-      `select id, Retainer_Status, Retainer_Viewed_Date from ${ENGAGEMENTS} where Retainer_ID = '${esc(evt.requestId)}'`,
+      `select id, Retainer_Status, Retainer_Viewed from ${ENGAGEMENTS} where Retainer_ID = '${esc(evt.requestId)}'`,
     );
     const eng = rows[0];
     if (!eng?.id) return null;
 
-    // Viewed-only event: stamp Retainer_Viewed_Date once; do not touch Retainer_Status.
+    // Viewed-only event: stamp Retainer_Viewed once; do not touch Retainer_Status.
     if (evt.viewed && !evt.status) {
-      if (eng.Retainer_Viewed_Date) return null; // already stamped
-      await svc.updateRecords(ENGAGEMENTS, [{ id: eng.id as string, Retainer_Viewed_Date: isoDateTime(now()) }]);
+      if (eng.Retainer_Viewed) return null; // already stamped
+      await svc.updateRecords(ENGAGEMENTS, [{ id: eng.id as string, Retainer_Viewed: isoDateTime(now()) }]);
       return { engagementId: eng.id as string, viewed: true };
     }
 

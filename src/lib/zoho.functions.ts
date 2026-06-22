@@ -749,7 +749,7 @@ export const retainerReset = createServerFn({ method: "POST" })
       Retainer_ID: null,
       Retainer_Link: null,
       Retainer_Sent: null,
-      Retainer_Viewed_Date: null,
+      Retainer_Viewed: null,
       Retainer_Signed_Date: null,
     }]);
     return { ok: true };
