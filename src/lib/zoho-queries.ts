@@ -29,8 +29,8 @@ function safeEnum(v: unknown, allowed: readonly string[]): string {
 /** Sanitize a free-text search term for a COQL `like` clause. */
 function safeLike(v: unknown): string {
   if (typeof v !== "string") throw new Error("Invalid search parameter.");
-  // Allow letters, numbers, dash, underscore, dot, slash, space. Cap length to keep COQL tight.
-  const cleaned = v.trim().slice(0, 40).replace(/[^A-Za-z0-9 _.\-/]/g, "");
+  // Allow common name/email/phone/case characters. Cap length to keep COQL tight.
+  const cleaned = v.trim().slice(0, 40).replace(/[^A-Za-z0-9 _.\-/@+()]/g, "");
   if (!cleaned) throw new Error("Search term is empty.");
   return `'%${cleaned}%'`;
 }
@@ -64,7 +64,13 @@ export type QueryName =
   | "allReferrals"
   | "ssdiCaseSearch"
   | "contactSearch"
+  | "contactFirstNameSearch"
+  | "contactEmailSearch"
+  | "contactPhoneSearch"
   | "leadSearch"
+  | "leadFirstNameSearch"
+  | "leadEmailSearch"
+  | "leadCompanySearch"
   | "engagementSearch";
 
 
@@ -253,11 +259,53 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               where Last_Name like ${q}
               limit 10`;
     }
+    case "contactFirstNameSearch": {
+      const q = safeLike(params.q);
+      return `select id, First_Name, Last_Name, Email, Phone
+              from Contacts
+              where First_Name like ${q}
+              limit 10`;
+    }
+    case "contactEmailSearch": {
+      const q = safeLike(params.q);
+      return `select id, First_Name, Last_Name, Email, Phone
+              from Contacts
+              where Email like ${q}
+              limit 10`;
+    }
+    case "contactPhoneSearch": {
+      const q = safeLike(params.q);
+      return `select id, First_Name, Last_Name, Email, Phone
+              from Contacts
+              where Phone like ${q}
+              limit 10`;
+    }
     case "leadSearch": {
       const q = safeLike(params.q);
       return `select id, First_Name, Last_Name, Email, Company, Lead_Status
               from Leads
               where Last_Name like ${q}
+              limit 10`;
+    }
+    case "leadFirstNameSearch": {
+      const q = safeLike(params.q);
+      return `select id, First_Name, Last_Name, Email, Company, Lead_Status
+              from Leads
+              where First_Name like ${q}
+              limit 10`;
+    }
+    case "leadEmailSearch": {
+      const q = safeLike(params.q);
+      return `select id, First_Name, Last_Name, Email, Company, Lead_Status
+              from Leads
+              where Email like ${q}
+              limit 10`;
+    }
+    case "leadCompanySearch": {
+      const q = safeLike(params.q);
+      return `select id, First_Name, Last_Name, Email, Company, Lead_Status
+              from Leads
+              where Company like ${q}
               limit 10`;
     }
     case "engagementSearch": {
