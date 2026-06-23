@@ -343,11 +343,15 @@ export const getUploadUrl = createServerFn({ method: "POST" })
     if (data.requestId) {
       const { data: req, error } = await supabaseAdmin
         .from("document_requests")
-        .select("id, case_id, status")
+        .select("id, case_id, engagement_id, status")
         .eq("id", data.requestId)
         .maybeSingle();
       if (error) throw new Error(error.message);
-      if (!req || req.case_id !== data.caseId) throw new Error("Request not found.");
+      const caseEngagementId = req?.case_id === data.caseId ? null : await getCaseEngagementId(data.caseId);
+      const matchesRequest =
+        req?.case_id === data.caseId ||
+        (!!req?.engagement_id && req.engagement_id === caseEngagementId);
+      if (!req || !matchesRequest) throw new Error("Request not found.");
       if (req.status !== "open") throw new Error("This request is no longer open.");
     }
 
