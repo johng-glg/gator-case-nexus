@@ -14,7 +14,7 @@ import {
   logFollowup,
   setRequestStatus,
 } from "@/lib/medicalRecords.functions";
-import { REQUEST_STATUSES, type RequestStatus } from "@/integrations/zoho/medicalRecords";
+import { REQUEST_STATUSES, TRANSITIONS, type RequestStatus } from "@/integrations/zoho/medicalRecords";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
