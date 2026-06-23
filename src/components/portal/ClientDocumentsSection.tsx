@@ -21,7 +21,17 @@ function fmtBytes(n: number | null): string {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function ClientDocumentsSection({ caseId }: { caseId: string }) {
+export function ClientDocumentsSection({
+  caseId,
+  engagementId,
+}: {
+  caseId?: string;
+  engagementId?: string;
+}) {
+  // Uploads still need a caseId server-side; for pre-case engagements we show
+  // requests read-only until the case is opened.
+  const uploadKey = caseId ?? null;
+  void engagementId; // currently informational only; future engagement-scoped uploads.
   const queryClient = useQueryClient();
   const fetchReqs = useServerFn(getMyDocumentRequests);
   const getUrl = useServerFn(getUploadUrl);
@@ -36,14 +46,15 @@ export function ClientDocumentsSection({ caseId }: { caseId: string }) {
 
   const upload = useMutation({
     mutationFn: async ({ file, requestId }: { file: File; requestId: string | null }) => {
+      if (!uploadKey) throw new Error("Uploads aren't available for this matter yet.");
       const { storagePath, signedUrl } = await getUrl({
-        data: { caseId, requestId, fileName: file.name, size: file.size },
+        data: { caseId: uploadKey, requestId, fileName: file.name, size: file.size },
       });
       const put = await fetch(signedUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type || "application/octet-stream" } });
       if (!put.ok) throw new Error(`Upload failed (${put.status}).`);
       await recordUp({
         data: {
-          caseId, requestId, storagePath,
+          caseId: uploadKey, requestId, storagePath,
           originalName: file.name, size: file.size, mime: file.type || undefined,
         },
       });
