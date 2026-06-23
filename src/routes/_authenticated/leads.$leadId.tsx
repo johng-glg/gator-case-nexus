@@ -62,6 +62,11 @@ function LeadDetail() {
 
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [overrideReason, setOverrideReason] = useState("");
+  const [conflictAlertOpen, setConflictAlertOpen] = useState(false);
+  const [convertedResult, setConvertedResult] = useState<{ engagementId: string; conflictMatches: any[] } | null>(null);
+
+  const goToEngagement = (engagementId: string) =>
+    navigate({ to: "/engagements/$engagementId", params: { engagementId } });
 
   const convert = useMutation({
     mutationFn: (override?: { reason: string }) =>
@@ -69,7 +74,12 @@ function LeadDetail() {
     onSuccess: (res) => {
       toast.success("Converted to engagement");
       qc.invalidateQueries({ queryKey: ["allLeads"] });
-      navigate({ to: "/engagements/$engagementId", params: { engagementId: res.engagementId } });
+      if (res.conflict?.status === "Conflict found") {
+        setConvertedResult({ engagementId: res.engagementId, conflictMatches: res.conflict.matches ?? [] });
+        setConflictAlertOpen(true);
+      } else {
+        goToEngagement(res.engagementId);
+      }
     },
     onError: (e: any) => toast.error(e.message ?? "Conversion failed"),
   });
