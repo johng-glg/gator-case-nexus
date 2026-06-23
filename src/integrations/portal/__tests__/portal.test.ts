@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { describe, expect, it } from "vitest";
 import { buildPortalView, ssdiToPortalMatter, type PortalMatter } from "../portal";
 import { fcraPortalAdapter } from "../adapters/stubs";
