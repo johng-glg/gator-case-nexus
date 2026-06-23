@@ -125,7 +125,7 @@ function ClientAuthPage() {
               className="space-y-3"
             >
               <label className="block text-sm">
-                <span style={{ color: `${GOLD}B3` }}>6-digit code</span>
+                <span style={{ color: `${GOLD}B3` }}>Sign-in code</span>
                 <Input
                   inputMode="numeric"
                   autoComplete="one-time-code"
