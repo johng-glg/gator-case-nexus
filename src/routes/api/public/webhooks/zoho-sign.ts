@@ -3,7 +3,8 @@
  *
  * Auth: prefers Zoho Sign HMAC-SHA256 (`X-ZS-WEBHOOK-SIGNATURE` over the raw
  * body) using ZOHO_SIGN_WEBHOOK_SECRET. Falls back to a shared-secret header
- * or `?secret=` query param so simple Zoho webhook configs still work.
+ * (`x-webhook-secret` / `x-zoho-webhook-secret`) for simple Zoho configs.
+ * Query-param secrets are NOT accepted (they leak into access logs).
  * Always returns 200 (even when no engagement matched) so Zoho doesn't retry-storm.
  */
 import { createFileRoute } from "@tanstack/react-router";
@@ -30,11 +31,9 @@ export const Route = createFileRoute("/api/public/webhooks/zoho-sign")({
 
         let sharedOk = false;
         if (!hmacOk) {
-          const url = new URL(request.url);
           const provided =
             request.headers.get("x-webhook-secret") ??
             request.headers.get("x-zoho-webhook-secret") ??
-            url.searchParams.get("secret") ??
             "";
           sharedOk = provided !== "" && provided === expected;
         }
@@ -59,21 +58,6 @@ export const Route = createFileRoute("/api/public/webhooks/zoho-sign")({
           } catch (err) {
             // Forms env may not be configured yet; don't block retainer flow.
             console.warn("[zoho-sign webhook] forms handler skipped:", String(err));
-          }
-          const result = retainerResult ?? formsResult;
-          if (result) {
-            console.log("[zoho-sign webhook]", { retainerResult, formsResult });
-          } else {
-            // Diagnostic: surface the shape so we can see why parse/match failed.
-            const p = (payload ?? {}) as Record<string, any>;
-            const req = p.requests ?? p.request ?? p.notifications?.requests ?? {};
-            console.log("[zoho-sign webhook] no-op", {
-              topKeys: Object.keys(p),
-              notifications: p.notifications ? Object.keys(p.notifications) : null,
-              operation_type: p.notifications?.operation_type ?? p.operation_type ?? p.action_type ?? null,
-              request_id: req?.request_id ?? req?.requestId ?? p.request_id ?? null,
-              request_status: req?.request_status ?? null,
-            });
           }
           return Response.json({ ok: true, retainerResult, formsResult }, { status: 200 });
         } catch (err) {
