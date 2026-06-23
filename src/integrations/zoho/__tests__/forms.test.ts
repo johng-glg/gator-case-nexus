@@ -29,7 +29,7 @@ function mockSign() {
   return { sign, sent };
 }
 
-(async () => {
+await (async () => {
   // ---- sendIntakeForms sends both, with the right templates ----
   {
     const { zoho, calls } = mockZoho({

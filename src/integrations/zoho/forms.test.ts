@@ -28,7 +28,7 @@ function mockSign() {
   return { sign, sent };
 }
 
-(async () => {
+await (async () => {
   // ---- sendIntakeForms only auto-sends SSA-1696 (827 is manual + needs attestation) ----
   {
     const { zoho, calls } = mockZoho({

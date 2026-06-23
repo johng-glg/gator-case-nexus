@@ -8,7 +8,7 @@ const TWO_PM = new Date("2026-06-20T21:00:00Z");  // 14:00 PDT
 const ELEVEN_PM = new Date("2026-06-21T06:00:00Z"); // 23:00 PDT (prev day)
 const TZ = "America/Los_Angeles";
 
-(async () => {
+await (async () => {
   // stage → messages
   ok("hearing scheduled notifies (routine)", messagesForStage("Hearing scheduled")[0].sensitivity === "routine");
   ok("award notifies (routine)", messagesForStage("Award / NOA received").length === 1);

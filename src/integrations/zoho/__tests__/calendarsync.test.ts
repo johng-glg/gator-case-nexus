@@ -24,7 +24,7 @@ function mocks(initialLinks: Record<string, { eventId: string; sig: string }> = 
 const CASE = { Deadline_Date: "2026-08-05", Active_Deadline_Type: "Reconsideration", ALJ_Hearing_Scheduled_Date: "2026-09-10T14:30:00-04:00", Hearing_Office_ODAR: "Orange OHO" };
 const META = { caseId: "K1", label: "Doe, Jane", caseUrl: "https://app/cases/K1" };
 
-(async () => {
+await (async () => {
   // create both on empty
   let m = mocks();
   let r = await createCalendarSyncService({ ...m, calendarId: "CAL" }).syncCase(CASE, META);

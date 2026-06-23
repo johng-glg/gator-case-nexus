@@ -16,7 +16,7 @@ const svc = createIntakeService({ zoho, now: NOW });
 let pass = 0, fail = 0;
 const ok = (l: string, c: boolean) => { console.log(`${c ? "✓" : "✗"} ${l}`); c ? pass++ : fail++; };
 
-(async () => {
+await (async () => {
   // conflict check — no matches
   coqlReturn = [];
   let cc = await svc.runConflictCheck("u", { lastName: "Smith", email: "a@b.com" });

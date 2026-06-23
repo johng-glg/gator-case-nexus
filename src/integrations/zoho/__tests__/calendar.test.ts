@@ -3,7 +3,7 @@ import { desiredEventsForCase, reconcile, signature, type CalEvent } from "../ca
 let pass = 0, fail = 0;
 const ok = (l: string, c: boolean) => { console.log(`${c ? "✓" : "✗"} ${l}`); c ? pass++ : fail++; };
 
-(async () => {
+await (async () => {
   // desired events
   const ev = desiredEventsForCase(
     { Deadline_Date: "2026-08-05", Active_Deadline_Type: "Reconsideration",

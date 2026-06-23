@@ -20,7 +20,7 @@ function mockZoho(lead: Record<string, unknown> | null, coqlRows: any[] = []) {
   return { zoho: { as: () => api } as any, calls };
 }
 
-(async () => {
+await (async () => {
   // ---- happy path: SSDI lead converts ----
   {
     const { zoho, calls } = mockZoho({
