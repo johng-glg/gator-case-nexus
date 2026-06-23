@@ -241,6 +241,7 @@ export const saveLeadScreener = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const { screenLead } = await import("@/integrations/zoho/leadScreening");
+    const { buildStoredScreener, upsertScreenerBlock } = await import("@/integrations/zoho/leadScreenerStorage");
 
     const i = data.input;
     let age = i.age;
@@ -265,68 +266,28 @@ export const saveLeadScreener = createServerFn({ method: "POST" })
       appealDeadlineDate: i.appealDeadlineDate || undefined,
     });
 
+    const zoho = makeZohoClient().as(context.userId);
+    const lead = await zoho.getRecord("Leads", data.leadId, ["Description"]);
+    const stored = buildStoredScreener({
+      workingAboveSGA: i.workingAboveSGA,
+      monthlyEarnings: i.monthlyEarnings,
+      isBlind: i.isBlind,
+      receivingTreatment: i.receivingTreatment,
+      meetsTwelveMonthDuration: i.meetsTwelveMonthDuration,
+      claimType: i.claimType,
+      dateLastInsured: i.dateLastInsured || undefined,
+      alreadyRepresented: i.alreadyRepresented,
+      age,
+      dateOfBirth: i.dateOfBirth || undefined,
+      currentLevel: i.currentLevel,
+      appealDeadlineDate: i.appealDeadlineDate || undefined,
+      primaryImpairment: i.primaryImpairment || undefined,
+    }, result);
     const payload: Record<string, unknown> = {
       id: data.leadId,
-      Working_Above_SGA: i.workingAboveSGA ?? null,
-      Monthly_Earnings: i.monthlyEarnings ?? null,
-      Is_Blind: i.isBlind ?? null,
-      Receiving_Treatment: i.receivingTreatment ?? null,
-      Meets_12mo_Duration: i.meetsTwelveMonthDuration ?? null,
-      Claim_Type: i.claimType ?? null,
-      Date_Last_Insured: i.dateLastInsured || null,
-      Already_Represented: i.alreadyRepresented ?? null,
-      Date_of_Birth: i.dateOfBirth || null,
-      Current_Level: i.currentLevel ?? null,
-      Appeal_Deadline_Date: i.appealDeadlineDate || null,
-      Primary_Impairment: i.primaryImpairment || null,
-      Lead_Tier: result.tier,
-      Lead_Score: result.score,
-      Screener_Knockouts: result.knockouts.map((k) => `[${k.severity}] ${k.label}`).join("\n") || null,
-      Is_Urgent: result.urgent,
+      Description: upsertScreenerBlock((lead as Record<string, unknown> | null)?.Description, stored),
     };
-    if (data.smsConsent?.granted) {
-      payload.SMS_Consent_At = new Date().toISOString();
-      payload.SMS_Consent_Text = data.smsConsent.text ?? null;
-      payload.SMS_Consent_Source = data.smsConsent.source ?? "app:screener";
-    }
-
-    const zoho = makeZohoClient().as(context.userId);
     await zoho.updateRecords("Leads", [payload]);
-
-    // Verify the screener fields actually persisted — Zoho silently ignores
-    // unknown field API names on update, so we confirm by reading back.
-    const verifyFields = [
-      "Working_Above_SGA", "Monthly_Earnings", "Is_Blind", "Receiving_Treatment",
-      "Meets_12mo_Duration", "Claim_Type", "Date_Last_Insured", "Already_Represented",
-      "Date_of_Birth", "Current_Level", "Appeal_Deadline_Date", "Primary_Impairment",
-      "Lead_Tier", "Lead_Score", "Screener_Knockouts", "Is_Urgent",
-    ];
-    let verified: Record<string, unknown> | null = null;
-    try {
-      verified = (await zoho.getRecord("Leads", data.leadId, verifyFields)) as Record<string, unknown> | null;
-    } catch {
-      // If verify-read fails (e.g. unknown field name → 400), surface the actual
-      // missing fields to the caller instead of failing silently.
-      const meta = await zoho.listModuleFields("Leads").catch(() => []);
-      const present = new Set(meta.map((f) => f.api_name));
-      const missing = verifyFields.filter((f) => !present.has(f));
-      throw new Error(
-        missing.length
-          ? `Zoho Leads is missing custom fields: ${missing.join(", ")}. Create them in Zoho (Setup → Modules → Leads).`
-          : `Could not verify Leads update — check field API names.`,
-      );
-    }
-    if (verified && verified.Lead_Tier !== result.tier) {
-      // Update was accepted but Lead_Tier didn't stick → field is missing or read-only.
-      const meta = await zoho.listModuleFields("Leads").catch(() => []);
-      const present = new Set(meta.map((f) => f.api_name));
-      const missing = verifyFields.filter((f) => !present.has(f));
-      throw new Error(
-        missing.length
-          ? `Zoho accepted the update but these field API names don't exist on Leads: ${missing.join(", ")}. Create them in Zoho.`
-          : `Zoho accepted the update but Lead_Tier didn't persist (got ${JSON.stringify(verified.Lead_Tier)}). Field may be read-only.`,
-      );
-    }
     return { result: toJson<Json>(result) };
   });
 
