@@ -224,6 +224,38 @@ function LeadDetail() {
           )}
         </div>
       </section>
+
+      <AlertDialog open={conflictAlertOpen} onOpenChange={setConflictAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conflict Check Alert</AlertDialogTitle>
+            <AlertDialogDescription>
+              This lead’s email matches an existing Contact in your CRM.
+              The new Engagement has been linked to the existing Contact instead of creating a duplicate.
+              {convertedResult && convertedResult.conflictMatches.length > 0 && (
+                <span className="block mt-2">
+                  Matched Contact: {" "}
+                  <strong>
+                    {[convertedResult.conflictMatches[0].First_Name, convertedResult.conflictMatches[0].Last_Name]
+                      .filter(Boolean)
+                      .join(" ") || "Existing contact"}
+                  </strong>
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                setConflictAlertOpen(false);
+                if (convertedResult) goToEngagement(convertedResult.engagementId);
+              }}
+            >
+              Ok
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
