@@ -59,17 +59,24 @@ function ClientAuthPage() {
 
   async function verifyCode() {
     setVerifying(true);
-    const { error } = await supabase.auth.verifyOtp({
-      email: email.trim().toLowerCase(),
-      token: code.trim(),
-      type: "email",
-    });
-    setVerifying(false);
-    if (error) {
-      toast.error(error.message || "Couldn't verify code.");
-      return;
+    const normalizedEmail = email.trim().toLowerCase();
+    const token = code.trim();
+    // The code may have been minted as an invite (first-time) or magiclink
+    // (returning). Supabase requires the matching `type`, so try both before
+    // surfacing an error — otherwise users see a misleading "expired" message.
+    const types: Array<"email" | "magiclink" | "invite"> = ["email", "magiclink", "invite"];
+    let lastError: { message?: string } | null = null;
+    for (const type of types) {
+      const { error } = await supabase.auth.verifyOtp({ email: normalizedEmail, token, type });
+      if (!error) {
+        setVerifying(false);
+        navigate({ to: "/portal", replace: true });
+        return;
+      }
+      lastError = error;
     }
-    navigate({ to: "/portal", replace: true });
+    setVerifying(false);
+    toast.error(lastError?.message || "Couldn't verify code.");
   }
 
   return (
