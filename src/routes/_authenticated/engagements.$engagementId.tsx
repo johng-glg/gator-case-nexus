@@ -342,16 +342,13 @@ function RetainerPanel({
       <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
         <div>
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Retainer</div>
-          <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-            {sentDate && <span>Sent {fmtWhen(sentDate)}</span>}
-            {viewedDate && <span>Viewed {fmtWhen(viewedDate)}</span>}
-            {signedDate && <span>Signed {fmtWhen(signedDate)}</span>}
-            {link && (
+          {link && (
+            <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
               <a href={link} target="_blank" rel="noreferrer" className="text-primary hover:underline">
                 View document
               </a>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {onMarkSigned && canMarkSigned && (
@@ -391,34 +388,47 @@ function RetainerPanel({
           )}
         </div>
       </div>
-      <ol className="flex items-center w-full gap-1">
+      <ol className="flex items-start w-full gap-1">
         {STEPS.map((step, i) => {
           const isDone = currentIdx > i;
           const isActive = currentIdx === i;
           const activeError = isActive && isError;
+          const dateText =
+            step === "Sent" && sentDate
+              ? fmtWhen(sentDate)
+              : step === "Viewed" && viewedDate
+                ? fmtWhen(viewedDate)
+                : step === "Signed" && signedDate
+                  ? fmtWhen(signedDate)
+                  : undefined;
           return (
-            <li key={step} className="flex items-center flex-1 last:flex-none min-w-0">
-              <div
-                className={cn(
-                  "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] whitespace-nowrap min-w-0",
-                  activeError && "border-destructive/40 bg-destructive/10 text-destructive font-medium",
-                  isActive && !activeError && "border-primary bg-primary/10 text-primary font-medium",
-                  isDone && "border-border bg-muted text-muted-foreground",
-                  !isActive && !isDone && "border-dashed border-border text-muted-foreground/60",
-                )}
-              >
-                {isDone && <Check className="h-3 w-3 shrink-0" />}
-                {isActive && <CircleDot className="h-3 w-3 shrink-0" />}
-                {!isActive && !isDone && <Circle className="h-3 w-3 shrink-0" />}
-                <span className="truncate">{activeError ? status : step}</span>
-              </div>
-              {i < STEPS.length - 1 && (
+            <li key={step} className="flex flex-col items-center flex-1 last:flex-none min-w-0">
+              <div className="flex items-center w-full">
                 <div
                   className={cn(
-                    "h-px flex-1 mx-1 min-w-2",
-                    currentIdx > i ? "bg-foreground/30" : "bg-border",
+                    "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] whitespace-nowrap min-w-0",
+                    activeError && "border-destructive/40 bg-destructive/10 text-destructive font-medium",
+                    isActive && !activeError && "border-primary bg-primary/10 text-primary font-medium",
+                    isDone && "border-border bg-muted text-muted-foreground",
+                    !isActive && !isDone && "border-dashed border-border text-muted-foreground/60",
                   )}
-                />
+                >
+                  {isDone && <Check className="h-3 w-3 shrink-0" />}
+                  {isActive && <CircleDot className="h-3 w-3 shrink-0" />}
+                  {!isActive && !isDone && <Circle className="h-3 w-3 shrink-0" />}
+                  <span className="truncate">{activeError ? status : step}</span>
+                </div>
+                {i < STEPS.length - 1 && (
+                  <div
+                    className={cn(
+                      "h-px flex-1 mx-1 min-w-2 mt-2",
+                      currentIdx > i ? "bg-foreground/30" : "bg-border",
+                    )}
+                  />
+                )}
+              </div>
+              {dateText && (
+                <div className="mt-1 text-[10px] text-muted-foreground whitespace-nowrap">{dateText}</div>
               )}
             </li>
           );
