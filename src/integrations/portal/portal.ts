@@ -104,9 +104,8 @@ export function ssdiToPortalMatter(input: SsdiPortalInput): PortalMatter {
   if (input.retainerSigned === false) {
     actionsNeeded.push({ type: "sign", label: "Sign your representation agreement" });
   }
-  if (input.questionnaireOutstanding) {
-    actionsNeeded.push({ type: "questionnaire", label: "Complete your intake questionnaire" });
-  }
+  // The questionnaire route is not a live form yet, so don't present it as an
+  // action clients can complete. Re-enable this when the full intake form ships.
   for (const r of input.openDocRequests ?? []) {
     actionsNeeded.push({ type: "upload", label: `Upload: ${r.label}`, ref: r.id });
   }
