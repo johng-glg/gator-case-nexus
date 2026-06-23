@@ -496,6 +496,11 @@ function CaseDetail() {
         initialStage={dialogInitialStage}
         initialFields={dialogInitialFields}
         requirementsMap={stageReqs}
+        evidence={{
+          gated: receivedRecordCount === 0,
+          gatedStages: ["Hearing held"],
+          receivedCount: receivedRecordCount,
+        }}
         onSubmit={onAdvance}
       />
     </div>
