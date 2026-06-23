@@ -117,11 +117,12 @@ function DeadlineSweepAdmin() {
       </div>
 
       {latest && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <Stat label="Last run" value={new Date(latest.ran_at).toLocaleString()} />
           <Stat label="Cases scanned" value={String(latest.scanned)} />
           <Stat label="Overdue" value={String(latest.overdue?.length ?? 0)} tone={latest.overdue?.length ? "danger" : undefined} />
           <Stat label="Due ≤ 7 days" value={String(latest.due_soon?.length ?? 0)} tone={latest.due_soon?.length ? "warn" : undefined} />
+          <Stat label="Stalled (past SLA)" value={String(latest.stalled?.length ?? 0)} tone={latest.stalled?.length ? "warn" : undefined} />
         </div>
       )}
 
