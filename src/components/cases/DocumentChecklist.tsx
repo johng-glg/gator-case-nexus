@@ -29,17 +29,32 @@ type DocRow = {
  * (`documentsThroughStage`) — phase groups appear as the case advances and
  * stay visible thereafter. Status is firm-wide and durable: every change
  * upserts `case_document_status` and writes a `case_activity_log` entry.
+ *
+ * `excludeCodes` lets the parent hide rows already rendered elsewhere (e.g.
+ * the SSA intake forms which live in FormsAndDocumentsPanel).
  */
-export function DocumentChecklist({ caseId, stage }: { caseId: string; stage: Stage }) {
+export function DocumentChecklist({
+  caseId,
+  stage,
+  excludeCodes,
+}: {
+  caseId: string;
+  stage: Stage;
+  excludeCodes?: string[];
+}) {
   const listFn = useServerFn(listCaseDocuments);
   const setFn = useServerFn(setDocumentStatus);
   const queryClient = useQueryClient();
 
   const queryKey = ["case-docs", caseId, stage] as const;
 
+  const exclude = new Set(excludeCodes ?? []);
   const q = useQuery({
     queryKey,
-    queryFn: () => listFn({ data: { caseId, currentStage: stage } }),
+    queryFn: async () => {
+      const rows = await listFn({ data: { caseId, currentStage: stage } });
+      return exclude.size ? rows.filter((r: DocRow) => !exclude.has(r.code)) : rows;
+    },
   });
 
   const mutation = useMutation({
