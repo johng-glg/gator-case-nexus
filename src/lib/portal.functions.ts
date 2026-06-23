@@ -77,7 +77,7 @@ export const requestClientPortalSignInLink = createServerFn({ method: "POST" })
     const { data: contactRows, error: contactError } = await supabaseAdmin
       .from("client_portal_contacts")
       .select("zoho_contact_id, email")
-      .ilike("email", email)
+      .eq("email", email)
       .limit(1);
 
     if (contactError) {
@@ -94,7 +94,7 @@ export const requestClientPortalSignInLink = createServerFn({ method: "POST" })
       const { data: legacyRows, error: legacyError } = await supabaseAdmin
         .from("client_portal_links")
         .select("email, zoho_case_id, zoho_engagement_id")
-        .ilike("email", email)
+        .eq("email", email)
         .limit(1);
 
       if (legacyError) {
