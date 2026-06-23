@@ -162,15 +162,24 @@ export function MedicalRecordsPanel({ caseId }: { caseId: string }) {
                     )}
                     <Select
                       value={r.Request_Status}
-                      onValueChange={(v) => statusM.mutate({ requestId: r.id!, status: v as RequestStatus })}
+                      onValueChange={(v) => {
+                        if (v === r.Request_Status) return;
+                        statusM.mutate({ requestId: r.id!, status: v as RequestStatus });
+                      }}
                     >
                       <SelectTrigger className="h-8 w-[140px] text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {REQUEST_STATUSES.map((s) => (
-                          <SelectItem key={s} value={s}>{s}</SelectItem>
-                        ))}
+                        {/* Current status (disabled) + only valid forward transitions */}
+                        <SelectItem value={r.Request_Status} disabled>
+                          {r.Request_Status} (current)
+                        </SelectItem>
+                        {(TRANSITIONS[r.Request_Status as RequestStatus] ?? [])
+                          .filter((s) => s !== r.Request_Status)
+                          .map((s) => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
