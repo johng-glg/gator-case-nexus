@@ -85,7 +85,7 @@ export const requestClientPortalSignInLink = createServerFn({ method: "POST" })
       return { ok: true };
     }
 
-    let contactId = contactRows?.[0]?.zoho_contact_id ?? null;
+    let contactId: string | null = contactRows?.[0]?.zoho_contact_id ?? null;
     let deliveryEmail = contactRows?.[0]?.email ?? email;
     let engagementId: string | undefined;
 
