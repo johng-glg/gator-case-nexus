@@ -109,8 +109,9 @@ export function CaseActionsMenu({ caseId, stage, isAdmin, onInvitePortal }: Prop
                 try {
                   const out = await runPlaybook({ data: { caseId } });
                   await refresh();
-                  const okCount = out.results.filter((r) => r.status === "ok").length;
-                  const errCount = out.results.filter((r) => r.status === "error").length;
+                  const results = out.results as Array<{ status: string }>;
+                  const okCount = results.filter((r) => r.status === "ok").length;
+                  const errCount = results.filter((r) => r.status === "error").length;
                   toast.dismiss(t);
                   if (errCount > 0) toast.warning(`Playbook ran with ${errCount} error(s). Check activity log.`);
                   else toast.success(`Playbook ran — ${okCount} step(s) completed.`);

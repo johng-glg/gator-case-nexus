@@ -707,8 +707,35 @@ export const seedTestCaseData = createServerFn({ method: "POST" })
     // Recompute deadline so Days_To_Deadline / Deadline_At_Risk are fresh.
     const svc = createCaseService({ zoho: makeZohoClient() });
     await svc.recomputeDeadline(context.userId, data.caseId);
+    // Fire the intake playbook (idempotent) so a seeded case looks identical
+    // to one opened via the retainer-signed webhook.
+    try {
+      const { onCaseOpened } = await import("@/integrations/zoho/caseIntakeService");
+      await onCaseOpened({ zoho: makeZohoClient(), caseId: data.caseId });
+    } catch (err) {
+      console.error("[seedTestCaseData] onCaseOpened failed", err);
+    }
     return { ok: true };
   });
+
+// ---------- Manual intake playbook trigger ----------
+
+const runIntakeInput = z.object({ caseId: z.string().regex(/^[A-Za-z0-9_]+$/) });
+
+export const runCaseIntakePlaybook = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => runIntakeInput.parse(data))
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin } = await context.supabase
+      .rpc("has_role", { _user_id: context.userId, _role: "admin" });
+    if (!isAdmin) throw new Error("Forbidden — admin only.");
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { onCaseOpened } = await import("@/integrations/zoho/caseIntakeService");
+    const results = await onCaseOpened({ zoho: makeZohoClient(), caseId: data.caseId });
+    return { ok: true, results };
+  });
+
+
 
 
 
