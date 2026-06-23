@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { sendIntakeForm } from "@/lib/zoho.functions";
+import { sendIntakeForm, markIntakeFormSigned } from "@/lib/zoho.functions";
 import { listCaseDocuments, setDocumentStatus } from "@/lib/caseDocuments.functions";
 import { DOC_STATUSES, type DocStatus } from "@/integrations/zoho/documents";
 import type { Stage } from "@/integrations/zoho/lifecycle";
