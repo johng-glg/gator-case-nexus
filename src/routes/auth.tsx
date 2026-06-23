@@ -52,23 +52,23 @@ function AuthPage() {
     <div className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden"
       style={{ background: "radial-gradient(circle at 50% 40%, oklch(0.97 0.006 95) 0%, oklch(0.94 0.008 95) 70%, oklch(0.90 0.01 95) 100%)" }}
     >
-      <div className="w-full max-w-sm rounded-xl border border-[#C9A84C]/30 bg-primary p-10 shadow-[0_25px_60px_-20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(201,1685,76,0.1)]">
+      <div className="w-full max-w-sm rounded-xl border border-[#F1D391]/30 bg-primary p-10 shadow-[0_25px_60px_-20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(241,211,145,0.1)]">
         <div className="text-center mb-10">
           <img src={gatorLogo.url} alt="Gator" className="mx-auto h-28 w-auto" />
           <h1
-            className="mt-5 text-3xl font-bold tracking-tight text-[#C9A84C]"
+            className="mt-5 text-3xl font-bold tracking-tight text-[#F1D391]"
             style={{ fontFamily: '"Playfair Display", Georgia, serif' }}
           >
             GATOR
           </h1>
-          <p className="mt-1.5 text-[11px] font-medium uppercase tracking-[0.22em] text-[#C9A84C]/70">
+          <p className="mt-1.5 text-[11px] font-medium uppercase tracking-[0.22em] text-[#F1D391]/70">
             Case Platform
           </p>
         </div>
 
         <div className="flex justify-center">
           <Button
-            className="bg-[#C9A84C] hover:bg-[#b8983f] text-[#1a3c2a] font-medium shadow-md rounded-lg px-6 min-w-[240px]"
+            className="bg-[#F1D391] hover:bg-[#e6c47d] text-[#1a3c2a] font-medium shadow-md rounded-lg px-6 min-w-[240px]"
             onClick={signIn}
             disabled={busy}
           >
