@@ -192,11 +192,18 @@ export function makeRetainerService() {
     const { caseId } = await createSsdiCaseOpener(zoho)(ctx);
     if (!caseId) return;
     try {
+      const { fillCaseIdOnLink } = await import("@/integrations/portal/autoInvite.server");
+      await fillCaseIdOnLink({ engagementId: ctx.engagementId, caseId });
+    } catch (err) {
+      console.error("[signClient] fillCaseIdOnLink failed", err);
+    }
+    try {
       const forms = makeFormsService();
       await forms.sendIntakeForms("SERVICE", caseId);
     } catch (err) {
       console.error("[signClient] sendIntakeForms failed", err);
     }
   };
+
   return createRetainerService({ zoho, sign, onRetainerSigned });
 }
