@@ -1,0 +1,1 @@
+ALTER TABLE public.ssdi_deadline_digests ADD COLUMN IF NOT EXISTS stalled jsonb NOT NULL DEFAULT '[]'::jsonb;

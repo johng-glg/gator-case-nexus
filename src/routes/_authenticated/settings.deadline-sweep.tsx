@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { myRoles } from "@/lib/users.functions";
 import { runDeadlineSweepNow } from "@/lib/zoho.functions";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle, Clock, FileWarning } from "lucide-react";
+import { Loader2, AlertTriangle, Clock, FileWarning, TimerOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -28,6 +28,7 @@ interface DigestRow {
   overdue: DigestCase[];
   due_soon: DigestCase[];
   release_expiring: DigestCase[];
+  stalled: StalledCase[];
   error: string | null;
   calendar_created: number | null;
   calendar_updated: number | null;
@@ -44,6 +45,16 @@ interface DigestCase {
   date: string;
   days?: number;
   kind: "overdue" | "due_soon" | "release";
+}
+
+interface StalledCase {
+  id: string;
+  caseNumber: string | null;
+  attorneyName: string | null;
+  stage: string;
+  daysInStage: number;
+  slaDays: number;
+  since: string;
 }
 
 function DeadlineSweepPage() {
@@ -66,7 +77,7 @@ function DeadlineSweepAdmin() {
     setLoading(true);
     const { data, error } = await supabase
       .from("ssdi_deadline_digests")
-      .select("id, ran_at, scanned, updated, overdue, due_soon, release_expiring, error, calendar_created, calendar_updated, calendar_deleted, calendar_errors")
+      .select("id, ran_at, scanned, updated, overdue, due_soon, release_expiring, stalled, error, calendar_created, calendar_updated, calendar_deleted, calendar_errors")
       .order("ran_at", { ascending: false })
       .limit(20);
     if (error) toast.error(error.message);
@@ -106,11 +117,12 @@ function DeadlineSweepAdmin() {
       </div>
 
       {latest && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
           <Stat label="Last run" value={new Date(latest.ran_at).toLocaleString()} />
           <Stat label="Cases scanned" value={String(latest.scanned)} />
           <Stat label="Overdue" value={String(latest.overdue?.length ?? 0)} tone={latest.overdue?.length ? "danger" : undefined} />
           <Stat label="Due ≤ 7 days" value={String(latest.due_soon?.length ?? 0)} tone={latest.due_soon?.length ? "warn" : undefined} />
+          <Stat label="Stalled (past SLA)" value={String(latest.stalled?.length ?? 0)} tone={latest.stalled?.length ? "warn" : undefined} />
         </div>
       )}
 
@@ -120,6 +132,7 @@ function DeadlineSweepAdmin() {
           <Section title="Overdue" icon={<AlertTriangle className="w-4 h-4 text-destructive" />} rows={latest.overdue ?? []} />
           <Section title="Due within 7 days" icon={<Clock className="w-4 h-4 text-amber-500" />} rows={latest.due_soon ?? []} />
           <Section title="Medical release expiring ≤ 30 days" icon={<FileWarning className="w-4 h-4 text-amber-500" />} rows={latest.release_expiring ?? []} />
+          <StalledSection rows={latest.stalled ?? []} />
         </div>
       )}
 
@@ -140,6 +153,7 @@ function DeadlineSweepAdmin() {
                   <th className="text-right px-3 py-2">Overdue</th>
                   <th className="text-right px-3 py-2">Due ≤7d</th>
                   <th className="text-right px-3 py-2">Release ≤30d</th>
+                  <th className="text-right px-3 py-2">Stalled</th>
                   <th className="text-left px-3 py-2">Status</th>
                 </tr>
               </thead>
@@ -152,6 +166,7 @@ function DeadlineSweepAdmin() {
                     <td className="px-3 py-2 text-right tabular-nums">{r.overdue?.length ?? 0}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{r.due_soon?.length ?? 0}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{r.release_expiring?.length ?? 0}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{r.stalled?.length ?? 0}</td>
                     <td className="px-3 py-2 text-xs">
                       {r.error ? <span className="text-destructive">Error: {r.error}</span> : <span className="text-muted-foreground">OK</span>}
                     </td>
@@ -229,6 +244,41 @@ function CalendarSyncLine({ latest }: { latest: DigestRow }) {
       {e > 0 && (
         <span className="ml-2 text-destructive">· {e} error{e === 1 ? "" : "s"}</span>
       )}
+    </div>
+  );
+}
+
+function StalledSection({ rows }: { rows: StalledCase[] }) {
+  if (!rows.length) return null;
+  return (
+    <div>
+      <div className="flex items-center gap-2 text-sm font-medium mb-2">
+        <TimerOff className="w-4 h-4 text-amber-500" />
+        Stalled — past stage SLA ({rows.length})
+      </div>
+      <div className="rounded-md border border-border divide-y divide-border">
+        {rows.map((c) => {
+          const over = c.daysInStage - c.slaDays;
+          const tone = over > c.slaDays ? "text-destructive" : "text-amber-500";
+          return (
+            <div key={c.id} className="px-3 py-2 flex items-center justify-between gap-4 text-sm">
+              <div className="flex items-center gap-3 min-w-0">
+                <Link to="/practices/ssdi/cases/$caseId" params={{ caseId: c.id }} className="font-medium text-primary hover:underline truncate">
+                  {c.caseNumber ?? c.id}
+                </Link>
+                <span className="text-xs text-muted-foreground truncate">{c.stage}</span>
+                {c.attorneyName && <span className="text-xs text-muted-foreground truncate">· {c.attorneyName}</span>}
+              </div>
+              <div className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                in stage since {c.since}
+                <span className={cn("ml-2 font-medium", tone)}>
+                  {c.daysInStage}d / SLA {c.slaDays}d (+{over})
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

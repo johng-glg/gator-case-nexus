@@ -26,7 +26,9 @@ export const Route = createFileRoute("/api/public/deadline-sweep")({
           const { makeZohoClient } = await import("@/integrations/zoho/client.server");
           const { createCaseService } = await import("@/integrations/zoho/caseService");
           const { syncAllOpenCases } = await import("@/integrations/zoho/caseCalendarSync");
-          const result = await createCaseService({ zoho: makeZohoClient() }).runDailyDeadlineSweep();
+          const { buildStageEntryLookup } = await import("@/integrations/zoho/stageEntryLookup.server");
+          const service = createCaseService({ zoho: makeZohoClient() });
+          const result = await service.runDailyDeadlineSweep();
 
           // Reconcile Google Calendar after recomputing deadlines. Calendar failures
           // must not fail the sweep — capture counts and continue.
@@ -38,12 +40,22 @@ export const Route = createFileRoute("/api/public/deadline-sweep")({
             cal.errors++;
           }
 
+          // Stalled-claim SLA scan. Non-fatal: surface as empty list on error.
+          let stalled: Awaited<ReturnType<typeof service.findStalledCases>> = [];
+          try {
+            const lookup = await buildStageEntryLookup();
+            stalled = await service.findStalledCases(lookup);
+          } catch (slaErr) {
+            console.error("[deadline-sweep] stalled scan failed:", slaErr);
+          }
+
           await supabaseAdmin.from("ssdi_deadline_digests").insert({
             scanned: result.scanned,
             updated: result.updated,
             overdue: result.overdue as unknown as never,
             due_soon: result.dueSoon as unknown as never,
             release_expiring: result.releaseExpiring as unknown as never,
+            stalled: stalled as unknown as never,
             calendar_created: cal.created,
             calendar_updated: cal.updated,
             calendar_deleted: cal.deleted,
@@ -57,6 +69,7 @@ export const Route = createFileRoute("/api/public/deadline-sweep")({
             overdueCount: result.overdue.length,
             dueSoonCount: result.dueSoon.length,
             releaseExpiringCount: result.releaseExpiring.length,
+            stalledCount: stalled.length,
             calendar: cal,
           });
         } catch (e) {

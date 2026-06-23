@@ -252,3 +252,27 @@ export function phaseIndex(stage: Stage | string): number {
   const s = normalizeStage(stage as string);
   return Math.max(0, PHASES.findIndex((p) => p.stages.includes(s)));
 }
+
+/**
+ * Stalled-claim SLA — how many days a case should normally remain in a given stage before
+ * staff intervention is expected. Used by the nightly sweep to surface "stalled" cases
+ * (in-stage longer than the SLA with no stage advance recorded). Tunable.
+ *
+ * Stages omitted from this map have NO SLA (e.g. "Closed", terminal decision-approved
+ * stages that immediately transition to Award / NOA).
+ */
+export const STAGE_SLA_DAYS: Partial<Record<Stage, number>> = {
+  "Retained": 30,                       // file SSA application
+  "Application filed": 180,             // SSA initial decision window
+  "Initial decision denied": 45,        // file reconsideration
+  "Reconsideration filed": 180,         // SSA recon decision window
+  "Recon decision denied": 45,          // request ALJ hearing
+  "ALJ hearing requested": 540,         // 12-18mo OHO backlog; flag past 18mo
+  "Hearing scheduled": 120,             // hearing typically within ~120d of scheduling
+  "Hearing held": 90,                   // ALJ decision typically issued in 60-90d
+  "ALJ decision denied": 45,            // Appeals Council decision window
+  "Appeals Council requested": 365,     // AC backlog
+  "AC decision denied": 45,             // federal court decision window
+  "Award / NOA received": 30,           // file fee petition
+  "Fee petition filed": 60,             // OHO fee approval
+};
