@@ -99,7 +99,9 @@ export const zohoQuery = createServerFn({ method: "POST" })
     const needsZohoUser =
       data.name === "myOpenCases" ||
       data.name === "myEngagements" ||
-      data.name === "myDeadlines";
+      data.name === "myDeadlines" ||
+      data.name === "myUpcomingHearings" ||
+      data.name === "myOpenTasks";
     const zohoUserId = needsZohoUser ? await client.currentUserId() : undefined;
     if (needsZohoUser && !zohoUserId) {
       return { rows: [] as ZohoRow[] };
