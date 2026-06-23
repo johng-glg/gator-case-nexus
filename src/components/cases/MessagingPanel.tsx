@@ -190,7 +190,8 @@ function HeldDraft({
   );
 }
 
-function HistoryIcon({ action }: { action: string }) {
+function HistoryIcon({ action, failed }: { action: string; failed?: boolean }) {
+  if (action === "message.sent" && failed) return <X className="h-3.5 w-3.5 text-destructive mt-0.5" />;
   if (action === "message.sent") return <MailCheck className="h-3.5 w-3.5 text-emerald-600 mt-0.5" />;
   if (action === "message.discarded") return <X className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />;
   return <Clock className="h-3.5 w-3.5 text-amber-600 mt-0.5" />;
