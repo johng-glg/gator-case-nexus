@@ -111,14 +111,22 @@ export function ClientDocumentsSection({
                   <input
                     type="file"
                     className="hidden"
+                    disabled={!uploadKey}
                     onChange={(e) => {
                       const f = e.target.files?.[0];
                       if (f) handlePick(r.id, f);
                       e.target.value = "";
                     }}
                   />
-                  <Button asChild size="sm" disabled={uploadingId === r.id}>
-                    <span><Upload className="h-3 w-3 mr-1" />{uploadingId === r.id ? "Uploading…" : "Upload"}</span>
+                  <Button asChild size="sm" disabled={!uploadKey || uploadingId === r.id}>
+                    <span>
+                      <Upload className="h-3 w-3 mr-1" />
+                      {uploadingId === r.id
+                        ? "Uploading…"
+                        : uploadKey
+                        ? "Upload"
+                        : "Available after your case opens"}
+                    </span>
                   </Button>
                 </label>
               </div>
