@@ -37,6 +37,7 @@ import { ActionCenter } from "@/components/cases/ActionCenter";
 import { FormsAndDocumentsPanel } from "@/components/cases/FormsAndDocumentsPanel";
 import { AppealFormsPanel } from "@/components/cases/AppealFormsPanel";
 import { NoaFeeCard } from "@/components/cases/NoaFeeCard";
+import { HearingPrepPanel } from "@/components/cases/HearingPrepPanel";
 import { CollapsibleSection } from "@/components/cases/CollapsibleSection";
 
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
@@ -372,6 +373,15 @@ function CaseDetail() {
           noaDate={(record.Notice_of_Award_Date as string | null | undefined) ?? null}
         />
       )}
+
+      {/* Hearing prep — ODAR exhibit index, on hearing-related stages */}
+      <HearingPrepPanel
+        caseId={caseId}
+        stage={stage}
+        caseNumber={record.Case_Number as string | undefined}
+        clientName={clientName}
+        hearingDate={(record.ALJ_Hearing_Scheduled_Date as string | null | undefined) ?? null}
+      />
 
       {/* Forms & documents — unified panel */}
       <div ref={formsSectionRef}>
