@@ -10,6 +10,7 @@ import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 export type ActivityAction =
   | "stage.advance"
+  | "stage.evidence_override"
   | "deadline.update"
   | "cost.create"
   | "cost.delete"
