@@ -23,6 +23,7 @@ export interface PortalKeyDate {
 /** Everything — and only — what a client may see about one matter. */
 export interface PortalMatter {
   id: string; // engagement id
+  caseId?: string; // practice case id, when the matter has an opened case
   practice: Practice;
   title: string; // plain-language ("Social Security Disability")
   statusLabel: string; // plain-language status ("Awaiting the initial decision")
@@ -58,6 +59,7 @@ export function buildPortalView(matters: PortalMatter[]): PortalView {
 /** Client-SAFE inputs only. The Lovable server passes just these — never fees/notes/strategy. */
 export interface SsdiPortalInput {
   engagementId: string;
+  caseId?: string;
   stage: string; // Current_Stage (or "Retained" pre-case at engagement level)
   retainerSigned?: boolean;
   hearingDate?: string; // ALJ_Hearing_Scheduled_Date
@@ -119,6 +121,7 @@ export function ssdiToPortalMatter(input: SsdiPortalInput): PortalMatter {
 
   return {
     id: input.engagementId,
+    caseId: input.caseId,
     practice: "SSDI",
     title: "Social Security Disability",
     statusLabel,
