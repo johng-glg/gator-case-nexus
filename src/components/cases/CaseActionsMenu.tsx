@@ -55,22 +55,24 @@ export function CaseActionsMenu({ caseId, engagementId, stage, isAdmin }: Props)
   const invite = useServerFn(inviteClientToPortal);
   const getLink = useServerFn(getPortalLinkForCase);
   const [busy, setBusy] = useState<string | null>(null);
-  const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState("");
 
   const linkQ = useQuery({
     queryKey: ["portal-link", caseId],
     queryFn: () => getLink({ data: { caseId } }),
-    enabled: inviteOpen,
   });
   const linkedEmail = linkQ.data?.link?.email as string | undefined;
 
   const inviteMut = useMutation({
-    mutationFn: () => invite({ data: { email: inviteEmail.trim(), caseId, engagementId } }),
-    onSuccess: () => {
-      toast.success(`Portal invite sent to ${inviteEmail.trim()}.`);
+    // No email — the server resolves it from the Contact on file in Zoho.
+    mutationFn: () => invite({ data: { caseId, engagementId } }),
+    onSuccess: (res) => {
+      const sentTo = (res as { email?: string } | undefined)?.email ?? linkedEmail ?? "the client";
+      toast.success(
+        (res as { resent?: boolean } | undefined)?.resent
+          ? `Re-sent portal sign-in link to ${sentTo}.`
+          : `Portal invite sent to ${sentTo}.`,
+      );
       qc.invalidateQueries({ queryKey: ["portal-link", caseId] });
-      setInviteOpen(false);
     },
     onError: (e: unknown) => {
       toast.error(e instanceof Error ? e.message : "Couldn't send invite.");
