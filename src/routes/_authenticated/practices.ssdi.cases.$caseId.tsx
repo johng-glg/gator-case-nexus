@@ -35,6 +35,8 @@ import { CaseActionsMenu } from "@/components/cases/CaseActionsMenu";
 import { NextStepCard } from "@/components/cases/NextStepCard";
 import { ActionCenter } from "@/components/cases/ActionCenter";
 import { FormsAndDocumentsPanel } from "@/components/cases/FormsAndDocumentsPanel";
+import { AppealFormsPanel } from "@/components/cases/AppealFormsPanel";
+import { NoaFeeCard } from "@/components/cases/NoaFeeCard";
 import { CollapsibleSection } from "@/components/cases/CollapsibleSection";
 
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
@@ -358,6 +360,18 @@ function CaseDetail() {
           onAdvance={(nextStage) => openAdvance(nextStage)}
         />
       </div>
+
+      {/* Appeal forms — surfaces when the case is on a denial stage */}
+      <AppealFormsPanel stage={stage} record={record as Record<string, unknown>} clientName={clientName} />
+
+      {/* Notice of Award fee reconciliation — surfaces once an NoA date exists */}
+      {((record.Notice_of_Award_Date as string | undefined) || stage === "Award / NOA received" || stage === "Fee petition filed") && (
+        <NoaFeeCard
+          caseId={caseId}
+          backPay={backPay}
+          noaDate={(record.Notice_of_Award_Date as string | null | undefined) ?? null}
+        />
+      )}
 
       {/* Forms & documents — unified panel */}
       <div ref={formsSectionRef}>
