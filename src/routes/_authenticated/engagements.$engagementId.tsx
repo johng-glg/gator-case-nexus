@@ -342,16 +342,13 @@ function RetainerPanel({
       <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
         <div>
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Retainer</div>
-          <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
-            {sentDate && <span>Sent {fmtWhen(sentDate)}</span>}
-            {viewedDate && <span>Viewed {fmtWhen(viewedDate)}</span>}
-            {signedDate && <span>Signed {fmtWhen(signedDate)}</span>}
-            {link && (
+          {link && (
+            <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
               <a href={link} target="_blank" rel="noreferrer" className="text-primary hover:underline">
                 View document
               </a>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           {onMarkSigned && canMarkSigned && (
