@@ -77,7 +77,7 @@ function DeadlineSweepAdmin() {
     setLoading(true);
     const { data, error } = await supabase
       .from("ssdi_deadline_digests")
-      .select("id, ran_at, scanned, updated, overdue, due_soon, release_expiring, error, calendar_created, calendar_updated, calendar_deleted, calendar_errors")
+      .select("id, ran_at, scanned, updated, overdue, due_soon, release_expiring, stalled, error, calendar_created, calendar_updated, calendar_deleted, calendar_errors")
       .order("ran_at", { ascending: false })
       .limit(20);
     if (error) toast.error(error.message);
