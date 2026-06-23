@@ -63,6 +63,7 @@ export function FormsAndDocumentsPanel({
   retainerSignedDate,
 }: Props) {
   const send = useServerFn(sendIntakeForm);
+  const markSigned = useServerFn(markIntakeFormSigned);
   const listFn = useServerFn(listCaseDocuments);
   const setFn = useServerFn(setDocumentStatus);
   const qc = useQueryClient();
