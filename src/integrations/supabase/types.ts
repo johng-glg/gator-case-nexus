@@ -151,7 +151,7 @@ export type Database = {
           invited_by: string | null
           updated_at: string
           user_id: string
-          zoho_case_id: string
+          zoho_case_id: string | null
           zoho_engagement_id: string | null
         }
         Insert: {
@@ -161,7 +161,7 @@ export type Database = {
           invited_by?: string | null
           updated_at?: string
           user_id: string
-          zoho_case_id: string
+          zoho_case_id?: string | null
           zoho_engagement_id?: string | null
         }
         Update: {
@@ -171,7 +171,7 @@ export type Database = {
           invited_by?: string | null
           updated_at?: string
           user_id?: string
-          zoho_case_id?: string
+          zoho_case_id?: string | null
           zoho_engagement_id?: string | null
         }
         Relationships: []

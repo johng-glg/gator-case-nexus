@@ -1,0 +1,2 @@
+ALTER TABLE public.client_portal_links ALTER COLUMN zoho_case_id DROP NOT NULL;
+CREATE INDEX IF NOT EXISTS client_portal_links_engagement_idx ON public.client_portal_links (zoho_engagement_id) WHERE zoho_case_id IS NULL;
