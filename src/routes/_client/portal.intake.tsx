@@ -33,9 +33,9 @@ function PortalIntakePage() {
           it&rsquo;s ready. In the meantime, you can upload documents or
           message your team from your portal.
         </p>
-        {caseId && (
+        {matterRef && (
           <p className="text-xs text-muted-foreground/70">
-            Case reference: <code>{caseId}</code>
+            Reference: <code>{matterRef}</code>
           </p>
         )}
         <Link
