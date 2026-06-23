@@ -6,11 +6,9 @@ import {
   Container,
   Head,
   Heading,
-  Hr,
   Html,
   Link,
   Preview,
-  Section,
   Text,
 } from '@react-email/components'
 
@@ -20,98 +18,60 @@ interface InviteEmailProps {
   confirmationUrl: string
 }
 
-// Gator Law SSDI — Client portal welcome (used by autoInvitePortal at lead conversion).
-// Passwordless: one-tap link signs the client into /portal — no password to set, no account to create.
 export const InviteEmail = ({
+  siteName,
   siteUrl,
   confirmationUrl,
-}: InviteEmailProps) => {
-  const portalUrl = `${siteUrl.replace(/\/$/, '')}/client-auth`
-  return (
-    <Html lang="en" dir="ltr">
-      <Head />
-      <Preview>Your secure case portal is ready — sign in with one tap</Preview>
-      <Body style={main}>
-        <Container style={container}>
-          <Text style={brand}>GATOR LAW</Text>
-          <Heading style={h1}>Welcome to your case portal</Heading>
-          <Text style={text}>
-            Your attorney at Gator Law set up a secure portal where you can review
-            documents, sign forms, message your team, and track your Social Security
-            Disability case.
-          </Text>
-          <Text style={text}>
-            No password needed — just tap the button below to sign in.
-          </Text>
-          <Section style={{ textAlign: 'center', margin: '28px 0' }}>
-            <Button style={button} href={confirmationUrl}>
-              Open my portal
-            </Button>
-          </Section>
-          <Hr style={hr} />
-          <Text style={smallHeading}>Coming back later?</Text>
-          <Text style={text}>
-            Bookmark this address — anytime you visit, enter your email and we'll send
-            a fresh one-tap sign-in link:
-            <br />
-            <Link href={portalUrl} style={link}>
-              {portalUrl}
-            </Link>
-          </Text>
-          <Text style={footer}>
-            If you didn't expect this email, you can safely ignore it — nothing will
-            happen. Questions? Reply to this email and we'll get back to you.
-          </Text>
-        </Container>
-      </Body>
-    </Html>
-  )
-}
+}: InviteEmailProps) => (
+  <Html lang="en" dir="ltr">
+    <Head />
+    <Preview>You've been invited to join {siteName}</Preview>
+    <Body style={main}>
+      <Container style={container}>
+        <Heading style={h1}>You've been invited</Heading>
+        <Text style={text}>
+          You've been invited to join{' '}
+          <Link href={siteUrl} style={link}>
+            <strong>{siteName}</strong>
+          </Link>
+          . Click the button below to accept the invitation and create your
+          account.
+        </Text>
+        <Button style={button} href={confirmationUrl}>
+          Accept Invitation
+        </Button>
+        <Text style={footer}>
+          If you weren't expecting this invitation, you can safely ignore this
+          email.
+        </Text>
+      </Container>
+    </Body>
+  </Html>
+)
 
 export default InviteEmail
 
-const FOREST = '#1f4d36'
-
 const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '24px 28px', maxWidth: '560px' }
-const brand = {
-  fontSize: '11px',
-  letterSpacing: '0.22em',
-  color: FOREST,
-  fontWeight: 'bold' as const,
-  margin: '0 0 14px',
-}
+const container = { padding: '20px 25px' }
 const h1 = {
-  fontSize: '24px',
+  fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: FOREST,
-  margin: '0 0 18px',
-  lineHeight: '1.2',
+  color: '#000000',
+  margin: '0 0 20px',
 }
 const text = {
-  fontSize: '15px',
-  color: '#3a3a3a',
-  lineHeight: '1.55',
-  margin: '0 0 16px',
+  fontSize: '14px',
+  color: '#55575d',
+  lineHeight: '1.5',
+  margin: '0 0 25px',
 }
-const smallHeading = {
-  fontSize: '13px',
-  fontWeight: 'bold' as const,
-  color: FOREST,
-  letterSpacing: '0.05em',
-  margin: '0 0 6px',
-  textTransform: 'uppercase' as const,
-}
-const link = { color: FOREST, textDecoration: 'underline' }
+const link = { color: 'inherit', textDecoration: 'underline' }
 const button = {
-  backgroundColor: FOREST,
+  backgroundColor: '#000000',
   color: '#ffffff',
-  fontSize: '15px',
-  fontWeight: 'bold' as const,
+  fontSize: '14px',
   borderRadius: '8px',
-  padding: '14px 28px',
+  padding: '12px 20px',
   textDecoration: 'none',
-  display: 'inline-block',
 }
-const hr = { border: 'none', borderTop: '1px solid #e6e6e0', margin: '28px 0 20px' }
-const footer = { fontSize: '12px', color: '#888888', lineHeight: '1.5', margin: '28px 0 0' }
+const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
