@@ -94,6 +94,16 @@ export function FormsAndDocumentsPanel({
     onError: (e) => toast.error(e instanceof Error ? e.message : "Send failed"),
   });
 
+  const markSignedMut = useMutation({
+    mutationFn: (args: { code: "SSA-1696" | "SSA-827" | "SSA-1693" }) =>
+      markSigned({ data: { caseId, code: args.code } }),
+    onSuccess: (_d, args) => {
+      toast.success(`${args.code} marked as signed`);
+      qc.invalidateQueries({ queryKey: ["case", caseId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Update failed"),
+  });
+
   const get = (k: string) => record?.[k] as string | boolean | undefined;
   const releaseExpiringSoon = Boolean(get("Release_Expiring_Soon"));
 
