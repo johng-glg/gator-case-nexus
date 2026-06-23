@@ -1,3 +1,4 @@
+import React, { Fragment } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -409,36 +410,35 @@ function RetainerPanel({
                 : step === "Signed" && signedDate
                   ? fmtWhen(signedDate)
                   : undefined;
-          return (
-            <li key={step} className="flex flex-col items-center flex-1 last:flex-none min-w-0">
-              <div className="flex items-center w-full">
-                <div
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] whitespace-nowrap min-w-0",
-                    activeError && "border-destructive/40 bg-destructive/10 text-destructive font-medium",
-                    isActive && !activeError && "border-primary bg-primary text-primary-foreground font-semibold shadow-sm",
-                    isDone && "border-border bg-muted text-muted-foreground",
-                    !isActive && !isDone && "border-dashed border-border text-muted-foreground/60",
-                  )}
-                >
-                  {isDone && <Check className="h-3 w-3 shrink-0" />}
-                  {isActive && <CircleDot className="h-3 w-3 shrink-0" />}
-                  {!isActive && !isDone && <Circle className="h-3 w-3 shrink-0" />}
-                  <span className="truncate">{activeError ? status : step}</span>
-                </div>
-                {i < STEPS.length - 1 && (
-                  <div
-                    className={cn(
-                      "h-px flex-1 mx-1 min-w-2 mt-2",
-                      currentIdx > i ? "bg-foreground/30" : "bg-border",
-                    )}
-                  />
+          const box = (
+            <li key={step} className="flex flex-col items-center shrink-0 min-w-fit">
+              <div
+                className={cn(
+                  "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] whitespace-nowrap",
+                  activeError && "border-destructive/40 bg-destructive/10 text-destructive font-medium",
+                  isActive && !activeError && "border-primary bg-primary text-primary-foreground font-semibold shadow-sm",
+                  isDone && "border-border bg-muted text-muted-foreground",
+                  !isActive && !isDone && "border-dashed border-border text-muted-foreground/60",
                 )}
+              >
+                {isDone && <Check className="h-3 w-3 shrink-0" />}
+                {isActive && <CircleDot className="h-3 w-3 shrink-0" />}
+                {!isActive && !isDone && <Circle className="h-3 w-3 shrink-0" />}
+                <span className="truncate">{activeError ? status : step}</span>
               </div>
               {dateText && (
                 <div className="mt-1 text-[10px] text-muted-foreground whitespace-nowrap">{dateText}</div>
               )}
             </li>
+          );
+          if (i === STEPS.length - 1) return box;
+          return (
+            <Fragment key={`group-${step}`}>
+              {box}
+              <li key={`${step}-line`} className="flex-1 min-w-2 mt-2">
+                <div className={cn("h-px w-full", currentIdx > i ? "bg-foreground/30" : "bg-border")} />
+              </li>
+            </Fragment>
           );
         })}
       </ol>
