@@ -60,6 +60,10 @@ function CaseDetail() {
   const [dialogInitialStage, setDialogInitialStage] = useState<Stage | undefined>(undefined);
   const [dialogInitialFields, setDialogInitialFields] = useState<Record<string, string> | undefined>(undefined);
   const tasksSectionRef = useRef<HTMLDivElement | null>(null);
+  const recordsSectionRef = useRef<HTMLDivElement | null>(null);
+  const deadlineSectionRef = useRef<HTMLDivElement | null>(null);
+  const messagingSectionRef = useRef<HTMLDivElement | null>(null);
+  const formsSectionRef = useRef<HTMLDivElement | null>(null);
   const [docsRequestNonce, setDocsRequestNonce] = useState(0);
 
   // Admin check (gates the overflow menu admin tools).
@@ -307,6 +311,7 @@ function CaseDetail() {
         <ActionCenter
           caseId={caseId}
           engagementId={engagementId}
+          currentStage={stage}
           ssa1696Status={ssa1696Status}
           ssa827Status={ssa827Status}
           openTaskCount={openTaskCount}
@@ -316,6 +321,11 @@ function CaseDetail() {
           }}
           onRequestDocuments={triggerDocsRequest}
           onScrollToTasks={() => tasksSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onScrollToRecords={() => recordsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onScrollToDeadline={() => deadlineSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onScrollToMessaging={() => messagingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onScrollToForms={() => formsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onAdvance={(nextStage) => openAdvance(nextStage)}
         />
       </div>
 
@@ -437,9 +447,13 @@ function CaseDetail() {
         <DocumentRequestsPanel caseId={caseId} engagementId={engagementId} />
       </div>
 
-      <MedicalRecordsPanel caseId={caseId} />
+      <div ref={recordsSectionRef}>
+        <MedicalRecordsPanel caseId={caseId} />
+      </div>
 
-      <MessagingPanel caseId={caseId} />
+      <div ref={messagingSectionRef}>
+        <MessagingPanel caseId={caseId} />
+      </div>
 
       <ActivityPanel caseId={caseId} engagementId={engagementId} />
 
