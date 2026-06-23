@@ -7,6 +7,7 @@ import { ChevronLeft, AlertTriangle, Loader2, Check, CircleDot, Circle } from "l
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { normalizeStage } from "@/integrations/zoho/lifecycle";
+import { InvitePortalButton } from "@/components/portal/InvitePortalButton";
 
 
 export const Route = createFileRoute("/_authenticated/engagements/$engagementId")({
