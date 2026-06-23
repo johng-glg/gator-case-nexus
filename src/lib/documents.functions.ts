@@ -25,17 +25,6 @@ function sanitizeName(name: string): string {
   return trimmed.replace(/[^\w.\- ]+/g, "_") || "file";
 }
 
-async function getClientCaseId(userId: string): Promise<string | null> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("client_portal_links")
-    .select("zoho_case_id, zoho_engagement_id")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return data?.zoho_case_id ?? null;
-}
-
 async function getEngagementClientId(engagementId: string): Promise<string | null> {
   const { makeZohoClient } = await import("@/integrations/zoho/client.server");
   const zoho = makeZohoClient().service();
