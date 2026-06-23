@@ -71,7 +71,7 @@ async function enqueuePortalAuthEmail(args: {
   });
 
   const { error } = await supabaseAdmin.rpc("enqueue_email", {
-    queue_name: "auth_emails",
+    queue_name: "transactional_emails",
     payload: {
       message_id: messageId,
       to: args.email,
@@ -82,6 +82,7 @@ async function enqueuePortalAuthEmail(args: {
       text,
       purpose: "transactional",
       label: args.emailType,
+      idempotency_key: `portal-${args.emailType}-${args.email}-${messageId}`,
       queued_at: new Date().toISOString(),
     },
   });
