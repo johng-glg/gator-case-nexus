@@ -244,6 +244,17 @@ export function createZohoClient(cfg: ZohoConfig) {
           .map((u) => ({ id: u.id!, full_name: u.full_name ?? u.email ?? u.id!, email: u.email ?? "" }));
       },
 
+      /** Diagnostic: list field API names + types for a module via /settings/fields. */
+      async listModuleFields(module: string): Promise<Array<{ api_name: string; field_label: string; data_type: string }>> {
+        const r = await request<{ fields?: Array<{ api_name?: string; field_label?: string; data_type?: string }> }>(
+          actorKey, "GET", `/settings/fields?module=${encodeURIComponent(module)}`,
+        );
+        return (r.fields ?? []).map((f) => ({
+          api_name: f.api_name ?? "",
+          field_label: f.field_label ?? "",
+          data_type: f.data_type ?? "",
+        }));
+      },
 
       /** Create up to any number of records; chunked to 100/call. Attributed to this actor. */
       async createRecords(module: string, records: ZohoRecord[]): Promise<unknown[]> {
