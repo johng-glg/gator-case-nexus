@@ -30,6 +30,7 @@ import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/em
 import { Route as ApiPublicMedicalRecordsSweepRouteImport } from './routes/api/public/medical-records-sweep'
 import { Route as ApiPublicDeadlineSweepRouteImport } from './routes/api/public/deadline-sweep'
 import { Route as ClientPortalIntakeRouteImport } from './routes/_client/portal.intake'
+import { Route as ClientPortalMatterIdRouteImport } from './routes/_client/portal.$matterId'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings.users'
 import { Route as AuthenticatedSettingsTrustExportRouteImport } from './routes/_authenticated/settings.trust-export'
 import { Route as AuthenticatedSettingsStageRequirementsRouteImport } from './routes/_authenticated/settings.stage-requirements'
@@ -165,6 +166,11 @@ const ApiPublicDeadlineSweepRoute = ApiPublicDeadlineSweepRouteImport.update({
 const ClientPortalIntakeRoute = ClientPortalIntakeRouteImport.update({
   id: '/intake',
   path: '/intake',
+  getParentRoute: () => ClientPortalRoute,
+} as any)
+const ClientPortalMatterIdRoute = ClientPortalMatterIdRouteImport.update({
+  id: '/$matterId',
+  path: '/$matterId',
   getParentRoute: () => ClientPortalRoute,
 } as any)
 const AuthenticatedSettingsUsersRoute =
@@ -358,6 +364,7 @@ export interface FileRoutesByFullPath {
   '/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
   '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
+  '/portal/$matterId': typeof ClientPortalMatterIdRoute
   '/portal/intake': typeof ClientPortalIntakeRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/public/medical-records-sweep': typeof ApiPublicMedicalRecordsSweepRoute
@@ -405,6 +412,7 @@ export interface FileRoutesByTo {
   '/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
   '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
+  '/portal/$matterId': typeof ClientPortalMatterIdRoute
   '/portal/intake': typeof ClientPortalIntakeRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/public/medical-records-sweep': typeof ApiPublicMedicalRecordsSweepRoute
@@ -457,6 +465,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
   '/_authenticated/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
+  '/_client/portal/$matterId': typeof ClientPortalMatterIdRoute
   '/_client/portal/intake': typeof ClientPortalIntakeRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/public/medical-records-sweep': typeof ApiPublicMedicalRecordsSweepRoute
@@ -508,6 +517,7 @@ export interface FileRouteTypes {
     | '/settings/stage-requirements'
     | '/settings/trust-export'
     | '/settings/users'
+    | '/portal/$matterId'
     | '/portal/intake'
     | '/api/public/deadline-sweep'
     | '/api/public/medical-records-sweep'
@@ -555,6 +565,7 @@ export interface FileRouteTypes {
     | '/settings/stage-requirements'
     | '/settings/trust-export'
     | '/settings/users'
+    | '/portal/$matterId'
     | '/portal/intake'
     | '/api/public/deadline-sweep'
     | '/api/public/medical-records-sweep'
@@ -606,6 +617,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/stage-requirements'
     | '/_authenticated/settings/trust-export'
     | '/_authenticated/settings/users'
+    | '/_client/portal/$matterId'
     | '/_client/portal/intake'
     | '/api/public/deadline-sweep'
     | '/api/public/medical-records-sweep'
@@ -798,6 +810,13 @@ declare module '@tanstack/react-router' {
       path: '/intake'
       fullPath: '/portal/intake'
       preLoaderRoute: typeof ClientPortalIntakeRouteImport
+      parentRoute: typeof ClientPortalRoute
+    }
+    '/_client/portal/$matterId': {
+      id: '/_client/portal/$matterId'
+      path: '/$matterId'
+      fullPath: '/portal/$matterId'
+      preLoaderRoute: typeof ClientPortalMatterIdRouteImport
       parentRoute: typeof ClientPortalRoute
     }
     '/_authenticated/settings/users': {
@@ -1114,10 +1133,12 @@ const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
 interface ClientPortalRouteChildren {
+  ClientPortalMatterIdRoute: typeof ClientPortalMatterIdRoute
   ClientPortalIntakeRoute: typeof ClientPortalIntakeRoute
 }
 
 const ClientPortalRouteChildren: ClientPortalRouteChildren = {
+  ClientPortalMatterIdRoute: ClientPortalMatterIdRoute,
   ClientPortalIntakeRoute: ClientPortalIntakeRoute,
 }
 
