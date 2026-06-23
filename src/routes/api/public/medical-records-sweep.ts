@@ -14,12 +14,9 @@ export const Route = createFileRoute("/api/public/medical-records-sweep")({
     handlers: {
       POST: async ({ request }) => {
         const auth = request.headers.get("authorization") ?? "";
-        const apikey = request.headers.get("apikey") ?? "";
-        const expected = `Bearer ${process.env.DEADLINE_SWEEP_SECRET ?? ""}`;
-        const anonKey = process.env.SUPABASE_PUBLISHABLE_KEY ?? process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? "";
-        const authorized =
-          (process.env.DEADLINE_SWEEP_SECRET && auth === expected) ||
-          (Boolean(anonKey) && apikey === anonKey);
+        const secret = process.env.DEADLINE_SWEEP_SECRET ?? "";
+        const expected = `Bearer ${secret}`;
+        const authorized = Boolean(secret) && auth === expected;
         if (!authorized) return new Response("Unauthorized", { status: 401 });
 
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
