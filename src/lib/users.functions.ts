@@ -19,7 +19,7 @@ export type AdminUser = {
 export const listUsers = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<AdminUser[]> => {
-    await assertAdmin(context as any);
+    await assertAdmin(context as any, "listUsers");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: list, error } = await supabaseAdmin.auth.admin.listUsers({
       page: 1,
@@ -63,7 +63,7 @@ export const setUserRole = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context as any);
+    await assertAdmin(context as any, "setUserRole");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     if (data.grant) {
       const { error } = await supabaseAdmin
@@ -95,7 +95,7 @@ export const inviteUser = createServerFn({ method: "POST" })
     z.object({ email: z.string().email(), asAdmin: z.boolean() }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context as any);
+    await assertAdmin(context as any, "inviteUser");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: invited, error } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       data.email,
