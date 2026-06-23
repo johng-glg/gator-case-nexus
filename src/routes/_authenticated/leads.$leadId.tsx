@@ -73,6 +73,15 @@ function LeadDetail() {
       convertFn({ data: { leadId, override } }),
     onSuccess: (res) => {
       toast.success("Converted to engagement");
+      if (res.portalInvite?.sent && res.portalInvite.email) {
+        toast.success(`Portal invite sent to ${res.portalInvite.email}.`);
+      } else if (res.portalInvite && !res.portalInvite.sent) {
+        toast.warning(
+          res.portalInvite.email
+            ? `Couldn't auto-send portal invite to ${res.portalInvite.email}. You can re-send from the case page.`
+            : "No email on file — portal invite skipped.",
+        );
+      }
       qc.invalidateQueries({ queryKey: ["allLeads"] });
       if (res.conflict?.status === "Conflict found") {
         setConvertedResult({ engagementId: res.engagementId, conflictMatches: res.conflict.matches ?? [] });
@@ -83,6 +92,7 @@ function LeadDetail() {
     },
     onError: (e: any) => toast.error(e.message ?? "Conversion failed"),
   });
+
 
   if (!validId) return <div className="p-8 text-sm text-destructive-foreground">Invalid lead id.</div>;
   if (q.isLoading) return <div className="p-8 text-sm text-muted-foreground">Loading lead…</div>;

@@ -61,6 +61,7 @@ function PortalPage() {
   }
 
   const c = data.case;
+  const isPending = "pending" in data && data.pending === true;
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
@@ -77,7 +78,17 @@ function PortalPage() {
         </Button>
       </header>
 
-      {!c ? (
+      {isPending ? (
+        <div className="rounded-lg border border-border bg-card p-6 space-y-2">
+          <div className="font-display text-xl">Welcome to Gator Law</div>
+          <p className="text-sm text-muted-foreground">
+            Your account is set up. Your case will appear here once you've signed the
+            retainer agreement your attorney sent. If you haven't received it, check
+            your email or contact the firm.
+          </p>
+        </div>
+      ) : !c ? (
+
         <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
           We couldn't load your case right now. Please try again in a few minutes.
         </div>
@@ -144,7 +155,7 @@ function PortalPage() {
             </section>
           ) : null}
 
-          <ClientDocumentsSection caseId={data.caseId} />
+          {data.caseId ? <ClientDocumentsSection caseId={data.caseId} /> : null}
 
           <ClientPortalSettings />
 

@@ -46,9 +46,10 @@ async function getClientLink(
     .eq("user_id", userId)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  if (!data) return null;
+  if (!data || !data.zoho_case_id) return null;
   return { case_id: data.zoho_case_id, engagement_id: data.zoho_engagement_id };
 }
+
 
 /** Staff-only: create a new document request for a case. */
 export const createDocumentRequest = createServerFn({ method: "POST" })
