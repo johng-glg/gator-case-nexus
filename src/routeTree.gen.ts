@@ -22,6 +22,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDeadlinesRouteImport } from './routes/_authenticated/deadlines'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedConnectZohoRouteImport } from './routes/_authenticated/connect-zoho'
+import { Route as ClientPortalIndexRouteImport } from './routes/_client/portal.index'
 import { Route as AuthenticatedSettingsIndexRouteImport } from './routes/_authenticated/settings.index'
 import { Route as AuthenticatedLeadsIndexRouteImport } from './routes/_authenticated/leads.index'
 import { Route as AuthenticatedEngagementsIndexRouteImport } from './routes/_authenticated/engagements.index'
@@ -124,6 +125,11 @@ const AuthenticatedConnectZohoRoute =
     path: '/connect-zoho',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ClientPortalIndexRoute = ClientPortalIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => ClientPortalRoute,
+} as any)
 const AuthenticatedSettingsIndexRoute =
   AuthenticatedSettingsIndexRouteImport.update({
     id: '/',
@@ -373,6 +379,7 @@ export interface FileRoutesByFullPath {
   '/engagements/': typeof AuthenticatedEngagementsIndexRoute
   '/leads/': typeof AuthenticatedLeadsIndexRoute
   '/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/portal/': typeof ClientPortalIndexRoute
   '/practices/ssdi/intake': typeof AuthenticatedPracticesSsdiIntakeRoute
   '/api/public/webhooks/zoho-sign': typeof ApiPublicWebhooksZohoSignRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
@@ -398,7 +405,6 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/today': typeof AuthenticatedTodayRoute
-  '/portal': typeof ClientPortalRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
@@ -421,6 +427,7 @@ export interface FileRoutesByTo {
   '/engagements': typeof AuthenticatedEngagementsIndexRoute
   '/leads': typeof AuthenticatedLeadsIndexRoute
   '/settings': typeof AuthenticatedSettingsIndexRoute
+  '/portal': typeof ClientPortalIndexRoute
   '/practices/ssdi/intake': typeof AuthenticatedPracticesSsdiIntakeRoute
   '/api/public/webhooks/zoho-sign': typeof ApiPublicWebhooksZohoSignRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
@@ -474,6 +481,7 @@ export interface FileRoutesById {
   '/_authenticated/engagements/': typeof AuthenticatedEngagementsIndexRoute
   '/_authenticated/leads/': typeof AuthenticatedLeadsIndexRoute
   '/_authenticated/settings/': typeof AuthenticatedSettingsIndexRoute
+  '/_client/portal/': typeof ClientPortalIndexRoute
   '/_authenticated/practices/ssdi/intake': typeof AuthenticatedPracticesSsdiIntakeRoute
   '/api/public/webhooks/zoho-sign': typeof ApiPublicWebhooksZohoSignRoute
   '/api/zoho/connect/callback': typeof ApiZohoConnectCallbackRoute
@@ -526,6 +534,7 @@ export interface FileRouteTypes {
     | '/engagements/'
     | '/leads/'
     | '/settings/'
+    | '/portal/'
     | '/practices/ssdi/intake'
     | '/api/public/webhooks/zoho-sign'
     | '/api/zoho/connect/callback'
@@ -551,7 +560,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/deadlines'
     | '/today'
-    | '/portal'
     | '/email/unsubscribe'
     | '/clients/$clientId'
     | '/engagements/$engagementId'
@@ -574,6 +582,7 @@ export interface FileRouteTypes {
     | '/engagements'
     | '/leads'
     | '/settings'
+    | '/portal'
     | '/practices/ssdi/intake'
     | '/api/public/webhooks/zoho-sign'
     | '/api/zoho/connect/callback'
@@ -626,6 +635,7 @@ export interface FileRouteTypes {
     | '/_authenticated/engagements/'
     | '/_authenticated/leads/'
     | '/_authenticated/settings/'
+    | '/_client/portal/'
     | '/_authenticated/practices/ssdi/intake'
     | '/api/public/webhooks/zoho-sign'
     | '/api/zoho/connect/callback'
@@ -755,6 +765,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/connect-zoho'
       preLoaderRoute: typeof AuthenticatedConnectZohoRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_client/portal/': {
+      id: '/_client/portal/'
+      path: '/'
+      fullPath: '/portal/'
+      preLoaderRoute: typeof ClientPortalIndexRouteImport
+      parentRoute: typeof ClientPortalRoute
     }
     '/_authenticated/settings/': {
       id: '/_authenticated/settings/'
@@ -1135,11 +1152,13 @@ const AuthenticatedRouteRouteWithChildren =
 interface ClientPortalRouteChildren {
   ClientPortalMatterIdRoute: typeof ClientPortalMatterIdRoute
   ClientPortalIntakeRoute: typeof ClientPortalIntakeRoute
+  ClientPortalIndexRoute: typeof ClientPortalIndexRoute
 }
 
 const ClientPortalRouteChildren: ClientPortalRouteChildren = {
   ClientPortalMatterIdRoute: ClientPortalMatterIdRoute,
   ClientPortalIntakeRoute: ClientPortalIntakeRoute,
+  ClientPortalIndexRoute: ClientPortalIndexRoute,
 }
 
 const ClientPortalRouteWithChildren = ClientPortalRoute._addFileChildren(
