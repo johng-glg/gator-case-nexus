@@ -6,17 +6,10 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAdmin } from "@/lib/rbac";
 
 const KEY = z.enum(["SIGN_FIRM", "SERVICE"]);
 
-async function assertAdmin(ctx: { supabase: any; userId: string }) {
-  const { data, error } = await ctx.supabase.rpc("has_role", {
-    _user_id: ctx.userId,
-    _role: "admin",
-  });
-  if (error) throw new Error(error.message);
-  if (!data) throw new Error("Forbidden: admin only");
-}
 
 export type FirmConnectionStatus = {
   key: "SIGN_FIRM" | "SERVICE";
@@ -34,7 +27,7 @@ export type FirmConnectionStatus = {
 export const listFirmConnections = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<FirmConnectionStatus[]> => {
-    await assertAdmin(context as any);
+    await assertAdmin(context as any, "listFirmConnections");
     const { getCredentialsService, getFirmConnections } = await import(
       "@/integrations/zoho/credentialsClient.server"
     );
@@ -64,7 +57,7 @@ export const saveFirmClientCreds = createServerFn({ method: "POST" })
         .parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context as any);
+    await assertAdmin(context as any, "saveFirmClientCreds");
     const { saveFirmClientCredentials } = await import(
       "@/integrations/zoho/credentialsClient.server"
     );
@@ -78,7 +71,7 @@ export const exchangeFirmGrantCode = createServerFn({ method: "POST" })
     z.object({ key: KEY, code: z.string().min(8) }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context as any);
+    await assertAdmin(context as any, "exchangeFirmGrantCode");
     const { getCredentialsService } = await import(
       "@/integrations/zoho/credentialsClient.server"
     );
@@ -93,7 +86,7 @@ export const testFirmConnection = createServerFn({ method: "POST" })
     z.object({ key: KEY }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context as any);
+    await assertAdmin(context as any, "testFirmConnection");
     const { getCredentialsService } = await import(
       "@/integrations/zoho/credentialsClient.server"
     );
@@ -107,7 +100,7 @@ export const revokeFirmConnection = createServerFn({ method: "POST" })
     z.object({ key: KEY }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context as any);
+    await assertAdmin(context as any, "revokeFirmConnection");
     const { getCredentialsService } = await import(
       "@/integrations/zoho/credentialsClient.server"
     );
@@ -124,7 +117,7 @@ export const getSignTemplateActions = createServerFn({ method: "POST" })
     z.object({ templateId: z.string().regex(/^[0-9]+$/) }).parse(d),
   )
   .handler(async ({ data, context }) => {
-    await assertAdmin(context as any);
+    await assertAdmin(context as any, "getSignTemplateActions");
     const { getCredentialsService } = await import(
       "@/integrations/zoho/credentialsClient.server"
     );

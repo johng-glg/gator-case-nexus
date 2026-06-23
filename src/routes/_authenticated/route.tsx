@@ -23,10 +23,26 @@ export const Route = createFileRoute("/_authenticated")({
       await supabase.auth.signOut();
       throw redirect({ to: "/auth" });
     }
-    return { user: data.user };
+    // Load this user's app_role rows (RLS allows reading own).
+    const { data: roleRows } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", data.user.id);
+    const roles = ((roleRows ?? []) as Array<{ role: "admin" | "staff" }>).map(
+      (r) => r.role,
+    );
+    // Anyone reaching the firm shell must hold staff OR admin. Domain check
+    // above already filters portal clients, but this is the defense-in-depth
+    // rule the server-side asserts also enforce.
+    if (!roles.includes("staff") && !roles.includes("admin")) {
+      await supabase.auth.signOut();
+      throw redirect({ to: "/auth" });
+    }
+    return { user: data.user, roles };
   },
   component: AuthedLayout,
 });
+
 
 function AuthedLayout() {
   const { user } = Route.useRouteContext();

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
@@ -10,6 +10,12 @@ import { zohoQuery } from "@/lib/zoho.functions";
 import { downloadCsv, toCsv } from "@/lib/csv";
 
 export const Route = createFileRoute("/_authenticated/settings/trust-export")({
+  beforeLoad: ({ context }) => {
+    const roles = (context as { roles?: string[] }).roles ?? [];
+    if (!roles.includes("admin")) {
+      throw redirect({ to: "/today" });
+    }
+  },
   head: () => ({ meta: [{ title: "Trust accounting export — Gator" }] }),
   component: TrustExportPage,
 });

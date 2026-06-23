@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAdmin } from "@/lib/rbac";
 
 const FieldSpecSchema = z.object({
   field: z.string().min(1),
@@ -40,6 +41,7 @@ export const saveStageRequirements = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => SaveInputSchema.parse(data))
   .handler(async ({ data, context }) => {
+    await assertAdmin(context as any, "saveStageRequirements");
     const { error } = await context.supabase
       .from("ssdi_stage_requirements")
       .upsert(
@@ -55,6 +57,7 @@ export const resetStageRequirements = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: unknown) => z.object({ stage: z.string().min(1) }).parse(data))
   .handler(async ({ data, context }) => {
+    await assertAdmin(context as any, "resetStageRequirements");
     const { error } = await context.supabase
       .from("ssdi_stage_requirements")
       .delete()

@@ -4,6 +4,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAdmin } from "@/lib/rbac";
 
 const FIRM_DOMAIN = "gatorlawpc.com";
 
@@ -154,7 +155,7 @@ export const setMessagingSettings = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d) => setSettingsInput.parse(d))
   .handler(async ({ data, context }) => {
-    if (!isStaff(actorEmail(context.claims) ?? undefined)) throw new Error("Forbidden");
+    await assertAdmin(context as any, "setMessagingSettings");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await (supabaseAdmin as any)
       .from("messaging_settings")
