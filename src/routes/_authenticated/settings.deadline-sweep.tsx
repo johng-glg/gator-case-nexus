@@ -247,3 +247,38 @@ function CalendarSyncLine({ latest }: { latest: DigestRow }) {
     </div>
   );
 }
+
+function StalledSection({ rows }: { rows: StalledCase[] }) {
+  if (!rows.length) return null;
+  return (
+    <div>
+      <div className="flex items-center gap-2 text-sm font-medium mb-2">
+        <TimerOff className="w-4 h-4 text-amber-500" />
+        Stalled — past stage SLA ({rows.length})
+      </div>
+      <div className="rounded-md border border-border divide-y divide-border">
+        {rows.map((c) => {
+          const over = c.daysInStage - c.slaDays;
+          const tone = over > c.slaDays ? "text-destructive" : "text-amber-500";
+          return (
+            <div key={c.id} className="px-3 py-2 flex items-center justify-between gap-4 text-sm">
+              <div className="flex items-center gap-3 min-w-0">
+                <Link to="/practices/ssdi/cases/$caseId" params={{ caseId: c.id }} className="font-medium text-primary hover:underline truncate">
+                  {c.caseNumber ?? c.id}
+                </Link>
+                <span className="text-xs text-muted-foreground truncate">{c.stage}</span>
+                {c.attorneyName && <span className="text-xs text-muted-foreground truncate">· {c.attorneyName}</span>}
+              </div>
+              <div className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">
+                in stage since {c.since}
+                <span className={cn("ml-2 font-medium", tone)}>
+                  {c.daysInStage}d / SLA {c.slaDays}d (+{over})
+                </span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
