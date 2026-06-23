@@ -249,6 +249,33 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialSt
             </div>
           )}
 
+          {evidenceBlocks && (
+            <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-50/50 dark:bg-amber-900/10 p-3">
+              <div className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                Evidence not on file — attorney override required
+              </div>
+              <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
+                Zero medical records have been received for this case. Advancing into{" "}
+                <strong>{selected}</strong> without evidence is unusual; provide a reason and
+                check the box to proceed.
+              </p>
+              <Textarea
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                placeholder="Reason (e.g. records arriving today; opinion-letter strategy; …)"
+              />
+              <label className="flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200">
+                <input
+                  type="checkbox"
+                  checked={overrideAck}
+                  onChange={(e) => setOverrideAck(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>I'm advancing without evidence on file and I'll log the reason.</span>
+              </label>
+            </div>
+          )}
+
           {(() => {
             const missing = requirements.filter((r) => r.required && !fields[r.field]);
             const showMissing = !!selected && missing.length > 0;
@@ -286,7 +313,8 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialSt
             disabled={
               !selected ||
               busy ||
-              requirements.some((r) => r.required && !fields[r.field])
+              requirements.some((r) => r.required && !fields[r.field]) ||
+              !overrideOk
             }
           >
             {busy ? "Advancing…" : "Advance"}
