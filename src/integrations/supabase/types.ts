@@ -143,6 +143,39 @@ export type Database = {
         }
         Relationships: []
       }
+      client_portal_contacts: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          intake_state: Json
+          invited_by: string | null
+          updated_at: string
+          user_id: string
+          zoho_contact_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          intake_state?: Json
+          invited_by?: string | null
+          updated_at?: string
+          user_id: string
+          zoho_contact_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          intake_state?: Json
+          invited_by?: string | null
+          updated_at?: string
+          user_id?: string
+          zoho_contact_id?: string
+        }
+        Relationships: []
+      }
       client_portal_links: {
         Row: {
           created_at: string

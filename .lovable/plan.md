@@ -1,104 +1,125 @@
-# SSDI case page reorg + intake automations
+# Client Portal v2 — firm-wide, multi-practice, client-scoped
 
-Two parallel workstreams. They share nothing structurally and can land in one pass.
+Supersedes the portal-invite/automation pieces of the earlier reorg. Keeps the SSDI case page work intact.
 
----
+## 1. The contract (`src/integrations/portal/portal.ts`)
 
-## Part A — Case page reorg (`practices.ssdi.cases.$caseId.tsx`)
+Drop in the file you supplied verbatim: `PortalMatter`, `PortalAction`, `PortalKeyDate`, `PortalView`, `buildPortalView`, `SsdiPortalInput`, `ssdiToPortalMatter`, `ssdiPortalAdapter`. This is the only place client-facing data is shaped — fees / notes / strategy can't reach the portal because the adapter only accepts the allowlisted input shape.
 
-Rebuild the page top-down so above the fold is **orient + act**, and reference data is pushed below.
+Add stub adapters (return `statusLabel: "Dispute in progress"`, no key dates, no actions) so the shell is provably practice-agnostic:
+- `src/integrations/portal/adapters/fcra.ts` → `"Credit report dispute"`
+- `src/integrations/portal/adapters/fdcpa.ts` → `"Debt-collection dispute"`
+- `src/integrations/portal/adapters/tcpa.ts` → `"TCPA matter"`
+- `src/integrations/portal/adapters/classAction.ts` → `"Class action"` (no client-specific data ever)
 
-### A1. Header
-- Keep: case # / client link + primary **Advance stage**.
-- Move into a new `<CaseActionsMenu>` overflow (⋯) component: *Invite to portal*, *Recompute deadline*, *Fee petition draft*, *Seed test data*, and a new **Run intake playbook** (admin-only — gated by `has_role('admin')`; "Seed test data" already hidden in prod via the same gate).
+## 2. Schema — re-key portal to Contact, not Case
 
-### A2. Status strip (NEW — `<CaseStatusStrip>`)
-A single thin row directly below the header:
-`current-stage chip · deadline countdown (green ≥30d / amber 8-29d / red ≤7d or overdue) · flag chips`
-Flag chips derived from the case record:
-- Retainer ✓ (from engagement Retainer_Status)
-- SSA-1696 *pending* / *signed*
-- SSA-827 *needs attestation* (when status = Not sent) / *expiring* (Release_Expiring_Soon)
-- Open tasks (N) — links to tasks panel
-- Welcome email *queued* / *sent*
+New migration. The current `client_portal_links` is case-keyed and breaks the "one login, all matters" model.
 
-When no appeal clock is active: show "No appeal deadline active".
+- New table `public.client_portal_contacts`: `user_id` (unique), `email`, `zoho_contact_id` (unique, required), `invited_by`, timestamps. RLS: a user reads only their own row.
+- Backfill: copy each existing `client_portal_links.zoho_engagement_id` → look up its `Client` (Contact) in Zoho → insert into `client_portal_contacts`. Done by a one-shot server fn the user kicks off (logged to activity). Old table kept for one release as a fallback, then dropped.
+- Grants: `authenticated` SELECT-only on own row; `service_role` ALL.
 
-### A3. Lifecycle rail
-Keep `<StageRail>`, but inside the "Intake & filing" phase add a collapsible **Show sub-steps** disclosure (default collapsed). Other phases unchanged.
+## 3. Auth — passwordless, OTP code OR magic link, 30-day session
 
-### A4. Above-the-fold action row (two-column grid)
-- **Left — Appeal Deadline**: keep `<DeadlinePanel>` only when an appeal clock is running. When stage = "Retained" and no clock, render a new `<NextStepCard>`: "File SSA application" + the required fields (SSA_Claim_Number) with an Advance-to-Application-filed shortcut.
-- **Right — Action Center (NEW `<ActionCenter>`)**: prioritized vertical list, each row = label + inline button:
-  - Send SSA-1696 (hidden when Signed) — wraps current SsaFormsPanel send action
-  - SSA-827 — *needs attestation* row (always until Signed) — opens the attestation confirm dialog
-  - Open tasks (N) → jumps to tasks panel
-  - Request documents from client (opens DocumentRequestsPanel new-request dialog)
-  - Invite to portal (only if no portal link yet)
+Stays passwordless (no passwords). Both delivery modes from one screen.
 
-### A5. Demote Case facts (collapsible `<details>` or shadcn `<Collapsible>` default closed)
-New "Case facts" section containing the existing **SSA case data** and **Lifecycle dates** panels, side-by-side inside it. Removed from ATF grid.
+`/client-auth` (rewrite the existing route):
+- Two-step form: email → "we sent a link AND a 6-digit code. Click the link OR type the code here."
+- Server uses `supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })`. Supabase's email OTP delivers both a link and a 6-digit code in the same template.
+- Code entry calls `supabase.auth.verifyOtp({ email, token, type: "email" })`.
+- "Remember this device" checkbox (default on) → set Supabase session `expires_in` to 30 days via project auth config (`session_lifetime`); current default is fine, just document it.
+- Update the branded `magic-link.tsx` email template to show both the button and the 6-digit code (`{{ .Token }}`) clearly.
+- Invite email (`invite.tsx`) already passwordless after the prior turn — leave content, just point CTA to `/portal`.
 
-### A6. Unify Forms & Documents — kill duplication
-New `<FormsAndDocumentsPanel>` (replaces `SsaFormsPanel` + the form rows inside `DocumentChecklist`):
-- One row per form (SSA-1696, SSA-827, SSA-1693 if firm uses it, retainer): columns = **E-sign status** (Not sent/Sent/Signed) · **Checklist status** (To do/Sent/Received/Filed) · **Action** (Send/Resend).
-- `DocumentChecklist` keeps non-form items (medical records, photo ID, etc.) only.
+## 4. Loader — assemble PortalView for a Contact
 
-### A7. Drop the standalone HIPAA panel
-Show `Release_Signed_Date` + `Release_Expiration_Date` + `Release_Expiring_Soon` flag inline on the SSA-827 row of the new Forms panel. Delete the separate HIPAA `<Panel>`.
+New server fn `getMyPortalView` in `src/lib/portal.functions.ts` (replaces `getMyClientPortal`):
 
-### A8. De-duplicate Notice Date
-Canonical editable field lives on the new Case facts section. Remove `Notice_Date` from the "SSA case data" duplicate rendering and from the Deadline panel's inline display — both render it read-only by reading the same field from the case record. (The editable input stays in the Advance dialog as before.)
+1. Look up `client_portal_contacts` row for `context.userId` → `zoho_contact_id`. If none → `{ linked: false }`.
+2. Service-role Zoho client: list **Engagements** where `Client.id = zoho_contact_id`, fields `id, Name, Practice, Stage, Current_Stage, Retainer_Signed, Assigned_Attorney, Modified_Time, Linked_SSDI_Case`.
+3. For each engagement, dispatch to the practice adapter:
+   - `SSDI`: load the linked `SSDI_Cases` record (allowlisted fields only — `Current_Stage`, `ALJ_Hearing_Scheduled_Date`, `Assigned_Attorney`), look up `document_requests` (open only, project to `{id, label}`), check if intake questionnaire is outstanding (a new boolean on `client_portal_contacts.questionnaire_completed_at` keyed per matter — stored as `jsonb` map `{engagementId: ISO}` to keep migrations small). Pass into `ssdiToPortalMatter`.
+   - Other practices: call the stub adapter with `engagementId`, `title`, `statusLabel` only.
+4. `buildPortalView(matters)` → return to client.
 
-### A9. Empty-state polish
-Wrap Costs / MedicalRecordsPanel / MessagingPanel / ActivityPanel in a `<CollapsibleSection emptyWhen={...}>` helper. When empty, render a single-line summary ("No costs recorded — Add cost") instead of a full empty card. Expanded automatically when content exists.
+All raw Zoho records stay server-side; only `PortalMatter[]` crosses the wire.
 
-### File touches (Part A)
-- Edit: `src/routes/_authenticated/practices.ssdi.cases.$caseId.tsx` (top-to-bottom rewrite of the JSX layout; logic untouched).
-- New components in `src/components/cases/`: `CaseActionsMenu.tsx`, `CaseStatusStrip.tsx`, `NextStepCard.tsx`, `ActionCenter.tsx`, `FormsAndDocumentsPanel.tsx`, `CollapsibleSection.tsx`.
-- Edit: `StageRail.tsx` to add the sub-step disclosure inside the Intake phase.
-- Edit: `DocumentChecklist.tsx` to drop SSA forms (they move to the new panel).
-- Delete from layout: the standalone HIPAA Panel + duplicate Notice Date rows.
+## 5. Shell UI
 
----
+New route layout: keep `_client/portal.tsx` as the landing, add `_client/portal.$matterId.tsx` as the matter detail. `_client/route.tsx` stays the auth gate.
 
-## Part B — `onCaseOpened(caseId)` intake playbook
+**Landing (`/portal`):**
+- 1 matter → `<Navigate to="/portal/$matterId" replace />`.
+- Multiple matters →
+  - Top card **"What we need from you"** rendering `actionsSummary` (matter title + action label, deep-link to that matter's detail with an anchor for the action).
+  - Matters list, one card each: practice chip, `title`, `statusLabel`, "Action needed" badge when `actionsNeeded.length > 0`.
 
-### B1. New module `src/integrations/zoho/caseIntakeService.ts`
-Exports `onCaseOpened({ caseId, actor }: { caseId: string; actor: string })`. Each step is wrapped in try/catch + activity-log entry, and gated by an idempotency check so re-running is safe. Steps:
+**Matter detail (`/portal/$matterId`):**
+- Header: practice chip, title, attorney.
+- Status block: `statusLabel` + a 5-step progress indicator for SSDI matters (Retained → Application → Decision → Hearing → Award), greyed-out for other practices.
+- **"What we need from you"** with action chips (sign / upload / questionnaire / info); each routes to its handler (retainer e-sign URL, doc upload modal scoped to the matter, `/portal/intake?engagement=...`).
+- **Documents**: re-scope `ClientDocumentsSection` to take an `engagementId`-first key (falls back to `caseId` for SSDI). Show only this matter's uploads + open requests.
+- **Messages**: thread-per-engagement; reuse the existing messaging service with `engagementId` as the thread key (already what it does).
+- **Key dates**: render `keyDates` only.
+- **Your team**: attorney name from the adapter; no other staff.
 
-1. **SSA-1696 e-sign** — `formsService.sendForm(actor, caseId, "SSA-1696")` only when `SSA1696_Status === "Not sent"`. Uses the existing forms service so the email goes out via Zoho Sign exactly like manual send.
-2. **SSA-827 prepare** — no send. Ensure `SSA827_Status` defaults to `"Not sent"`; surface "needs attestation" via the Action Center flag.
-3. **Task bundle** from `HOOKS["Retained"].tasks` plus the three new tasks the spec calls out (Verify insured status/DLI +3, Confirm work/SGA status +3, Collect medical provider list +7, File SSA application +14). Add the three to `HOOKS["Retained"]` so the lifecycle table stays the single source of truth. Resolve due dates via existing `DueRule` resolver (`fieldPlus Date_Opened`). Idempotent: skip if a Task with the same Subject already exists on the case.
-4. **Auto-invite to portal** — reuse `autoInvitePortal` from `src/integrations/portal/autoInvite.server.ts` (added previously). Idempotent: skip if `client_portal_links` row exists for the engagement; otherwise create, then call `fillCaseIdOnLink({engagementId, caseId})` so the link points at the new case immediately.
-5. **Welcome-packet email** — new React Email template `src/lib/email-templates/ssdi-welcome-packet.tsx` registered in `registry.ts`. Subject: *Welcome to Gator Law — your Social Security disability case*. Body covers what's next, rough timeline, and the dos/don'ts (keep seeing doctors, don't exceed SGA, list every provider, forward every SSA letter, use the portal). Sent via the existing `/lovable/email/transactional/send` route with `idempotencyKey: ssdi-welcome-${caseId}` so retries don't double-send. Skip if `email_send_log` already has a row for that key.
-6. **Intake questionnaire email** — second template `ssdi-intake-questionnaire.tsx` with a CTA link to `/portal/intake?case={caseId}`. Same idempotency-key pattern. The portal page itself (the questionnaire form) is a separate ticket; this turn ships the email + a stub portal route that records the case id and renders "Questionnaire coming soon" so the link doesn't 404. *Flagged in the plan as a stub — let me know if you want the full form built in this same pass.*
-7. **Document request** — insert one `document_requests` row via `supabaseAdmin` with `caseId`, `engagementId`, `label = "Standard SSDI intake documents"`, `instructions` enumerating the items (photo ID, recent medical/work records, prior SSA correspondence). Idempotent: skip if a request with the same label already exists on the case.
-8. **SSA-1693** — only when firm setting `fee_vehicle === "SSA-1693"` (default off). Reuses `formsService.sendForm(actor, caseId, "SSA-1693")` once `gatorIntakeForms` exposes it.
-9. **Carry forward lead/screener data** — read the engagement → lead → `parseScreenerBlock(lead.Description)` and update `SSDI_Cases` with `Claim_Type`, `Onset_Date`, `Last_Worked_Date`, `Primary_Impairment`, `Disability_Type`. Idempotent: only write fields currently blank on the case.
-10. **Internal notification** — insert a `case_activity_log` row of `action="case.opened"` with `summary = "New SSDI case opened: {client}"` (already used by ActivityPanel — no new UI surface needed). If the assigned attorney/paralegal has an email on file in Zoho Users, also queue a transactional `internal-case-opened.tsx` email.
-11. **Activity log** — every step above logs success/failure into `case_activity_log` so the audit trail is one-stop.
+**Account (`/portal/account`):**
+- Notification settings (existing `ClientPortalSettings`) + "SMS — coming soon" disabled toggle. Contact info read-only.
 
-### B2. Settings → Intake Automations panel
-- New route: `src/routes/_authenticated/settings.intake-automations.tsx`.
-- New table `firm_intake_settings` (single row, keyed by `firm_id = 'default'`): toggles for `welcome_email`, `questionnaire_email`, `auto_portal_invite`, `send_ssa1693`, `internal_notification`. Defaults: all on except `send_ssa1693`.
-- `onCaseOpened` reads this row at the start and skips disabled steps.
+Visual rules: forest-green primary, large body text (`text-base` default, `text-lg` for status), generous spacing — same brand tokens as `/portal` today.
 
-### B3. Wiring
-- **Retainer-signed webhook**: in `signClient.server.ts` `onRetainerSigned`, after the existing `fillCaseIdOnLink` call, call `onCaseOpened({caseId, actor: SERVICE_ACTOR})` instead of `sendIntakeForms` (the playbook subsumes it). Existing `sendIntakeForms` call removed.
-- **Manual trigger**: new `runCaseOpenedPlaybook` server fn (admin-only via `has_role`). The Case page header overflow ("Run intake playbook") and the `Seed test data` flow both call it, so seeded cases get the same emails/tasks.
+## 6. Automation split — `onConversion` vs `onCaseOpened`
 
-### B4. Acceptance verification
-- New unit test `src/integrations/zoho/__tests__/case-intake.test.ts` covering: first run fires all steps; second run is a no-op; SSA-827 stays Not sent; toggling `send_ssa1693` off skips it.
-- Manual smoke: open a seeded case, click Run intake playbook, confirm Activity log shows the 1696 send, welcome email, questionnaire email, doc request, 4 tasks, portal invite — then click again, log shows "already done" entries with no duplicate side effects.
+Move the early-onboarding steps out of `onCaseOpened` into a new playbook so the portal is ready the moment a Lead converts.
 
-### File touches (Part B)
-- New: `src/integrations/zoho/caseIntakeService.ts`, `src/lib/email-templates/ssdi-welcome-packet.tsx`, `src/lib/email-templates/ssdi-intake-questionnaire.tsx`, `src/lib/email-templates/internal-case-opened.tsx`, `src/routes/_authenticated/settings.intake-automations.tsx`, `src/routes/_client/portal.intake.tsx` (stub), `src/integrations/zoho/__tests__/case-intake.test.ts`.
-- Edit: `src/integrations/zoho/lifecycle.ts` (add the 3 extra tasks to `HOOKS["Retained"]`), `src/integrations/zoho/formsService.ts` (expose SSA-1693 in `gatorIntakeForms`), `src/integrations/zoho/signClient.server.ts` (call playbook instead of `sendIntakeForms`), `src/lib/email-templates/registry.ts` (register 3 templates), `src/lib/zoho.functions.ts` (add `runCaseOpenedPlaybook`, hook into `seedTestCaseData`).
-- Migration: create `firm_intake_settings` with grants + RLS (staff read/update via `has_role('admin')`), seed one default row.
+New `src/integrations/zoho/conversionPlaybook.ts` — `onConversion({ engagementId, contactId, actor })`:
+1. Auto-invite to portal (uses new `client_portal_contacts` keyed by `zoho_contact_id`).
+2. Welcome email (`ssdi-welcome-packet` repurposed as practice-agnostic `client-welcome-packet`, or branched by `engagement.Practice`).
+3. Intake questionnaire email + open `document_requests` row scoped by `engagement_id`.
+4. Carry-forward screener data (where already wired).
+5. All idempotent + `firm_intake_settings`-gated (reuses the same toggle config).
 
----
+`convertLead` in `src/lib/zoho.functions.ts` calls `onConversion` instead of the inline `autoInvitePortal` block. `onCaseOpened` keeps SSDI-only items: SSA-1696 e-sign, SSA-827 prepare, task bundle, internal notification. It no longer sends welcome/questionnaire/docrequest/portal invite (logs them as `skipped — handled at conversion`).
 
-## Open question I'd like to confirm before building
+The retainer-signed hook (`signClient.server.ts`) still calls `onCaseOpened`; nothing changes there.
 
-**#6 Intake questionnaire** is the only step that's not just plumbing — it's a whole structured form (disability history, work history, meds, providers) with persistence that seeds the Medical Records module. Plan above ships the **email + stub portal page** so the rest of the playbook is end-to-end working; I'd build the actual form as a follow-up. If you want the full questionnaire form in this same pass, say so and I'll expand step B1.6 with the form schema, persistence table, and Medical Records seeding logic.
+## 7. Allowlist enforcement
+
+- Type signature: every adapter accepts a narrow input interface, not the raw Zoho record. Loader explicitly projects fields before calling the adapter — reviewers can grep for the projection list per practice.
+- Test: add `src/integrations/portal/__tests__/portal.test.ts` checking that the SSDI adapter ignores `fee_amount`, `internal_notes`, `strategy_notes` if accidentally passed (TypeScript already rejects them; runtime test asserts no leak even if cast `as any`).
+
+## Acceptance
+
+- Two-matter client (SSDI + stub FCRA): logs in, lands on multi-matter view, "what we need" combines both.
+- Single-matter client: lands directly in matter detail.
+- Just-converted (no case yet) client: matter shows status `"Action needed — sign your representation agreement"`, action chip routes to e-sign, questionnaire + document-request actions visible.
+- SSDI denial stage maps to `"…we're handling your appeal"`, never `"DENIED"`.
+- Grep the loader output: no fee / note / strategy field reaches `PortalMatter`.
+- OTP code path verified end-to-end (paste code into form, lands in `/portal`).
+
+## Files
+
+**New**
+- `src/integrations/portal/portal.ts` (the contract you supplied)
+- `src/integrations/portal/adapters/{ssdi,fcra,fdcpa,tcpa,classAction}.ts`
+- `src/integrations/portal/__tests__/portal.test.ts`
+- `src/integrations/zoho/conversionPlaybook.ts`
+- `src/routes/_client/portal.$matterId.tsx`
+- `src/routes/_client/portal.account.tsx`
+- Migration: `client_portal_contacts` + backfill helper.
+
+**Edited**
+- `src/routes/client-auth.tsx` — add OTP code input.
+- `src/lib/email-templates/magic-link.tsx` — include 6-digit code.
+- `src/routes/_client/portal.tsx` — landing (multi-matter or redirect).
+- `src/lib/portal.functions.ts` — replace `getMyClientPortal` with `getMyPortalView`; rewrite `inviteClientToPortal` and `autoInvitePortal` against `client_portal_contacts`.
+- `src/integrations/portal/autoInvite.server.ts` — operate on contact id.
+- `src/integrations/zoho/caseIntakeService.ts` — strip steps 4–7, 9; keep SSA-1696, SSA-827, tasks, internal notification.
+- `src/lib/zoho.functions.ts` — `convertLead` calls `onConversion`.
+- `src/components/portal/ClientDocumentsSection.tsx` — engagement-first scoping.
+
+## Open questions
+
+- **OTP vs magic link only** — confirm both delivery (link + 6-digit code in same email) is what you want, vs link-only with the code as a fallback in a separate "trouble?" flow. Plan currently assumes both in one email.
+- **Backfill cutover** — keep `client_portal_links` for one release as fallback, or drop in the same migration?
