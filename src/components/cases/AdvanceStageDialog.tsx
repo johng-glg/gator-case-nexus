@@ -52,7 +52,7 @@ export const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
     { field: "ALJ_Name", label: "ALJ name", type: "text" },
   ],
   "Hearing held": [
-    { field: "ALJ_Hearing_Held_Date", label: "Hearing held date", type: "date", required: true },
+    { field: "Hearing_Held_Date", label: "Hearing held date", type: "date", required: true },
   ],
   "ALJ decision denied": [
     { field: "Notice_Date", label: "Notice date", type: "date", required: true },
