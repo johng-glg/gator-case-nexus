@@ -137,12 +137,19 @@ function EngagementDetail() {
             </span>
           </div>
         </div>
-        <Link
-          to="/engagements"
-          className="inline-flex shrink-0 items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="h-4 w-4" /> Back to engagements
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <InvitePortalButton
+            engagementId={engagementId}
+            contactId={clientId}
+            knownEmail={typeof contact?.Email === "string" ? contact.Email : undefined}
+          />
+          <Link
+            to="/engagements"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" /> Back to engagements
+          </Link>
+        </div>
       </header>
 
 
