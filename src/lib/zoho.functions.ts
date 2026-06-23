@@ -275,7 +275,43 @@ export const saveLeadScreener = createServerFn({ method: "POST" })
       payload.SMS_Consent_Source = data.smsConsent.source ?? "app:screener";
     }
 
-    await makeZohoClient().as(context.userId).updateRecords("Leads", [payload]);
+    const zoho = makeZohoClient().as(context.userId);
+    await zoho.updateRecords("Leads", [payload]);
+
+    // Verify the screener fields actually persisted — Zoho silently ignores
+    // unknown field API names on update, so we confirm by reading back.
+    const verifyFields = [
+      "Working_Above_SGA", "Monthly_Earnings", "Is_Blind", "Receiving_Treatment",
+      "Meets_12mo_Duration", "Claim_Type", "Date_Last_Insured", "Already_Represented",
+      "Date_of_Birth", "Current_Level", "Appeal_Deadline_Date", "Primary_Impairment",
+      "Lead_Tier", "Lead_Score", "Screener_Knockouts", "Is_Urgent",
+    ];
+    let verified: Record<string, unknown> | null = null;
+    try {
+      verified = (await zoho.getRecord("Leads", data.leadId, verifyFields)) as Record<string, unknown> | null;
+    } catch {
+      // If verify-read fails (e.g. unknown field name → 400), surface the actual
+      // missing fields to the caller instead of failing silently.
+      const meta = await zoho.listModuleFields("Leads").catch(() => []);
+      const present = new Set(meta.map((f) => f.api_name));
+      const missing = verifyFields.filter((f) => !present.has(f));
+      throw new Error(
+        missing.length
+          ? `Zoho Leads is missing custom fields: ${missing.join(", ")}. Create them in Zoho (Setup → Modules → Leads).`
+          : `Could not verify Leads update — check field API names.`,
+      );
+    }
+    if (verified && verified.Lead_Tier !== result.tier) {
+      // Update was accepted but Lead_Tier didn't stick → field is missing or read-only.
+      const meta = await zoho.listModuleFields("Leads").catch(() => []);
+      const present = new Set(meta.map((f) => f.api_name));
+      const missing = verifyFields.filter((f) => !present.has(f));
+      throw new Error(
+        missing.length
+          ? `Zoho accepted the update but these field API names don't exist on Leads: ${missing.join(", ")}. Create them in Zoho.`
+          : `Zoho accepted the update but Lead_Tier didn't persist (got ${JSON.stringify(verified.Lead_Tier)}). Field may be read-only.`,
+      );
+    }
     return { result: toJson<Json>(result) };
   });
 
