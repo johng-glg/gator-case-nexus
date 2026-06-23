@@ -39,7 +39,7 @@ function mockFetch(handlers: Array<(url: string, init: any) => any>) {
   return { f, calls };
 }
 
-(async () => {
+await (async () => {
   // ---- exchangeGrantCode stores refresh + caches access ----
   {
     const s = stores();

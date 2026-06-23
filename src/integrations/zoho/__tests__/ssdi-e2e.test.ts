@@ -44,7 +44,7 @@ function memoryZoho() {
 }
 function mockSign() { let n = 0; return { async sendTemplate() { return { requestId: "REQ" + (++n), signLink: "https://s/" + n }; } }; }
 
-(async () => {
+await (async () => {
   const { zoho, db } = memoryZoho();
   const sign = mockSign();
   const intake = createIntakeService({ zoho, now: NOW });

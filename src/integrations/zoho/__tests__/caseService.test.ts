@@ -18,7 +18,7 @@ let pass = 0, fail = 0;
 const ok = (l: string, c: boolean) => { console.log(`${c ? "✓" : "✗"} ${l}`); c ? pass++ : fail++; };
 const NOW = () => new Date(Date.UTC(2026, 5, 1)); // 2026-06-01
 
-(async () => {
+await (async () => {
   // case currently at "Initial decision pending", we deny it with a notice date
   const { client, calls } = mockZoho({ Current_Stage: "Initial decision pending" });
   const svc = createCaseService({ zoho: client, now: NOW });

@@ -18,7 +18,7 @@ function mocks(sentKeys: string[] = []) {
 }
 const ctx = { recipient: { email: "jane@x.com" }, consent: {} as ConsentRecord, tokens: { first_name: "Jane", hearing_date: "Sept 10" } };
 
-(async () => {
+await (async () => {
   // routine stage → email sent + logged
   {
     const m = mocks();

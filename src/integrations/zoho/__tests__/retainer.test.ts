@@ -25,7 +25,7 @@ function mockSign(result = { requestId: "REQ-123", signLink: "https://sign/REQ-1
   return { sign, sent };
 }
 
-(async () => {
+await (async () => {
   // ---- sendRetainer happy path ----
   {
     const { client, calls } = mockZoho({
