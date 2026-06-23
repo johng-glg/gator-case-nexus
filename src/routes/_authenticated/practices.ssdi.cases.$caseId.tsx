@@ -35,6 +35,8 @@ import { CaseActionsMenu } from "@/components/cases/CaseActionsMenu";
 import { NextStepCard } from "@/components/cases/NextStepCard";
 import { ActionCenter } from "@/components/cases/ActionCenter";
 import { FormsAndDocumentsPanel } from "@/components/cases/FormsAndDocumentsPanel";
+import { AppealFormsPanel } from "@/components/cases/AppealFormsPanel";
+import { NoaFeeCard } from "@/components/cases/NoaFeeCard";
 import { CollapsibleSection } from "@/components/cases/CollapsibleSection";
 
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
