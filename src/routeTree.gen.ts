@@ -33,6 +33,7 @@ import { Route as ApiPublicDeadlineSweepRouteImport } from './routes/api/public/
 import { Route as ClientPortalIntakeRouteImport } from './routes/_client/portal.intake'
 import { Route as ClientPortalMatterIdRouteImport } from './routes/_client/portal.$matterId'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings.users'
+import { Route as AuthenticatedSettingsTrustLedgerRouteImport } from './routes/_authenticated/settings.trust-ledger'
 import { Route as AuthenticatedSettingsTrustExportRouteImport } from './routes/_authenticated/settings.trust-export'
 import { Route as AuthenticatedSettingsStageRequirementsRouteImport } from './routes/_authenticated/settings.stage-requirements'
 import { Route as AuthenticatedSettingsMessagingRouteImport } from './routes/_authenticated/settings.messaging'
@@ -183,6 +184,12 @@ const AuthenticatedSettingsUsersRoute =
   AuthenticatedSettingsUsersRouteImport.update({
     id: '/users',
     path: '/users',
+    getParentRoute: () => AuthenticatedSettingsRoute,
+  } as any)
+const AuthenticatedSettingsTrustLedgerRoute =
+  AuthenticatedSettingsTrustLedgerRouteImport.update({
+    id: '/trust-ledger',
+    path: '/trust-ledger',
     getParentRoute: () => AuthenticatedSettingsRoute,
   } as any)
 const AuthenticatedSettingsTrustExportRoute =
@@ -369,6 +376,7 @@ export interface FileRoutesByFullPath {
   '/settings/messaging': typeof AuthenticatedSettingsMessagingRoute
   '/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
   '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
+  '/settings/trust-ledger': typeof AuthenticatedSettingsTrustLedgerRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/portal/$matterId': typeof ClientPortalMatterIdRoute
   '/portal/intake': typeof ClientPortalIntakeRoute
@@ -417,6 +425,7 @@ export interface FileRoutesByTo {
   '/settings/messaging': typeof AuthenticatedSettingsMessagingRoute
   '/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
   '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
+  '/settings/trust-ledger': typeof AuthenticatedSettingsTrustLedgerRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/portal/$matterId': typeof ClientPortalMatterIdRoute
   '/portal/intake': typeof ClientPortalIntakeRoute
@@ -471,6 +480,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/messaging': typeof AuthenticatedSettingsMessagingRoute
   '/_authenticated/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
   '/_authenticated/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
+  '/_authenticated/settings/trust-ledger': typeof AuthenticatedSettingsTrustLedgerRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
   '/_client/portal/$matterId': typeof ClientPortalMatterIdRoute
   '/_client/portal/intake': typeof ClientPortalIntakeRoute
@@ -524,6 +534,7 @@ export interface FileRouteTypes {
     | '/settings/messaging'
     | '/settings/stage-requirements'
     | '/settings/trust-export'
+    | '/settings/trust-ledger'
     | '/settings/users'
     | '/portal/$matterId'
     | '/portal/intake'
@@ -572,6 +583,7 @@ export interface FileRouteTypes {
     | '/settings/messaging'
     | '/settings/stage-requirements'
     | '/settings/trust-export'
+    | '/settings/trust-ledger'
     | '/settings/users'
     | '/portal/$matterId'
     | '/portal/intake'
@@ -625,6 +637,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/messaging'
     | '/_authenticated/settings/stage-requirements'
     | '/_authenticated/settings/trust-export'
+    | '/_authenticated/settings/trust-ledger'
     | '/_authenticated/settings/users'
     | '/_client/portal/$matterId'
     | '/_client/portal/intake'
@@ -843,6 +856,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsUsersRouteImport
       parentRoute: typeof AuthenticatedSettingsRoute
     }
+    '/_authenticated/settings/trust-ledger': {
+      id: '/_authenticated/settings/trust-ledger'
+      path: '/trust-ledger'
+      fullPath: '/settings/trust-ledger'
+      preLoaderRoute: typeof AuthenticatedSettingsTrustLedgerRouteImport
+      parentRoute: typeof AuthenticatedSettingsRoute
+    }
     '/_authenticated/settings/trust-export': {
       id: '/_authenticated/settings/trust-export'
       path: '/trust-export'
@@ -1043,6 +1063,7 @@ interface AuthenticatedSettingsRouteChildren {
   AuthenticatedSettingsMessagingRoute: typeof AuthenticatedSettingsMessagingRoute
   AuthenticatedSettingsStageRequirementsRoute: typeof AuthenticatedSettingsStageRequirementsRoute
   AuthenticatedSettingsTrustExportRoute: typeof AuthenticatedSettingsTrustExportRoute
+  AuthenticatedSettingsTrustLedgerRoute: typeof AuthenticatedSettingsTrustLedgerRoute
   AuthenticatedSettingsUsersRoute: typeof AuthenticatedSettingsUsersRoute
   AuthenticatedSettingsIndexRoute: typeof AuthenticatedSettingsIndexRoute
 }
@@ -1057,6 +1078,7 @@ const AuthenticatedSettingsRouteChildren: AuthenticatedSettingsRouteChildren = {
   AuthenticatedSettingsStageRequirementsRoute:
     AuthenticatedSettingsStageRequirementsRoute,
   AuthenticatedSettingsTrustExportRoute: AuthenticatedSettingsTrustExportRoute,
+  AuthenticatedSettingsTrustLedgerRoute: AuthenticatedSettingsTrustLedgerRoute,
   AuthenticatedSettingsUsersRoute: AuthenticatedSettingsUsersRoute,
   AuthenticatedSettingsIndexRoute: AuthenticatedSettingsIndexRoute,
 }
