@@ -36,6 +36,90 @@ async function getClientCaseId(userId: string): Promise<string | null> {
   return data?.zoho_case_id ?? null;
 }
 
+async function getEngagementClientId(engagementId: string): Promise<string | null> {
+  const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+  const zoho = makeZohoClient().service();
+  const engagement = await zoho.getRecord<{ Client?: { id?: string } | string }>(
+    "Engagements",
+    engagementId,
+    ["Client"],
+  );
+  const client = engagement?.Client;
+  return (typeof client === "string" ? client : client?.id) ?? null;
+}
+
+async function getCaseEngagementId(caseId: string): Promise<string | null> {
+  const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+  const zoho = makeZohoClient().service();
+  const caseRecord = await zoho.getRecord<{ Engagement?: { id?: string } | string }>(
+    "SSDI_Cases",
+    caseId,
+    ["Engagement"],
+  );
+  const engagement = caseRecord?.Engagement;
+  return (typeof engagement === "string" ? engagement : engagement?.id) ?? null;
+}
+
+async function getCaseIdForEngagement(engagementId: string): Promise<string | null> {
+  const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+  const zoho = makeZohoClient().service();
+  const cases = await zoho
+    .coql<{ id: string }>(
+      `select id from SSDI_Cases where Engagement = '${engagementId}' limit 1`,
+    )
+    .catch(() => [] as { id: string }[]);
+  return cases[0]?.id ?? null;
+}
+
+async function getClientContactId(userId: string): Promise<string | null> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
+    .from("client_portal_contacts")
+    .select("zoho_contact_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  return data?.zoho_contact_id ?? null;
+}
+
+async function getClientDocumentScope(
+  userId: string,
+  requested?: { caseId?: string; engagementId?: string },
+): Promise<{ case_id: string | null; engagement_id: string | null } | null> {
+  const contactId = await getClientContactId(userId);
+
+  if (contactId) {
+    if (requested?.caseId) {
+      const engagementId = await getCaseEngagementId(requested.caseId);
+      if (!engagementId) return null;
+      const clientId = await getEngagementClientId(engagementId);
+      return clientId === contactId
+        ? { case_id: requested.caseId, engagement_id: engagementId }
+        : null;
+    }
+
+    if (requested?.engagementId) {
+      const clientId = await getEngagementClientId(requested.engagementId);
+      if (clientId !== contactId) return null;
+      return {
+        case_id: await getCaseIdForEngagement(requested.engagementId),
+        engagement_id: requested.engagementId,
+      };
+    }
+  }
+
+  const legacy = await getClientLink(userId);
+  if (!legacy) return null;
+  if (requested?.caseId && legacy.case_id !== requested.caseId) return null;
+  if (requested?.engagementId && legacy.engagement_id !== requested.engagementId) return null;
+  return legacy;
+}
+
+async function clientCanAccessCase(userId: string, caseId: string): Promise<boolean> {
+  const scope = await getClientDocumentScope(userId, { caseId });
+  return scope?.case_id === caseId;
+}
+
 async function getClientLink(
   userId: string,
 ): Promise<{ case_id: string; engagement_id: string | null } | null> {
@@ -186,26 +270,44 @@ export const getCaseDocuments = createServerFn({ method: "POST" })
     };
   });
 
+const clientDocsInput = z
+  .object({
+    caseId: z.string().regex(ID_RE).optional(),
+    engagementId: z.string().regex(ID_RE).optional(),
+  })
+  .optional();
+
 /** Client-facing: list this client's own pending requests + their uploads. */
 export const getMyDocumentRequests = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
-    const link = await getClientLink(context.userId);
-    if (!link) return { linked: false as const };
+  .inputValidator((d) => clientDocsInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const link = await getClientDocumentScope(context.userId, data);
+    if (!link || (!link.case_id && !link.engagement_id)) return { linked: false as const };
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const [reqs, ups] = await Promise.all([
-      supabaseAdmin
-        .from("document_requests")
-        .select("id, label, instructions, status, created_at, fulfilled_at")
-        .eq("case_id", link.case_id)
-        .order("created_at", { ascending: false }),
-      supabaseAdmin
-        .from("document_uploads")
-        .select("id, request_id, original_name, size_bytes, uploaded_at")
-        .eq("case_id", link.case_id)
-        .eq("uploaded_by_user", context.userId)
-        .order("uploaded_at", { ascending: false }),
-    ]);
+    let reqQuery = supabaseAdmin
+      .from("document_requests")
+      .select("id, label, instructions, status, created_at, fulfilled_at")
+      .order("created_at", { ascending: false });
+
+    if (link.case_id && link.engagement_id) {
+      reqQuery = reqQuery.or(`case_id.eq.${link.case_id},engagement_id.eq.${link.engagement_id}`);
+    } else if (link.case_id) {
+      reqQuery = reqQuery.eq("case_id", link.case_id);
+    } else {
+      reqQuery = reqQuery.eq("engagement_id", link.engagement_id);
+    }
+
+    const uploadQuery = link.case_id
+      ? supabaseAdmin
+          .from("document_uploads")
+          .select("id, request_id, original_name, size_bytes, uploaded_at")
+          .eq("case_id", link.case_id)
+          .eq("uploaded_by_user", context.userId)
+          .order("uploaded_at", { ascending: false })
+      : Promise.resolve({ data: [], error: null });
+
+    const [reqs, ups] = await Promise.all([reqQuery, uploadQuery]);
     if (reqs.error) throw new Error(reqs.error.message);
     if (ups.error) throw new Error(ups.error.message);
     return {
@@ -233,8 +335,7 @@ export const getUploadUrl = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const email = (context.claims as { email?: string }).email ?? null;
     if (!isStaff(email)) {
-      const clientCase = await getClientCaseId(context.userId);
-      if (clientCase !== data.caseId) throw new Error("Forbidden.");
+      if (!(await clientCanAccessCase(context.userId, data.caseId))) throw new Error("Forbidden.");
     }
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -284,8 +385,7 @@ export const recordUpload = createServerFn({ method: "POST" })
     const email = (context.claims as { email?: string }).email ?? null;
     const staff = isStaff(email);
     if (!staff) {
-      const clientCase = await getClientCaseId(context.userId);
-      if (clientCase !== data.caseId) throw new Error("Forbidden.");
+      if (!(await clientCanAccessCase(context.userId, data.caseId))) throw new Error("Forbidden.");
     }
     // Defense in depth: storage path must be under cases/{caseId}/
     if (!data.storagePath.startsWith(`cases/${data.caseId}/`)) {
