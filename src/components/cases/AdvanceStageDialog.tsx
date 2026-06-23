@@ -52,7 +52,7 @@ export const STAGE_REQUIREMENTS: Partial<Record<Stage, FieldSpec[]>> = {
     { field: "ALJ_Name", label: "ALJ name", type: "text" },
   ],
   "Hearing held": [
-    { field: "ALJ_Hearing_Held_Date", label: "Hearing held date", type: "date", required: true },
+    { field: "Hearing_Held_Date", label: "Hearing held date", type: "date", required: true },
   ],
   "ALJ decision denied": [
     { field: "Notice_Date", label: "Notice date", type: "date", required: true },
@@ -104,16 +104,21 @@ interface Props {
   initialFields?: Record<string, string>;
   /** Optional: override the per-stage requirements map (e.g. with admin-edited values). */
   requirementsMap?: Partial<Record<Stage, FieldSpec[]>>;
+  /** Evidence-readiness state. When `gated` is true and `gatedStages` contains
+   *  the selected next stage, the dialog requires an attorney override + reason. */
+  evidence?: { gated: boolean; gatedStages: Stage[]; receivedCount: number };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  onSubmit: (toStage: Stage, fields: Record<string, any>) => Promise<void>;
+  onSubmit: (toStage: Stage, fields: Record<string, any>, meta?: { evidenceOverride?: { reason: string; receivedCount: number } }) => Promise<void>;
 }
 
-export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialStage, initialFields, requirementsMap, onSubmit }: Props) {
+export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialStage, initialFields, requirementsMap, evidence, onSubmit }: Props) {
   const nextStages = (TRANSITIONS[currentStage as Stage] ?? []) as Stage[];
   const [selected, setSelected] = useState<Stage | "">(initialStage ?? "");
   const [fields, setFields] = useState<Record<string, string>>(initialFields ?? {});
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [overrideAck, setOverrideAck] = useState(false);
+  const [overrideReason, setOverrideReason] = useState("");
 
   // When the dialog re-opens (e.g. from a banner), re-seed selection + prefill.
   useEffect(() => {
@@ -121,11 +126,18 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialSt
       setSelected(initialStage ?? "");
       setFields(initialFields ?? {});
       setErr(null);
+      setOverrideAck(false);
+      setOverrideReason("");
     }
   }, [open, initialStage, initialFields]);
 
   const effectiveMap = requirementsMap ?? STAGE_REQUIREMENTS;
   const requirements = selected ? effectiveMap[selected] ?? [] : [];
+  const evidenceBlocks =
+    !!selected &&
+    !!evidence?.gated &&
+    evidence.gatedStages.includes(selected);
+  const overrideOk = !evidenceBlocks || (overrideAck && overrideReason.trim().length >= 5);
 
   async function submit() {
     if (!selected) return;
@@ -140,10 +152,15 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialSt
         payload[r.field] = r.type === "number" ? Number(raw) : raw;
       }
       if (selected === "Closed") payload.Is_Closed = true;
-      await onSubmit(selected, payload);
+      const meta = evidenceBlocks
+        ? { evidenceOverride: { reason: overrideReason.trim(), receivedCount: evidence?.receivedCount ?? 0 } }
+        : undefined;
+      await onSubmit(selected, payload, meta);
       onOpenChange(false);
       setSelected("");
       setFields({});
+      setOverrideAck(false);
+      setOverrideReason("");
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));
     } finally {
@@ -232,6 +249,33 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialSt
             </div>
           )}
 
+          {evidenceBlocks && (
+            <div className="space-y-2 rounded-md border border-amber-500/40 bg-amber-50/50 dark:bg-amber-900/10 p-3">
+              <div className="text-sm font-medium text-amber-900 dark:text-amber-200">
+                Evidence not on file — attorney override required
+              </div>
+              <p className="text-xs text-amber-900/80 dark:text-amber-200/80">
+                Zero medical records have been received for this case. Advancing into{" "}
+                <strong>{selected}</strong> without evidence is unusual; provide a reason and
+                check the box to proceed.
+              </p>
+              <Textarea
+                value={overrideReason}
+                onChange={(e) => setOverrideReason(e.target.value)}
+                placeholder="Reason (e.g. records arriving today; opinion-letter strategy; …)"
+              />
+              <label className="flex items-start gap-2 text-xs text-amber-900 dark:text-amber-200">
+                <input
+                  type="checkbox"
+                  checked={overrideAck}
+                  onChange={(e) => setOverrideAck(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>I'm advancing without evidence on file and I'll log the reason.</span>
+              </label>
+            </div>
+          )}
+
           {(() => {
             const missing = requirements.filter((r) => r.required && !fields[r.field]);
             const showMissing = !!selected && missing.length > 0;
@@ -269,7 +313,8 @@ export function AdvanceStageDialog({ open, onOpenChange, currentStage, initialSt
             disabled={
               !selected ||
               busy ||
-              requirements.some((r) => r.required && !fields[r.field])
+              requirements.some((r) => r.required && !fields[r.field]) ||
+              !overrideOk
             }
           >
             {busy ? "Advancing…" : "Advance"}

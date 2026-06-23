@@ -76,8 +76,7 @@ await (async () => {
   ok("SSA-827 NOT auto-sent (attestation)", kase.SSA827_Status === undefined);
 
   // 4) advance to a denial → deadline computed
-  await cases.advanceStage("u", kase.id, "Application filed", { fields: { SSA_Claim_Number: "123-45-6789" } });
-  await cases.advanceStage("u", kase.id, "Initial decision pending");
+  await cases.advanceStage("u", kase.id, "Application filed", { fields: { SSA_Claim_Number: "123-45-6789", Application_Filed_Date: "2026-04-01" } });
   const denial = await cases.advanceStage("u", kase.id, "Initial decision denied", { fields: { Notice_Date: "2026-06-01" } });
   ok("denial computed deadline (notice+65, rolled)", denial.deadline === "2026-08-05");
   ok("Active_Deadline_Type = Reconsideration", db[kase.id].Active_Deadline_Type === "Reconsideration");

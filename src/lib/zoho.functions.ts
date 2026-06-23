@@ -405,6 +405,9 @@ const advanceInput = z.object({
   caseId: z.string().regex(/^[A-Za-z0-9_]+$/),
   toStage: z.string(),
   fields: z.record(z.string(), z.unknown()).optional(),
+  evidenceOverride: z
+    .object({ reason: z.string().min(5).max(500), receivedCount: z.number().int().nonnegative() })
+    .optional(),
 });
 
 export const caseAdvance = createServerFn({ method: "POST" })
@@ -415,6 +418,16 @@ export const caseAdvance = createServerFn({ method: "POST" })
     const { createCaseService } = await import("@/integrations/zoho/caseService");
     const { logCaseActivity } = await import("@/integrations/audit/log.server");
     const svc = createCaseService({ zoho: makeZohoClient() });
+    if (data.evidenceOverride) {
+      await logCaseActivity({
+        caseId: data.caseId,
+        actorUserId: context.userId,
+        actorEmail: actorEmail(context.claims),
+        action: "stage.evidence_override",
+        summary: `Evidence override for "${data.toStage}" (records received: ${data.evidenceOverride.receivedCount}).`,
+        metadata: { toStage: data.toStage, reason: data.evidenceOverride.reason, receivedCount: data.evidenceOverride.receivedCount },
+      });
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await svc.advanceStage(context.userId, data.caseId, data.toStage as any, {
       fields: data.fields,

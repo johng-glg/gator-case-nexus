@@ -107,8 +107,15 @@ export const HOOKS: Partial<Record<Stage, StageEffects>> = {
       { label: "Begin hearing prep", due: { type: "fieldMinus", field: "ALJ_Hearing_Scheduled_Date", days: 75 } },
       { label: "Order updated medical records", due: { type: "fieldMinus", field: "ALJ_Hearing_Scheduled_Date", days: 60 } },
       { label: "Client hearing-prep session", due: { type: "fieldMinus", field: "ALJ_Hearing_Scheduled_Date", days: 14 } },
+      { label: "Submit evidence + brief to OHO (5-business-day rule)", due: { type: "fieldMinus", field: "ALJ_Hearing_Scheduled_Date", days: 5 } },
     ],
     calendar: [{ label: "ALJ hearing", on: { type: "fieldPlus", field: "ALJ_Hearing_Scheduled_Date", days: 0 } }],
+  },
+  "Hearing held": {
+    tasks: [
+      { label: "Submit post-hearing evidence if record left open", due: { type: "fieldPlus", field: "Hearing_Held_Date", days: 3 } },
+      { label: "Respond to VE/ME interrogatories if any", due: { type: "fieldPlus", field: "Hearing_Held_Date", days: 7 } },
+    ],
   },
   "ALJ decision denied": {
     setDeadline: { tier: "Appeals Council", from: "noticeDate" },
@@ -126,6 +133,15 @@ export const HOOKS: Partial<Record<Stage, StageEffects>> = {
     clearDeadline: true,
     tasks: [{ label: "File fee petition / verify fee agreement", due: { type: "fieldPlus", field: "Notice_of_Award_Date", days: 7 } }],
   },
+  "Closed": {
+    tasks: [
+      { label: "Send final accounting / cost-reimbursement statement", due: { type: "fieldPlus", field: "Final_Disposition_Date", days: 3 } },
+      { label: "Set file retention / destroy date", due: { type: "fieldPlus", field: "Final_Disposition_Date", days: 3 } },
+      { label: "Revoke client portal access", due: { type: "fieldPlus", field: "Final_Disposition_Date", days: 3 } },
+      { label: "Referral-source thank-you", due: { type: "fieldPlus", field: "Final_Disposition_Date", days: 3 } },
+      { label: "Request review / send NPS", due: { type: "fieldPlus", field: "Final_Disposition_Date", days: 3 } },
+    ],
+  },
 };
 
 /** Convenience: given a stage and its notice date, the appeal deadline + tier (if any). */
@@ -142,13 +158,18 @@ export function deadlineForStage(stage: Stage, noticeDate?: string, documentedRe
  * API names; the value may already be on the case OR supplied in the advance form.
  */
 export const REQUIRED_FIELDS: Partial<Record<Stage, string[]>> = {
-  "Application filed":        ["SSA_Claim_Number"],
+  "Application filed":        ["SSA_Claim_Number", "Application_Filed_Date"],
   "Initial decision denied":  ["Notice_Date"],
+  "Reconsideration filed":    ["Recon_Filed_Date"],
   "Recon decision denied":    ["Notice_Date"],
-  "ALJ decision denied":      ["Notice_Date"],
-  "AC decision denied":       ["Notice_Date"],
+  "ALJ hearing requested":    ["ALJ_Hearing_Requested_Date"],
   "Hearing scheduled":        ["ALJ_Hearing_Scheduled_Date", "Hearing_Type"],
+  "Hearing held":             ["Hearing_Held_Date"],
+  "ALJ decision denied":      ["Notice_Date"],
+  "Appeals Council requested":["Appeals_Council_Requested_Date"],
+  "AC decision denied":       ["Notice_Date"],
   "Award / NOA received":     ["Notice_of_Award_Date"],
+  "Fee petition filed":       ["Fee_Petition_Filed_Date"],
 };
 
 /** Human labels for required fields — the advance dialog shows these, not raw API names. */
@@ -159,6 +180,12 @@ export const FIELD_LABELS: Record<string, string> = {
   Hearing_Type: "Hearing type",
   Notice_of_Award_Date: "Notice of Award date",
   SSA_Claim_Number: "SSA claim number",
+  Application_Filed_Date: "Application filed date",
+  Recon_Filed_Date: "Reconsideration filed date",
+  ALJ_Hearing_Requested_Date: "Hearing requested date",
+  Hearing_Held_Date: "Hearing held date",
+  Appeals_Council_Requested_Date: "Appeals Council requested date",
+  Fee_Petition_Filed_Date: "Fee petition filed date",
 };
 
 export interface MissingField { field: string; label: string; }
@@ -216,10 +243,12 @@ export const PHASES: { key: string; label: string; stages: Stage[] }[] = [
 ];
 
 export function phaseForStage(stage: Stage | string): string {
-  return PHASES.find((p) => p.stages.includes(stage as Stage))?.key ?? "intake";
+  const s = normalizeStage(stage as string);
+  return PHASES.find((p) => p.stages.includes(s))?.key ?? "intake";
 }
 
 /** Index of the phase containing the stage (for "done / current / upcoming" styling). */
 export function phaseIndex(stage: Stage | string): number {
-  return Math.max(0, PHASES.findIndex((p) => p.stages.includes(stage as Stage)));
+  const s = normalizeStage(stage as string);
+  return Math.max(0, PHASES.findIndex((p) => p.stages.includes(s)));
 }

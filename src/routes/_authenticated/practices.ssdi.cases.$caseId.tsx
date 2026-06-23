@@ -16,6 +16,7 @@ import {
   zohoQuery,
   getCaseTasks,
 } from "@/lib/zoho.functions";
+import { listCaseRequests } from "@/lib/medicalRecords.functions";
 import { Button } from "@/components/ui/button";
 import { StageRail } from "@/components/cases/StageRail";
 import { AdvanceStageDialog } from "@/components/cases/AdvanceStageDialog";
@@ -146,8 +147,22 @@ function CaseDetail() {
     (t) => String(t.Status ?? "") !== "Completed",
   ).length;
 
-  async function onAdvance(toStage: string, fields: Record<string, unknown>) {
-    const result = await advance({ data: { caseId, toStage, fields } });
+  // Records counts → drives the evidence override gate when advancing into a hearing stage.
+  const listRequests = useServerFn(listCaseRequests);
+  const recordsCountsQ = useQuery({
+    queryKey: ["case", caseId, "records-counts"],
+    enabled: validCaseId,
+    queryFn: () => listRequests({ data: { caseId } }),
+    staleTime: 30_000,
+  });
+  const receivedRecordCount = recordsCountsQ.data?.counts.received ?? 0;
+
+  async function onAdvance(
+    toStage: string,
+    fields: Record<string, unknown>,
+    meta?: { evidenceOverride?: { reason: string; receivedCount: number } },
+  ) {
+    const result = await advance({ data: { caseId, toStage, fields, evidenceOverride: meta?.evidenceOverride } });
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ["case", caseId] }),
       queryClient.invalidateQueries({ queryKey: ["tasks", caseId] }),
@@ -481,6 +496,11 @@ function CaseDetail() {
         initialStage={dialogInitialStage}
         initialFields={dialogInitialFields}
         requirementsMap={stageReqs}
+        evidence={{
+          gated: receivedRecordCount === 0,
+          gatedStages: ["Hearing held"],
+          receivedCount: receivedRecordCount,
+        }}
         onSubmit={onAdvance}
       />
     </div>
