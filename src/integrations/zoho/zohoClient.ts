@@ -255,12 +255,20 @@ export function createZohoClient(cfg: ZohoConfig) {
         return results;
       },
 
-      /** Update records (each must include `id`); chunked to 100/call. */
+      /** Update records (each must include `id`); chunked to 100/call. Throws on per-record failures. */
       async updateRecords(module: string, records: ZohoRecord[]): Promise<unknown[]> {
         const results: unknown[] = [];
         for (const part of chunk(records, 100)) {
           const r = await request<{ data?: unknown[] }>(actorKey, "PUT", `/${module}`, { data: part });
-          results.push(...(r.data ?? []));
+          const rows = (r.data ?? []) as Array<{ code?: string; status?: string; message?: string; details?: unknown }>;
+          const failures = rows.filter((row) => row && row.code && row.code !== "SUCCESS");
+          if (failures.length) {
+            const detail = failures
+              .map((f) => `${f.code}: ${f.message ?? "unknown"}${f.details ? ` (${JSON.stringify(f.details)})` : ""}`)
+              .join("; ");
+            throw new Error(`Zoho ${module} update failed — ${detail}`);
+          }
+          results.push(...rows);
         }
         return results;
       },
