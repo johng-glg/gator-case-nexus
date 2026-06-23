@@ -2,7 +2,7 @@
  * CaseStatusStrip — thin "orient" row directly under the page header.
  * Shows current stage, deadline countdown (color-coded), and risk flag chips.
  */
-import { Link } from "@tanstack/react-router";
+
 import { AlertTriangle, CheckCircle2, Clock, FileSignature, Mail, ShieldAlert } from "lucide-react";
 import type { Stage } from "@/integrations/zoho/lifecycle";
 
