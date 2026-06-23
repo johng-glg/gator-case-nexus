@@ -54,7 +54,6 @@ function ClientAuthPage() {
       toast.error(error instanceof Error ? error.message : "Couldn't send sign-in link.");
     } finally {
       setSending(false);
-      return;
     }
   }
 
