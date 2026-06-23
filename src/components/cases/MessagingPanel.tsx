@@ -102,17 +102,33 @@ export function MessagingPanel({ caseId }: { caseId: string }) {
           <p className="text-xs text-muted-foreground">No messages yet.</p>
         ) : (
           <ul className="space-y-1.5">
-            {d.history.slice(0, 8).map((row: any) => (
-              <li key={row.id} className="flex items-start gap-2 text-xs">
-                <HistoryIcon action={row.action} />
-                <div className="flex-1 min-w-0">
-                  <div className="truncate">{row.summary}</div>
-                  <div className="text-[10px] text-muted-foreground">
-                    {new Date(row.created_at).toLocaleString()}
+            {d.history.slice(0, 8).map((row: any) => {
+              const status: string | null = row.deliveryStatus ?? null;
+              const failed = row.action === "message.sent" && (status === "failed" || status === "dlq");
+              return (
+                <li key={row.id} className="flex items-start gap-2 text-xs">
+                  <HistoryIcon action={row.action} failed={failed} />
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate flex items-center gap-1.5">
+                      <span>{row.summary}</span>
+                      {failed && (
+                        <span className="inline-flex items-center rounded-full border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-medium text-destructive">
+                          Delivery failed
+                        </span>
+                      )}
+                      {row.action === "message.sent" && status === "suppressed" && (
+                        <span className="inline-flex items-center rounded-full border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+                          Suppressed
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      {new Date(row.created_at).toLocaleString()}
+                    </div>
                   </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
