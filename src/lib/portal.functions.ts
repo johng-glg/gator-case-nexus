@@ -1,17 +1,30 @@
 /**
  * portal.functions.ts — Client-portal server functions.
  *
- * The client portal lets a claimant sign in (via Supabase magic link) and see
- * their own SSDI case status, current stage, deadline, and a few other read-only
- * facts. The link between an `auth.users` row and a Zoho case lives in the
- * `client_portal_links` table; rows are inserted by firm staff via `inviteClientToPortal`.
+ * The portal is contact-keyed: one passwordless login → all of that client's
+ * matters across practices. Adapters in `src/integrations/portal/` are the only
+ * place client-facing data is shaped, enforcing the client-safe allowlist
+ * (no fees, internal notes, or strategy can leak).
  *
  * Staff = signed-in user with an `@gatorlawpc.com` email (mirrors the gate in
- * src/routes/_authenticated/route.tsx). Clients = anyone else with a link row.
+ * src/routes/_authenticated/route.tsx). Clients = anyone else with a row in
+ * `client_portal_contacts`.
  */
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import {
+  buildPortalView,
+  ssdiToPortalMatter,
+  type PortalMatter,
+  type PortalView,
+} from "@/integrations/portal/portal";
+import {
+  fcraPortalAdapter,
+  fdcpaPortalAdapter,
+  tcpaPortalAdapter,
+  classActionPortalAdapter,
+} from "@/integrations/portal/adapters/stubs";
 
 const FIRM_DOMAIN = "gatorlawpc.com";
 
@@ -33,10 +46,10 @@ const inviteInput = z
     message: "Either caseId or engagementId is required.",
   });
 
-
 /**
- * Staff-only. Sends a magic-link invite to the client and links their
- * auth.users row to the given SSDI case. Safe to re-invoke (re-sends the link).
+ * Staff-only. Sends a passwordless invite to a client and binds their auth
+ * user to the Zoho Contact (so they can later be added to another matter
+ * without a second invite). Safe to re-invoke — resends the magic link.
  */
 export const inviteClientToPortal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -48,74 +61,56 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
       throw new Error("Refuse to enroll a firm-domain email as a client.");
     }
 
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const siteUrl =
-      process.env.SITE_URL ??
-      process.env.VITE_SITE_URL ??
-      "https://gator-case-nexus.lovable.app";
-    const redirectTo = `${siteUrl.replace(/\/$/, "")}/portal`;
+    // Resolve the Zoho contact id from the engagement/case the caller gave us.
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const api = makeZohoClient().as(context.userId);
 
-    // Issue a magic-link invite. If the user already exists, generateLink with type
-    // 'magiclink' just sends a fresh sign-in link instead of erroring.
-    type AdminUser = { id: string; email?: string | null };
-    let userId: string | undefined;
-    const invite = await supabaseAdmin.auth.admin.inviteUserByEmail(data.email, {
-      redirectTo,
-    });
-    if (invite.error) {
-      const msg = invite.error.message || "";
-      // Already-registered user: send a magic link instead.
-      if (/already|registered|exists/i.test(msg)) {
-        const link = await supabaseAdmin.auth.admin.generateLink({
-          type: "magiclink",
-          email: data.email,
-          options: { redirectTo },
-        });
-        if (link.error) throw new Error(link.error.message);
-        userId = (link.data?.user as AdminUser | null | undefined)?.id;
-      } else {
-        throw new Error(msg || "Failed to send invite.");
-      }
-    } else {
-      userId = (invite.data?.user as AdminUser | null | undefined)?.id;
-    }
-
-    if (!userId) throw new Error("Invite sent but no user id returned.");
-
-    const { error: upsertError } = await supabaseAdmin
-      .from("client_portal_links")
-      .upsert(
-        {
-          user_id: userId,
-          email: data.email,
-          zoho_case_id: data.caseId ?? null,
-          zoho_engagement_id: data.engagementId ?? null,
-          invited_by: context.userId,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" },
+    let engagementId = data.engagementId;
+    if (!engagementId && data.caseId) {
+      const c = await api.getRecord<{ Engagement?: { id?: string } | string }>(
+        "SSDI_Cases",
+        data.caseId,
+        ["Engagement"],
       );
-    if (upsertError) throw new Error(upsertError.message);
+      const e = c?.Engagement;
+      engagementId = typeof e === "string" ? e : e?.id;
+    }
+    if (!engagementId) throw new Error("Could not resolve engagement for invite.");
+
+    const engagement = await api.getRecord<{ Client?: { id?: string } | string }>(
+      "Engagements",
+      engagementId,
+      ["Client"],
+    );
+    const cl = engagement?.Client;
+    const contactId = typeof cl === "string" ? cl : cl?.id;
+    if (!contactId) throw new Error("Engagement has no Client (Contact) to invite.");
+
+    const { autoInvitePortal } = await import("@/integrations/portal/autoInvite.server");
+    const { userId, resent } = await autoInvitePortal({
+      email: data.email,
+      contactId,
+      engagementId,
+      invitedByUserId: context.userId,
+    });
 
     const { logCaseActivity } = await import("@/integrations/audit/log.server");
     await logCaseActivity({
-      caseId: data.caseId ?? data.engagementId ?? "unknown",
-      engagementId: data.engagementId ?? null,
+      caseId: data.caseId ?? engagementId,
+      engagementId,
       actorUserId: context.userId,
       actorEmail: staffEmail,
       action: "portal.invite",
-      summary: `Sent portal invite to ${data.email}.`,
-      metadata: { email: data.email, caseId: data.caseId ?? null },
+      summary: resent
+        ? `Re-sent portal sign-in link to ${data.email}.`
+        : `Sent portal invite to ${data.email}.`,
+      metadata: { email: data.email, contactId, engagementId },
     });
 
-    return { ok: true, userId, emailSent: true };
+    return { ok: true, userId, emailSent: true, resent };
   });
 
-
-/**
- * Staff-only. Lists the portal link for a given case (so the case page can
- * show "Invited: client@example.com").
- */
+/** Staff-only. Shows which client is enrolled on a case (for the case page). */
 export const getPortalLinkForCase = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => z.object({ caseId: z.string().regex(ID_RE) }).parse(data))
@@ -123,98 +118,194 @@ export const getPortalLinkForCase = createServerFn({ method: "POST" })
     const staffEmail = (context.claims as { email?: string }).email;
     ensureStaff(staffEmail);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin
+    const { data: row, error } = await supabaseAdmin
       .from("client_portal_links")
       .select("email, created_at")
       .eq("zoho_case_id", data.caseId)
       .limit(1)
       .maybeSingle();
     if (error) throw new Error(error.message);
-    return { link: rows };
+    return { link: row };
   });
+
+// ---------- Client-facing: assemble the multi-matter PortalView ----------
+
+interface EngagementRow {
+  id: string;
+  Name?: string;
+  Engagement_Type?: string;
+  Engagement_Status?: string;
+  Retainer_Status?: string;
+  Assigned_Attorney?: { id?: string; name?: string } | string;
+  Modified_Time?: string;
+}
+
+interface SsdiCaseRow {
+  id: string;
+  Current_Stage?: string;
+  ALJ_Hearing_Scheduled_Date?: string;
+  Assigned_Attorney?: { id?: string; name?: string } | string;
+}
+
+function attorneyName(v: unknown): string | undefined {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object" && "name" in v) {
+    const n = (v as { name?: string }).name;
+    return typeof n === "string" ? n : undefined;
+  }
+  return undefined;
+}
 
 /**
- * Client-facing. Returns the read-only portal view for the signed-in user.
- * Uses the SERVICE Zoho client (no per-client Zoho grant required).
+ * Client-facing. Returns the signed-in client's full PortalView — every matter
+ * across every practice, shaped by per-practice adapters. Raw Zoho records
+ * never cross this boundary; only the allowlisted `PortalMatter` fields do.
  */
-export const getMyClientPortal = createServerFn({ method: "GET" })
+export const getMyPortalView = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async ({ context }) => {
+  .handler(async ({ context }): Promise<
+    | { linked: false }
+    | { linked: true; email: string; view: PortalView }
+  > => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: link, error } = await supabaseAdmin
-      .from("client_portal_links")
-      .select("zoho_case_id, zoho_engagement_id, email")
+
+    // 1) Resolve user → contact (new table) with legacy fallback for clients
+    //    who were invited before the contact-keyed table existed.
+    const { data: contactLink } = await supabaseAdmin
+      .from("client_portal_contacts")
+      .select("zoho_contact_id, email, intake_state")
       .eq("user_id", context.userId)
       .maybeSingle();
-    if (error) throw new Error(error.message);
-    if (!link) return { linked: false as const };
 
-    // Invited but the SSDI case hasn't been opened yet (retainer not signed).
-    if (!link.zoho_case_id) {
-      return {
-        linked: true as const,
-        pending: true as const,
-        email: link.email,
-        caseId: null,
-        case: null,
-      };
+    let zohoContactId: string | null = contactLink?.zoho_contact_id ?? null;
+    let email: string = contactLink?.email ?? "";
+    const intakeState =
+      (contactLink?.intake_state as Record<string, Record<string, string | null>>) ?? {};
+
+    if (!zohoContactId) {
+      // Legacy fallback: look up via the case-keyed table and resolve the contact in Zoho.
+      const { data: legacy } = await supabaseAdmin
+        .from("client_portal_links")
+        .select("zoho_case_id, zoho_engagement_id, email")
+        .eq("user_id", context.userId)
+        .maybeSingle();
+      if (!legacy) return { linked: false };
+      email = legacy.email;
+      const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+      const zoho = makeZohoClient().service();
+      const engId =
+        legacy.zoho_engagement_id ??
+        (legacy.zoho_case_id
+          ? ((await zoho.getRecord<{ Engagement?: { id?: string } | string }>(
+              "SSDI_Cases",
+              legacy.zoho_case_id,
+              ["Engagement"],
+            )) ?? {}).Engagement
+          : null);
+      const engIdStr =
+        typeof engId === "string" ? engId : (engId as { id?: string } | undefined)?.id;
+      if (engIdStr) {
+        const eng = await zoho.getRecord<{ Client?: { id?: string } | string }>(
+          "Engagements",
+          engIdStr,
+          ["Client"],
+        );
+        const c = eng?.Client;
+        zohoContactId = (typeof c === "string" ? c : c?.id) ?? null;
+      }
+      if (!zohoContactId) return { linked: false };
     }
 
+    // 2) List the client's engagements via COQL (contact-scoped).
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const zoho = makeZohoClient().service();
-    const record = (await zoho.getRecord("SSDI_Cases", link.zoho_case_id, [
-      "Case_Number",
-      "Current_Stage",
-      "Sub_Status",
-      "Date_Opened",
-      "Deadline_Date",
-      "Days_To_Deadline",
-      "ALJ_Hearing_Scheduled_Date",
-      "Hearing_Type",
-      "Hearing_Office_ODAR",
-      "ALJ_Name",
-      "Notice_of_Award_Date",
-      "Assigned_Attorney",
-    ])) as Record<string, unknown> | null;
+    const engagements = await zoho
+      .coql<EngagementRow>(
+        `select id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Assigned_Attorney, Modified_Time from Engagements where Client.id = '${zohoContactId}' order by Modified_Time desc limit 50`,
+      )
+      .catch((err) => {
+        console.error("[getMyPortalView] engagements COQL failed", err);
+        return [] as EngagementRow[];
+      });
 
-    if (!record)
-      return {
-        linked: true as const,
-        pending: false as const,
-        email: link.email,
-        caseId: link.zoho_case_id,
-        case: null,
+    // 3) For each engagement, shape via the per-practice adapter (allowlist).
+    const matters: PortalMatter[] = [];
+    for (const eng of engagements) {
+      const practice = (eng.Engagement_Type ?? "").toString();
+      const attorney = attorneyName(eng.Assigned_Attorney);
+
+      if (practice === "SSDI") {
+        // Look up the SSDI case (if opened) for stage + hearing date.
+        let caseRow: SsdiCaseRow | null = null;
+        const cases = await zoho
+          .coql<SsdiCaseRow>(
+            `select id, Current_Stage, ALJ_Hearing_Scheduled_Date, Assigned_Attorney from SSDI_Cases where Engagement.id = '${eng.id}' limit 1`,
+          )
+          .catch(() => [] as SsdiCaseRow[]);
+        caseRow = cases[0] ?? null;
+
+        // Open document requests for this engagement OR its case (allowlisted projection).
+        const docs = await supabaseAdmin
+          .from("document_requests")
+          .select("id, label, status, case_id, engagement_id")
+          .or(
+            `engagement_id.eq.${eng.id}${caseRow ? `,case_id.eq.${caseRow.id}` : ""}`,
+          )
+          .eq("status", "open");
+        const openDocRequests =
+          docs.data?.map((d) => ({ id: d.id as string, label: d.label as string })) ?? [];
+
+        const retainerSigned = (eng.Retainer_Status ?? "").toLowerCase() === "signed";
+        const questionnaireOutstanding = !intakeState[eng.id]?.questionnaire_completed_at;
+
+        matters.push(
+          ssdiToPortalMatter({
+            engagementId: eng.id,
+            stage: caseRow?.Current_Stage ?? "Retained",
+            retainerSigned,
+            hearingDate: caseRow?.ALJ_Hearing_Scheduled_Date ?? undefined,
+            attorney: attorneyName(caseRow?.Assigned_Attorney) ?? attorney,
+            openDocRequests,
+            questionnaireOutstanding,
+            updatedAt: eng.Modified_Time,
+          }),
+        );
+        continue;
+      }
+
+      const stubInput = {
+        engagementId: eng.id,
+        attorney,
+        updatedAt: eng.Modified_Time,
       };
+      switch (practice) {
+        case "FCRA":
+          matters.push(fcraPortalAdapter.toMatter(stubInput));
+          break;
+        case "FDCPA":
+          matters.push(fdcpaPortalAdapter.toMatter(stubInput));
+          break;
+        case "TCPA":
+          matters.push(tcpaPortalAdapter.toMatter(stubInput));
+          break;
+        case "Class Action":
+        case "ClassAction":
+          matters.push(classActionPortalAdapter.toMatter(stubInput));
+          break;
+        default:
+          // Unknown practice — surface the engagement title with a generic status.
+          matters.push({
+            id: eng.id,
+            practice: "SSDI", // typed; will be overridden once an adapter exists
+            title: eng.Name ?? "Your matter",
+            statusLabel: "In progress",
+            actionsNeeded: [],
+            keyDates: [],
+            attorney,
+            updatedAt: eng.Modified_Time,
+          });
+      }
+    }
 
-    type Lookup = { name?: string };
-    const attorney = record.Assigned_Attorney as Lookup | string | null | undefined;
-    const attorneyName =
-      typeof attorney === "object" && attorney
-        ? attorney.name ?? null
-        : typeof attorney === "string"
-        ? attorney
-        : null;
-
-    return {
-      linked: true as const,
-      pending: false as const,
-      email: link.email,
-      caseId: link.zoho_case_id,
-      case: {
-        caseNumber: (record.Case_Number as string | null) ?? null,
-        currentStage: (record.Current_Stage as string | null) ?? null,
-        subStatus: (record.Sub_Status as string | null) ?? null,
-        dateOpened: (record.Date_Opened as string | null) ?? null,
-        deadlineDate: (record.Deadline_Date as string | null) ?? null,
-        daysToDeadline:
-          typeof record.Days_To_Deadline === "number" ? record.Days_To_Deadline : null,
-        hearingDate: (record.ALJ_Hearing_Scheduled_Date as string | null) ?? null,
-        hearingType: (record.Hearing_Type as string | null) ?? null,
-        hearingOffice: (record.Hearing_Office_ODAR as string | null) ?? null,
-        aljName: (record.ALJ_Name as string | null) ?? null,
-        noticeOfAwardDate: (record.Notice_of_Award_Date as string | null) ?? null,
-        attorneyName,
-      },
-    };
+    return { linked: true, email, view: buildPortalView(matters) };
   });
-

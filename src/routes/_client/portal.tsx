@@ -1,27 +1,30 @@
 /**
- * /portal — Client-facing read-only view of the claimant's SSDI case.
+ * /portal — Multi-matter client landing. The portal is keyed to the Contact,
+ * so this loader returns the client's full set of matters (across practices).
+ *
+ *  - 0 matters but linked → "we've enrolled you; your matters will appear here"
+ *  - 1 matter → redirect straight to /portal/$matterId
+ *  - 2+ matters → "What we need from you" roll-up + matters list
  */
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Navigate, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { getMyClientPortal } from "@/lib/portal.functions";
-import { ClientDocumentsSection } from "@/components/portal/ClientDocumentsSection";
-import { ClientPortalSettings } from "@/components/portal/ClientPortalSettings";
+import { getMyPortalView } from "@/lib/portal.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { LogOut, AlertTriangle, Calendar, Gavel, FileText, Clock } from "lucide-react";
-import { normalizeStage } from "@/integrations/zoho/lifecycle";
+import { Badge } from "@/components/ui/badge";
+import { LogOut, ChevronRight, AlertCircle } from "lucide-react";
 
 export const Route = createFileRoute("/_client/portal")({
-  head: () => ({ meta: [{ title: "Your case — Gator Law" }] }),
-  component: PortalPage,
+  head: () => ({ meta: [{ title: "Your matters — Gator Law" }] }),
+  component: PortalLanding,
 });
 
-function PortalPage() {
+function PortalLanding() {
   const navigate = useNavigate();
-  const fetchPortal = useServerFn(getMyClientPortal);
+  const fetchPortal = useServerFn(getMyPortalView);
   const portal = useQuery({
-    queryKey: ["client-portal"],
+    queryKey: ["portal-view"],
     queryFn: () => fetchPortal(),
   });
 
@@ -31,12 +34,12 @@ function PortalPage() {
   }
 
   if (portal.isLoading) {
-    return <div className="p-8 text-sm text-muted-foreground">Loading your case…</div>;
+    return <div className="p-8 text-base text-muted-foreground">Loading your matters…</div>;
   }
   if (portal.error) {
     return (
       <div className="max-w-xl mx-auto p-8">
-        <p className="text-sm text-destructive">{(portal.error as Error).message}</p>
+        <p className="text-base text-destructive">{(portal.error as Error).message}</p>
         <Button variant="outline" className="mt-4" onClick={signOut}>
           Sign out
         </Button>
@@ -48,10 +51,10 @@ function PortalPage() {
   if (!data || !data.linked) {
     return (
       <div className="max-w-xl mx-auto p-8 space-y-3">
-        <h1 className="font-display text-2xl">Not enrolled</h1>
-        <p className="text-sm text-muted-foreground">
-          Your sign-in works, but this email isn't linked to a case yet. Please contact
-          your attorney at Gator Law and ask them to send you a portal invite.
+        <h1 className="font-display text-2xl">Not enrolled yet</h1>
+        <p className="text-base text-muted-foreground">
+          Your sign-in works, but we couldn't find a matter linked to this email.
+          Please contact your attorney at Gator Law.
         </p>
         <Button variant="outline" onClick={signOut}>
           Sign out
@@ -60,9 +63,98 @@ function PortalPage() {
     );
   }
 
-  const c = data.case;
-  const isPending = "pending" in data && data.pending === true;
+  const { matters, actionsSummary } = data.view;
 
+  if (matters.length === 0) {
+    return (
+      <Shell email={data.email} onSignOut={signOut}>
+        <div className="rounded-lg border border-border bg-card p-6 space-y-2">
+          <div className="font-display text-xl">Welcome to Gator Law</div>
+          <p className="text-base text-muted-foreground">
+            We've enrolled you. Your matter will appear here as soon as your
+            attorney finishes onboarding.
+          </p>
+        </div>
+      </Shell>
+    );
+  }
+
+  if (matters.length === 1) {
+    return <Navigate to="/portal/$matterId" params={{ matterId: matters[0].id }} replace />;
+  }
+
+  return (
+    <Shell email={data.email} onSignOut={signOut}>
+      {actionsSummary.length > 0 ? (
+        <section className="rounded-lg border border-amber-500/40 bg-amber-50/60 dark:bg-amber-950/30 p-5">
+          <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-amber-700 dark:text-amber-300">
+            <AlertCircle className="h-3.5 w-3.5" />
+            What we need from you
+          </div>
+          <ul className="mt-3 space-y-2">
+            {actionsSummary.map((s, i) => (
+              <li key={i} className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-base">{s.action.label}</div>
+                  <div className="text-xs text-muted-foreground">{s.matterTitle}</div>
+                </div>
+                <Link
+                  to="/portal/$matterId"
+                  params={{ matterId: s.matterId }}
+                  className="text-sm text-primary underline-offset-2 hover:underline shrink-0"
+                >
+                  Open
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <section className="space-y-3">
+        <h2 className="text-xs uppercase tracking-wider text-muted-foreground">
+          Your matters
+        </h2>
+        {matters.map((m) => (
+          <Link
+            key={m.id}
+            to="/portal/$matterId"
+            params={{ matterId: m.id }}
+            className="block rounded-lg border border-border bg-card p-5 hover:border-primary/50 transition-colors"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px]">
+                    {m.practice}
+                  </Badge>
+                  {m.actionsNeeded.length > 0 ? (
+                    <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-300 text-[10px]">
+                      Action needed
+                    </Badge>
+                  ) : null}
+                </div>
+                <div className="mt-1 font-display text-lg">{m.title}</div>
+                <div className="mt-1 text-base text-muted-foreground">{m.statusLabel}</div>
+              </div>
+              <ChevronRight className="h-5 w-5 text-muted-foreground shrink-0 mt-1" />
+            </div>
+          </Link>
+        ))}
+      </section>
+    </Shell>
+  );
+}
+
+function Shell({
+  email,
+  onSignOut,
+  children,
+}: {
+  email: string;
+  onSignOut: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <div className="max-w-3xl mx-auto px-6 py-8 space-y-6">
       <header className="flex items-start justify-between gap-4">
@@ -70,132 +162,14 @@ function PortalPage() {
           <div className="text-xs uppercase tracking-[0.18em] text-primary/80">
             Gator Law — Client portal
           </div>
-          <h1 className="font-display text-3xl text-foreground mt-1">Your case</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Signed in as {data.email}</p>
+          <h1 className="font-display text-3xl text-foreground mt-1">Your matters</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Signed in as {email}</p>
         </div>
-        <Button variant="outline" size="sm" onClick={signOut}>
+        <Button variant="outline" size="sm" onClick={onSignOut}>
           <LogOut className="h-4 w-4 mr-1.5" /> Sign out
         </Button>
       </header>
-
-      {isPending ? (
-        <div className="rounded-lg border border-border bg-card p-6 space-y-2">
-          <div className="font-display text-xl">Welcome to Gator Law</div>
-          <p className="text-sm text-muted-foreground">
-            Your account is set up. Your case will appear here once you've signed the
-            retainer agreement your attorney sent. If you haven't received it, check
-            your email or contact the firm.
-          </p>
-        </div>
-      ) : !c ? (
-
-        <div className="rounded-lg border border-border bg-card p-6 text-sm text-muted-foreground">
-          We couldn't load your case right now. Please try again in a few minutes.
-        </div>
-      ) : (
-        <>
-          <section className="rounded-lg border border-border bg-card p-5">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">
-              Case {c.caseNumber ?? "—"}
-            </div>
-            <div className="mt-1 font-display text-2xl">
-              {c.currentStage ? normalizeStage(c.currentStage) : "—"}
-            </div>
-            {c.subStatus ? (
-              <div className="mt-1 text-sm text-muted-foreground">{c.subStatus}</div>
-            ) : null}
-            {c.dateOpened ? (
-              <div className="mt-3 text-xs text-muted-foreground">
-                Opened {c.dateOpened}
-              </div>
-            ) : null}
-          </section>
-
-          {c.deadlineDate ? (
-            <section className="rounded-lg border border-border bg-card p-5">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-                <Clock className="h-3.5 w-3.5" /> Next deadline
-              </div>
-              <div className="mt-2 flex items-baseline gap-3">
-                <div className="font-display text-2xl">{c.deadlineDate}</div>
-                {typeof c.daysToDeadline === "number" ? (
-                  <DaysBadge days={c.daysToDeadline} />
-                ) : null}
-              </div>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Your attorney is tracking this date. If you have questions, contact the
-                firm directly.
-              </p>
-            </section>
-          ) : null}
-
-          {c.hearingDate ? (
-            <section className="rounded-lg border border-border bg-card p-5">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-                <Gavel className="h-3.5 w-3.5" /> ALJ hearing
-              </div>
-              <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                <Field label="Date" value={c.hearingDate} />
-                <Field label="Type" value={c.hearingType ?? "—"} />
-                <Field label="Hearing office" value={c.hearingOffice ?? "—"} />
-                <Field label="ALJ" value={c.aljName ?? "—"} />
-              </div>
-            </section>
-          ) : null}
-
-          {c.noticeOfAwardDate ? (
-            <section className="rounded-lg border border-border bg-card p-5">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-                <FileText className="h-3.5 w-3.5" /> Award
-              </div>
-              <p className="mt-2 text-sm">
-                Notice of Award received {c.noticeOfAwardDate}. Your attorney will be in
-                touch about next steps.
-              </p>
-            </section>
-          ) : null}
-
-          {data.caseId ? <ClientDocumentsSection caseId={data.caseId} /> : null}
-
-          <ClientPortalSettings />
-
-          <section className="rounded-lg border border-border bg-card p-5">
-            <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground">
-              <Calendar className="h-3.5 w-3.5" /> Your attorney
-            </div>
-            <p className="mt-2 text-sm">{c.attorneyName ?? "Gator Law team"}</p>
-          </section>
-        </>
-      )}
+      {children}
     </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">
-        {label}
-      </div>
-      <div className="text-sm">{value}</div>
-    </div>
-  );
-}
-
-function DaysBadge({ days }: { days: number }) {
-  const past = days < 0;
-  const urgent = !past && days <= 14;
-  const cls = past
-    ? "bg-destructive/15 text-destructive border-destructive/30"
-    : urgent
-    ? "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-300"
-    : "bg-muted text-muted-foreground border-border";
-  return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium ${cls}`}
-    >
-      {past ? <AlertTriangle className="h-3 w-3" /> : null}
-      {past ? `${Math.abs(days)} days overdue` : `${days} days left`}
-    </span>
   );
 }

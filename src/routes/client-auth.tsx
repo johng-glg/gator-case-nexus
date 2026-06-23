@@ -1,9 +1,9 @@
 /**
- * /client-auth — Magic-link sign-in for SSDI clients (separate from staff /auth).
+ * /client-auth — Passwordless sign-in for Gator Law clients.
  *
- * Clients receive their initial invite by email; this page is a fallback for
- * returning sign-ins ("email me a new link"). It does NOT create accounts on
- * its own — staff enroll clients via the case page.
+ * Sends a magic link AND a 6-digit code to the client's email; either works.
+ * The code path survives link-mangling by spam filters and is more accessible
+ * for older or low-tech users.
  */
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
@@ -15,14 +15,16 @@ import { toast } from "sonner";
 const FIRM_DOMAIN = "gatorlawpc.com";
 
 export const Route = createFileRoute("/client-auth")({
-  head: () => ({ meta: [{ title: "Client portal sign-in — Gator" }] }),
+  head: () => ({ meta: [{ title: "Client portal sign-in — Gator Law" }] }),
   component: ClientAuthPage,
 });
 
 function ClientAuthPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
+  const [code, setCode] = useState("");
   const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [sent, setSent] = useState(false);
 
   useEffect(() => {
@@ -40,7 +42,7 @@ function ClientAuthPage() {
   async function requestLink() {
     setSending(true);
     const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       options: {
         emailRedirectTo: `${window.location.origin}/portal`,
         shouldCreateUser: false,
@@ -52,6 +54,22 @@ function ClientAuthPage() {
       return;
     }
     setSent(true);
+    toast.success("Check your email for the link or 6-digit code.");
+  }
+
+  async function verifyCode() {
+    setVerifying(true);
+    const { error } = await supabase.auth.verifyOtp({
+      email: email.trim().toLowerCase(),
+      token: code.trim(),
+      type: "email",
+    });
+    setVerifying(false);
+    if (error) {
+      toast.error(error.message || "Couldn't verify code.");
+      return;
+    }
+    navigate({ to: "/portal", replace: true });
   }
 
   return (
@@ -60,17 +78,59 @@ function ClientAuthPage() {
         <div className="text-center mb-8">
           <h1 className="font-display text-4xl text-primary">Client portal</h1>
           <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Gator Law SSDI clients
+            Gator Law clients
           </p>
         </div>
         <div className="rounded-lg border border-border bg-card p-6">
           {sent ? (
-            <div className="text-sm">
-              <p className="font-medium">Check your email.</p>
-              <p className="mt-2 text-muted-foreground">
-                We sent a sign-in link to {email}. The link is good for one use; if it
-                doesn't arrive in a few minutes, contact your attorney.
-              </p>
+            <div className="space-y-4">
+              <div className="text-sm">
+                <p className="font-medium">Check your email.</p>
+                <p className="mt-2 text-muted-foreground">
+                  We sent a sign-in link and a 6-digit code to{" "}
+                  <span className="font-medium text-foreground">{email}</span>. Tap
+                  the link in the email, or enter the code below.
+                </p>
+              </div>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (code.trim().length >= 6) verifyCode();
+                }}
+                className="space-y-3"
+              >
+                <label className="block text-sm">
+                  <span className="text-muted-foreground">6-digit code</span>
+                  <Input
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    required
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                    placeholder="123456"
+                    className="mt-1 text-center text-2xl tracking-[0.4em] font-mono"
+                  />
+                </label>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={verifying || code.trim().length < 6}
+                >
+                  {verifying ? "Signing in…" : "Sign in"}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSent(false);
+                    setCode("");
+                  }}
+                  className="block w-full text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Use a different email
+                </button>
+              </form>
             </div>
           ) : (
             <form

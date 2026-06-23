@@ -192,14 +192,9 @@ export function makeRetainerService() {
     const { caseId } = await createSsdiCaseOpener(zoho)(ctx);
     if (!caseId) return;
     try {
-      const { fillCaseIdOnLink } = await import("@/integrations/portal/autoInvite.server");
-      await fillCaseIdOnLink({ engagementId: ctx.engagementId, caseId });
-    } catch (err) {
-      console.error("[signClient] fillCaseIdOnLink failed", err);
-    }
-    try {
-      // Run the full intake playbook (SSA-1696, task bundle, portal invite,
-      // welcome email, intake questionnaire, doc request, etc.). Idempotent.
+      // Run the SSDI case-open playbook (SSA-1696, task bundle, internal
+      // notification). Portal invite + welcome email + questionnaire ran at
+      // conversion time; see conversionPlaybook.ts.
       const { onCaseOpened } = await import("./caseIntakeService");
       await onCaseOpened({ zoho, caseId });
     } catch (err) {
