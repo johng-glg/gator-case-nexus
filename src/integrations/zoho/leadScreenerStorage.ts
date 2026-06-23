@@ -16,6 +16,12 @@ export type StoredLeadScreener = {
     urgent: boolean;
     knockouts: string[];
   };
+  smsConsent?: {
+    granted: boolean;
+    at?: string;
+    text?: string | null;
+    source?: string | null;
+  };
 };
 
 export function parseScreenerBlock(description: unknown): StoredLeadScreener | null {
