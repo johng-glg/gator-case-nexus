@@ -44,6 +44,7 @@ export type QueryName =
   | "deadlinesAll"
   | "myDeadlines"
   | "upcomingHearings"
+  | "myUpcomingHearings"
   | "releasesExpiringSoon"
   | "releasesAll"
   | "pipelineByStage"
@@ -61,6 +62,9 @@ export type QueryName =
   | "allContacts"
   | "engagementsByContact"
   | "allLeads"
+  | "leadsToQualify"
+  | "pendingRetainers"
+  | "myOpenTasks"
   | "allReferrals"
   | "ssdiCaseSearch"
   | "contactSearch"
@@ -120,6 +124,33 @@ export function buildQuery(name: QueryName, params: Record<string, unknown> = {}
               from SSDI_Cases
               where ALJ_Hearing_Scheduled_Date is not null and Is_Closed = false
               order by ALJ_Hearing_Scheduled_Date asc
+              limit 200`;
+    case "myUpcomingHearings":
+      return `select Case_Number, ALJ_Hearing_Scheduled_Date, Hearing_Office_ODAR, ALJ_Name,
+                     Engagement, Engagement.Name, Assigned_Attorney
+              from SSDI_Cases
+              where ALJ_Hearing_Scheduled_Date is not null and Is_Closed = false
+                and Assigned_Attorney.id = ${safeId(params.userId)}
+              order by ALJ_Hearing_Scheduled_Date asc
+              limit 200`;
+    case "myOpenTasks":
+      return `select id, Subject, Status, Priority, Due_Date, Owner, What_Id, se_module
+              from Tasks
+              where Owner = ${safeId(params.userId)} and Status != 'Completed'
+              order by Due_Date asc
+              limit 200`;
+    case "leadsToQualify":
+      return `select id, First_Name, Last_Name, Email, Phone, Lead_Status, Lead_Source, Practice_Area, Created_Time
+              from Leads
+              where Lead_Status in ('New','Contacted','Attempted Contact','Pre-Qualified')
+              order by Created_Time desc
+              limit 200`;
+    case "pendingRetainers":
+      return `select id, Name, Engagement_Type, Retainer_Status, Modified_Time,
+                     Client.First_Name, Client.Last_Name
+              from Engagements
+              where Retainer_Status = 'Sent'
+              order by Modified_Time asc
               limit 200`;
     case "releasesExpiringSoon":
       return `select Case_Number, Release_Expiration_Date, Engagement
