@@ -247,9 +247,16 @@ export const getMyPortalView = createServerFn({ method: "GET" })
       .coql<EngagementRow>(
         `select id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Open_Date from Engagements where Client = '${zohoContactId}' order by Modified_Time desc limit 50`,
       )
-      .catch((err) => {
+      .catch(async (err) => {
         console.error("[getMyPortalView] engagements COQL failed", err);
-        return [] as EngagementRow[];
+        return zoho
+          .coql<EngagementRow>(
+            `select id, Name, Engagement_Type, Engagement_Status from Engagements where Client = '${zohoContactId}' limit 50`,
+          )
+          .catch((fallbackErr) => {
+            console.error("[getMyPortalView] engagements fallback COQL failed", fallbackErr);
+            return [] as EngagementRow[];
+          });
       });
 
     // 3) For each engagement, shape via the per-practice adapter (allowlist).
