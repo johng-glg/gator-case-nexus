@@ -98,6 +98,27 @@ export async function autoInvitePortal(args: {
     if (upsertError) throw new Error(upsertError.message);
   }
 
+  // Backward-compat: keep the legacy case-keyed table populated so existing
+  // documents/messaging code that joins on `client_portal_links` keeps working.
+  // Safe to remove once all callers migrate to `client_portal_contacts`.
+  if (args.engagementId) {
+    await supabaseAdmin
+      .from("client_portal_links")
+      .upsert(
+        {
+          user_id: userId!,
+          email,
+          zoho_case_id: null,
+          zoho_engagement_id: args.engagementId,
+          invited_by: args.invitedByUserId === "00000000-0000-0000-0000-000000000000"
+            ? null
+            : args.invitedByUserId,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
+  }
+
   return { userId: userId!, resent };
 }
 

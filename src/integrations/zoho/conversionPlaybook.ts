@@ -102,6 +102,7 @@ export async function onConversion(opts: RunOpts): Promise<StepResult[]> {
         const { resent } = await autoInvitePortal({
           email: clientEmail,
           contactId,
+          engagementId: opts.engagementId,
           invitedByUserId:
             opts.invitedByUserId ?? "00000000-0000-0000-0000-000000000000",
         });
