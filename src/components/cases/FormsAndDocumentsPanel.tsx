@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { sendIntakeForm } from "@/lib/zoho.functions";
+import { sendIntakeForm, markIntakeFormSigned } from "@/lib/zoho.functions";
 import { listCaseDocuments, setDocumentStatus } from "@/lib/caseDocuments.functions";
 import { DOC_STATUSES, type DocStatus } from "@/integrations/zoho/documents";
 import type { Stage } from "@/integrations/zoho/lifecycle";
@@ -63,6 +63,7 @@ export function FormsAndDocumentsPanel({
   retainerSignedDate,
 }: Props) {
   const send = useServerFn(sendIntakeForm);
+  const markSigned = useServerFn(markIntakeFormSigned);
   const listFn = useServerFn(listCaseDocuments);
   const setFn = useServerFn(setDocumentStatus);
   const qc = useQueryClient();
@@ -91,6 +92,16 @@ export function FormsAndDocumentsPanel({
       qc.invalidateQueries({ queryKey: ["case", caseId] });
     },
     onError: (e) => toast.error(e instanceof Error ? e.message : "Send failed"),
+  });
+
+  const markSignedMut = useMutation({
+    mutationFn: (args: { code: "SSA-1696" | "SSA-827" | "SSA-1693" }) =>
+      markSigned({ data: { caseId, code: args.code } }),
+    onSuccess: (_d, args) => {
+      toast.success(`${args.code} marked as signed`);
+      qc.invalidateQueries({ queryKey: ["case", caseId] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Update failed"),
   });
 
   const get = (k: string) => record?.[k] as string | boolean | undefined;
@@ -232,27 +243,40 @@ export function FormsAndDocumentsPanel({
                     </div>
                   </td>
                   <td className="px-3 py-2.5 text-right">
-                    {showSendBtn ? (
-                      <Button
-                        size="sm"
-                        variant={r.eSignStatus === "Not sent" ? "default" : "outline"}
-                        disabled={sendMut.isPending}
-                        onClick={() => {
-                          if (r.requiresAttestation) {
-                            setAttested(false);
-                            setAttestOpen(true);
-                          } else if (r.code !== "retainer") {
-                            sendMut.mutate({ code: r.code });
-                          }
-                        }}
-                      >
-                        {r.eSignStatus === "Not sent" ? "Send" : "Resend"}
-                      </Button>
-                    ) : r.code === "retainer" ? (
-                      <span className="text-[11px] text-muted-foreground">on engagement</span>
-                    ) : (
-                      <span className="text-[11px] text-muted-foreground">—</span>
-                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      {showSendBtn ? (
+                        <Button
+                          size="sm"
+                          variant={r.eSignStatus === "Not sent" ? "default" : "outline"}
+                          disabled={sendMut.isPending}
+                          onClick={() => {
+                            if (r.requiresAttestation) {
+                              setAttested(false);
+                              setAttestOpen(true);
+                            } else if (r.code !== "retainer") {
+                              sendMut.mutate({ code: r.code });
+                            }
+                          }}
+                        >
+                          {r.eSignStatus === "Not sent" ? "Send" : "Resend"}
+                        </Button>
+                      ) : r.code === "retainer" ? (
+                        <span className="text-[11px] text-muted-foreground">on engagement</span>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">—</span>
+                      )}
+                      {r.code !== "retainer" && r.eSignStatus === "Sent" && (
+                        <button
+                          type="button"
+                          disabled={markSignedMut.isPending}
+                          onClick={() => markSignedMut.mutate({ code: r.code as "SSA-1696" | "SSA-827" | "SSA-1693" })}
+                          className="text-[10px] text-muted-foreground underline hover:text-foreground disabled:opacity-50"
+                          title="If the client signed but the webhook didn't update, mark it signed manually."
+                        >
+                          Mark signed
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
