@@ -232,6 +232,5 @@ export function CaseActionsMenu({ caseId, engagementId, stage, isAdmin }: Props)
     </>
   );
 }
-// Unused param hint
-void ((_: Stage) => _);
+
 
