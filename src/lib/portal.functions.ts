@@ -159,8 +159,7 @@ interface EngagementRow {
   Engagement_Type?: string;
   Engagement_Status?: string;
   Retainer_Status?: string;
-  Assigned_Attorney?: { id?: string; name?: string } | string;
-  Modified_Time?: string;
+  Open_Date?: string;
 }
 
 interface SsdiCaseRow {
@@ -246,18 +245,25 @@ export const getMyPortalView = createServerFn({ method: "GET" })
     // not `Client.id = ...` — that form returns zero rows on Engagements/SSDI_Cases.
     const engagements = await zoho
       .coql<EngagementRow>(
-        `select id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Assigned_Attorney, Modified_Time from Engagements where Client = '${zohoContactId}' order by Modified_Time desc limit 50`,
+        `select id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Open_Date from Engagements where Client = '${zohoContactId}' order by Modified_Time desc limit 50`,
       )
-      .catch((err) => {
+      .catch(async (err) => {
         console.error("[getMyPortalView] engagements COQL failed", err);
-        return [] as EngagementRow[];
+        return zoho
+          .coql<EngagementRow>(
+            `select id, Name, Engagement_Type, Engagement_Status from Engagements where Client = '${zohoContactId}' limit 50`,
+          )
+          .catch((fallbackErr) => {
+            console.error("[getMyPortalView] engagements fallback COQL failed", fallbackErr);
+            return [] as EngagementRow[];
+          });
       });
 
     // 3) For each engagement, shape via the per-practice adapter (allowlist).
     const matters: PortalMatter[] = [];
     for (const eng of engagements) {
       const practice = (eng.Engagement_Type ?? "").toString();
-      const attorney = attorneyName(eng.Assigned_Attorney);
+      const updatedAt = eng.Open_Date;
 
       if (practice === "SSDI") {
         // Look up the SSDI case (if opened) for stage + hearing date.
@@ -289,10 +295,10 @@ export const getMyPortalView = createServerFn({ method: "GET" })
             stage: caseRow?.Current_Stage ?? "Retained",
             retainerSigned,
             hearingDate: caseRow?.ALJ_Hearing_Scheduled_Date ?? undefined,
-            attorney: attorneyName(caseRow?.Assigned_Attorney) ?? attorney,
+            attorney: attorneyName(caseRow?.Assigned_Attorney),
             openDocRequests,
             questionnaireOutstanding,
-            updatedAt: eng.Modified_Time,
+            updatedAt,
           }),
         );
         continue;
@@ -300,8 +306,8 @@ export const getMyPortalView = createServerFn({ method: "GET" })
 
       const stubInput = {
         engagementId: eng.id,
-        attorney,
-        updatedAt: eng.Modified_Time,
+        attorney: undefined,
+        updatedAt,
       };
       switch (practice) {
         case "FCRA":
@@ -326,8 +332,8 @@ export const getMyPortalView = createServerFn({ method: "GET" })
             statusLabel: "In progress",
             actionsNeeded: [],
             keyDates: [],
-            attorney,
-            updatedAt: eng.Modified_Time,
+            attorney: undefined,
+            updatedAt,
           });
       }
     }
