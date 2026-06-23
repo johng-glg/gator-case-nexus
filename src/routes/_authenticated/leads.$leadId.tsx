@@ -7,6 +7,15 @@ import { ChevronLeft, Loader2, ArrowRight, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { ScreenerPanel } from "@/components/leads/ScreenerPanel";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 
 export const Route = createFileRoute("/_authenticated/leads/$leadId")({
@@ -53,6 +62,11 @@ function LeadDetail() {
 
   const [overrideOpen, setOverrideOpen] = useState(false);
   const [overrideReason, setOverrideReason] = useState("");
+  const [conflictAlertOpen, setConflictAlertOpen] = useState(false);
+  const [convertedResult, setConvertedResult] = useState<{ engagementId: string; conflictMatches: any[] } | null>(null);
+
+  const goToEngagement = (engagementId: string) =>
+    navigate({ to: "/engagements/$engagementId", params: { engagementId } });
 
   const convert = useMutation({
     mutationFn: (override?: { reason: string }) =>
@@ -60,7 +74,12 @@ function LeadDetail() {
     onSuccess: (res) => {
       toast.success("Converted to engagement");
       qc.invalidateQueries({ queryKey: ["allLeads"] });
-      navigate({ to: "/engagements/$engagementId", params: { engagementId: res.engagementId } });
+      if (res.conflict?.status === "Conflict found") {
+        setConvertedResult({ engagementId: res.engagementId, conflictMatches: res.conflict.matches ?? [] });
+        setConflictAlertOpen(true);
+      } else {
+        goToEngagement(res.engagementId);
+      }
     },
     onError: (e: any) => toast.error(e.message ?? "Conversion failed"),
   });
@@ -205,6 +224,38 @@ function LeadDetail() {
           )}
         </div>
       </section>
+
+      <AlertDialog open={conflictAlertOpen} onOpenChange={setConflictAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Conflict Check Alert</AlertDialogTitle>
+            <AlertDialogDescription>
+              This lead’s email matches an existing Contact in your CRM.
+              The new Engagement has been linked to the existing Contact instead of creating a duplicate.
+              {convertedResult && convertedResult.conflictMatches.length > 0 && (
+                <span className="block mt-2">
+                  Matched Contact: {" "}
+                  <strong>
+                    {[convertedResult.conflictMatches[0].First_Name, convertedResult.conflictMatches[0].Last_Name]
+                      .filter(Boolean)
+                      .join(" ") || "Existing contact"}
+                  </strong>
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction
+              onClick={() => {
+                setConflictAlertOpen(false);
+                if (convertedResult) goToEngagement(convertedResult.engagementId);
+              }}
+            >
+              Ok
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
