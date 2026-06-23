@@ -374,6 +374,15 @@ function CaseDetail() {
         />
       )}
 
+      {/* Hearing prep — ODAR exhibit index, on hearing-related stages */}
+      <HearingPrepPanel
+        caseId={caseId}
+        stage={stage}
+        caseNumber={record.Case_Number as string | undefined}
+        clientName={clientName}
+        hearingDate={(record.ALJ_Hearing_Scheduled_Date as string | null | undefined) ?? null}
+      />
+
       {/* Forms & documents — unified panel */}
       <div ref={formsSectionRef}>
         <FormsAndDocumentsPanel
