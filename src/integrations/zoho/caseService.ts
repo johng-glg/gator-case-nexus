@@ -12,7 +12,7 @@
  * Field API names match the confirmed contract (SSDI_Cases, Tasks).
  */
 
-import { TRANSITIONS, canTransition, HOOKS, normalizeStage, missingRequiredFieldsDetailed, type Stage, type DueRule, type MissingField } from "./lifecycle";
+import { TRANSITIONS, canTransition, HOOKS, normalizeStage, missingRequiredFieldsDetailed, STAGE_SLA_DAYS, type Stage, type DueRule, type MissingField } from "./lifecycle";
 import { computeAppealDeadline, daysUntil, isAtRisk, releaseExpiration, releaseExpiringSoon, asUTCDate, localToday } from "./deadlines";
 import type { ZohoClient, ZohoRecord } from "./zohoClient";
 import { SERVICE_ACTOR } from "./zohoClient";
