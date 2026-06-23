@@ -28,6 +28,7 @@ interface DigestRow {
   overdue: DigestCase[];
   due_soon: DigestCase[];
   release_expiring: DigestCase[];
+  stalled: StalledCase[];
   error: string | null;
   calendar_created: number | null;
   calendar_updated: number | null;
@@ -44,6 +45,16 @@ interface DigestCase {
   date: string;
   days?: number;
   kind: "overdue" | "due_soon" | "release";
+}
+
+interface StalledCase {
+  id: string;
+  caseNumber: string | null;
+  attorneyName: string | null;
+  stage: string;
+  daysInStage: number;
+  slaDays: number;
+  since: string;
 }
 
 function DeadlineSweepPage() {
