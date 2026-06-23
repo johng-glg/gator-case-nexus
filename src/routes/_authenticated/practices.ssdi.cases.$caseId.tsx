@@ -60,6 +60,7 @@ function CaseDetail() {
   const [dialogInitialStage, setDialogInitialStage] = useState<Stage | undefined>(undefined);
   const [dialogInitialFields, setDialogInitialFields] = useState<Record<string, string> | undefined>(undefined);
   const tasksSectionRef = useRef<HTMLDivElement | null>(null);
+  const [docsRequestNonce, setDocsRequestNonce] = useState(0);
 
   // Admin check (gates the overflow menu admin tools).
   const [isAdmin, setIsAdmin] = useState(false);
