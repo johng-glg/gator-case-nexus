@@ -167,10 +167,11 @@ export const getLead = createServerFn({ method: "POST" })
         "Owner", "Created_Time", "Converted_Contact",
       ]);
     if (!record) return { record: null };
-    const { parseScreenerBlock } = await import("@/integrations/zoho/leadScreenerStorage");
+    const { parseScreenerBlock, stripScreenerBlock } = await import("@/integrations/zoho/leadScreenerStorage");
     const stored = parseScreenerBlock((record as Record<string, unknown>).Description);
     if (stored) {
       Object.assign(record as Record<string, unknown>, {
+        Description: stripScreenerBlock((record as Record<string, unknown>).Description),
         Working_Above_SGA: stored.input.workingAboveSGA,
         Monthly_Earnings: stored.input.monthlyEarnings,
         Is_Blind: stored.input.isBlind,
