@@ -28,18 +28,17 @@ export function ClientDocumentsSection({
   caseId?: string;
   engagementId?: string;
 }) {
-  // Uploads still need a caseId server-side; for pre-case engagements we show
-  // requests read-only until the case is opened.
+  // Uploads need an opened case for storage/audit. Pre-case engagement requests
+  // still show here as read-only until the case exists.
   const uploadKey = caseId ?? null;
-  void engagementId; // currently informational only; future engagement-scoped uploads.
   const queryClient = useQueryClient();
   const fetchReqs = useServerFn(getMyDocumentRequests);
   const getUrl = useServerFn(getUploadUrl);
   const recordUp = useServerFn(recordUpload);
 
   const q = useQuery({
-    queryKey: ["client-document-requests"],
-    queryFn: () => fetchReqs(),
+    queryKey: ["client-document-requests", caseId ?? null, engagementId ?? null],
+    queryFn: () => fetchReqs({ data: { caseId, engagementId } }),
   });
 
   const [uploadingId, setUploadingId] = useState<string | null>(null);
