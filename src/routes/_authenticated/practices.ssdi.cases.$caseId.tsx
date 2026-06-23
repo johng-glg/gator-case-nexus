@@ -361,6 +361,18 @@ function CaseDetail() {
         />
       </div>
 
+      {/* Appeal forms — surfaces when the case is on a denial stage */}
+      <AppealFormsPanel stage={stage} record={record as Record<string, unknown>} clientName={clientName} />
+
+      {/* Notice of Award fee reconciliation — surfaces once an NoA date exists */}
+      {((record.Notice_of_Award_Date as string | undefined) || stage === "Award / NOA received" || stage === "Fee petition filed") && (
+        <NoaFeeCard
+          caseId={caseId}
+          backPay={backPay}
+          noaDate={(record.Notice_of_Award_Date as string | null | undefined) ?? null}
+        />
+      )}
+
       {/* Forms & documents — unified panel */}
       <div ref={formsSectionRef}>
         <FormsAndDocumentsPanel
