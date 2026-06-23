@@ -165,16 +165,31 @@ export const getLead = createServerFn({ method: "POST" })
         "First_Name", "Last_Name", "Email", "Phone", "Mobile", "Company",
         "Lead_Source", "Lead_Status", "Practice_Area", "Description",
         "Owner", "Created_Time", "Converted_Contact",
-        // Screener inputs
-        "Working_Above_SGA", "Monthly_Earnings", "Is_Blind", "Receiving_Treatment",
-        "Meets_12mo_Duration", "Claim_Type", "Date_Last_Insured", "Already_Represented",
-        "Date_of_Birth", "Current_Level", "Appeal_Deadline_Date", "Primary_Impairment",
-        // Screener outputs
-        "Lead_Tier", "Lead_Score", "Screener_Knockouts", "Is_Urgent",
-        // SMS consent (TCPA)
-        "SMS_Consent_At", "SMS_Consent_Text", "SMS_Consent_Source",
       ]);
-    return { record: record ? toJson<ZohoRow>(record) : null };
+    if (!record) return { record: null };
+    const { parseScreenerBlock } = await import("@/integrations/zoho/leadScreenerStorage");
+    const stored = parseScreenerBlock((record as Record<string, unknown>).Description);
+    if (stored) {
+      Object.assign(record as Record<string, unknown>, {
+        Working_Above_SGA: stored.input.workingAboveSGA,
+        Monthly_Earnings: stored.input.monthlyEarnings,
+        Is_Blind: stored.input.isBlind,
+        Receiving_Treatment: stored.input.receivingTreatment,
+        Meets_12mo_Duration: stored.input.meetsTwelveMonthDuration,
+        Claim_Type: stored.input.claimType,
+        Date_Last_Insured: stored.input.dateLastInsured,
+        Already_Represented: stored.input.alreadyRepresented,
+        Date_of_Birth: stored.input.dateOfBirth,
+        Current_Level: stored.input.currentLevel,
+        Appeal_Deadline_Date: stored.input.appealDeadlineDate,
+        Primary_Impairment: stored.input.primaryImpairment,
+        Lead_Tier: stored.result.tier,
+        Lead_Score: stored.result.score,
+        Screener_Knockouts: stored.result.knockouts.join("\n") || null,
+        Is_Urgent: stored.result.urgent,
+      });
+    }
+    return { record: toJson<ZohoRow>(record) };
   });
 
 const leadStatusInput = z.object({
