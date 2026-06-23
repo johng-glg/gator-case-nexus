@@ -416,7 +416,7 @@ function RetainerPanel({
                   className={cn(
                     "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] whitespace-nowrap min-w-0",
                     activeError && "border-destructive/40 bg-destructive/10 text-destructive font-medium",
-                    isActive && !activeError && "border-primary bg-primary/10 text-primary font-medium",
+                    isActive && !activeError && "border-primary bg-primary text-primary-foreground font-semibold shadow-sm",
                     isDone && "border-border bg-muted text-muted-foreground",
                     !isActive && !isDone && "border-dashed border-border text-muted-foreground/60",
                   )}
