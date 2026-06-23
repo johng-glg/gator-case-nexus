@@ -29,6 +29,14 @@ type GeneratedLinkData = {
   } | null;
 };
 
+function generateToken(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 async function enqueuePortalAuthEmail(args: {
   email: string;
   emailType: "invite" | "magiclink";
@@ -62,6 +70,58 @@ async function enqueuePortalAuthEmail(args: {
       ? "Welcome to your Gator Law case portal"
       : "Your Gator Law portal sign-in link";
 
+  const normalizedEmail = args.email.toLowerCase();
+  const { data: suppressed, error: suppressionError } = await supabaseAdmin
+    .from("suppressed_emails")
+    .select("id")
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+  if (suppressionError) throw new Error(`Suppression lookup failed: ${suppressionError.message}`);
+  if (suppressed) {
+    await supabaseAdmin.from("email_send_log").insert({
+      message_id: messageId,
+      template_name: args.emailType,
+      recipient_email: args.email,
+      status: "suppressed",
+      metadata: { source: "portal_reinvite" },
+    });
+    throw new Error("Portal email is suppressed for this recipient.");
+  }
+
+  let unsubscribeToken: string;
+  const { data: existingToken, error: tokenLookupError } = await supabaseAdmin
+    .from("email_unsubscribe_tokens")
+    .select("token, used_at")
+    .eq("email", normalizedEmail)
+    .maybeSingle();
+  if (tokenLookupError) throw new Error(`Unsubscribe token lookup failed: ${tokenLookupError.message}`);
+  if (existingToken && !existingToken.used_at) {
+    unsubscribeToken = existingToken.token;
+  } else if (!existingToken) {
+    const fresh = generateToken();
+    const { error: tokenError } = await supabaseAdmin
+      .from("email_unsubscribe_tokens")
+      .upsert({ token: fresh, email: normalizedEmail }, { onConflict: "email", ignoreDuplicates: true });
+    if (tokenError) throw new Error(`Unsubscribe token creation failed: ${tokenError.message}`);
+    const { data: storedToken, error: reReadError } = await supabaseAdmin
+      .from("email_unsubscribe_tokens")
+      .select("token")
+      .eq("email", normalizedEmail)
+      .maybeSingle();
+    if (reReadError || !storedToken) throw new Error("Unsubscribe token persistence failed.");
+    unsubscribeToken = storedToken.token;
+  } else {
+    await supabaseAdmin.from("email_send_log").insert({
+      message_id: messageId,
+      template_name: args.emailType,
+      recipient_email: args.email,
+      status: "suppressed",
+      error_message: "unsubscribe token already used",
+      metadata: { source: "portal_reinvite" },
+    });
+    throw new Error("Portal email is suppressed for this recipient.");
+  }
+
   await supabaseAdmin.from("email_send_log").insert({
     message_id: messageId,
     template_name: args.emailType,
@@ -83,6 +143,7 @@ async function enqueuePortalAuthEmail(args: {
       purpose: "transactional",
       label: args.emailType,
       idempotency_key: `portal-${args.emailType}-${args.email}-${messageId}`,
+      unsubscribe_token: unsubscribeToken,
       queued_at: new Date().toISOString(),
     },
   });
