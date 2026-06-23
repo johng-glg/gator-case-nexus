@@ -193,52 +193,9 @@ export function CaseActionsMenu({ caseId, engagementId, stage, isAdmin }: Props)
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Client portal invite</DialogTitle>
-            <DialogDescription>
-              Sends a one-click sign-in link by email. The client will see read-only case
-              status, current stage, and upcoming deadlines — no fees, no notes.
-              {linkedEmail ? (
-                <span className="block mt-2 text-foreground">
-                  Currently linked: <strong>{linkedEmail}</strong>. Sending again will replace
-                  the previous link.
-                </span>
-              ) : null}
-            </DialogDescription>
-          </DialogHeader>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (inviteEmail.trim()) inviteMut.mutate();
-            }}
-            className="space-y-3"
-          >
-            <label className="block text-sm">
-              <span className="text-muted-foreground">Client email</span>
-              <Input
-                type="email"
-                required
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
-                placeholder="client@example.com"
-                className="mt-1"
-              />
-            </label>
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setInviteOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={inviteMut.isPending || !inviteEmail.trim()}>
-                {inviteMut.isPending ? "Sending…" : "Send invite"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
+
 
 
