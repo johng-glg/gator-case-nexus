@@ -160,7 +160,7 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
       id: leadId, Lead_Status: "Converted", Converted_Contact: { id: result.clientId },
     }]);
 
-    return { ...result, leadId, conflict, override: opts?.override ?? null };
+    return { ...result, leadId, conflict, override: opts?.override ?? null, clientEmail: email ?? null };
   }
 
 

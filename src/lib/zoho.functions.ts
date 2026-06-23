@@ -359,12 +359,40 @@ export const convertLead = createServerFn({ method: "POST" })
         metadata: { leadId: data.leadId, reason: data.override.reason },
       });
     }
+
+    // Auto-invite the new client to the portal. Don't fail conversion if the invite
+    // can't be sent (logged, surfaced separately in UI via portalInvite field).
+    let portalInvite: { sent: boolean; email: string | null; error?: string } = {
+      sent: false,
+      email: result.clientEmail,
+    };
+    if (result.clientEmail) {
+      try {
+        const { autoInvitePortal } = await import("@/integrations/portal/autoInvite.server");
+        await autoInvitePortal({
+          email: result.clientEmail,
+          engagementId: result.engagementId,
+          invitedByUserId: context.userId,
+        });
+        portalInvite = { sent: true, email: result.clientEmail };
+      } catch (err) {
+        console.error("[convertLead] auto portal invite failed", err);
+        portalInvite = {
+          sent: false,
+          email: result.clientEmail,
+          error: err instanceof Error ? err.message : "Unknown error",
+        };
+      }
+    }
+
     return toJson<{
       clientId: string; engagementId: string; leadId: string;
       conflict: { status: "Cleared" | "Conflict found"; matches: ZohoRow[] };
       override: { reason: string } | null;
-    }>(result);
+      portalInvite: { sent: boolean; email: string | null; error?: string };
+    }>({ ...result, portalInvite });
   });
+
 
 
 const advanceInput = z.object({
