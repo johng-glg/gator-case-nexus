@@ -134,12 +134,21 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
     const firstName = str(lead.First_Name) ?? "";
     if (!lastName) throw new Error(`Lead ${leadId} has no last name; cannot convert.`);
 
-    const conflict = await runConflictCheck(userKey, { lastName, email: str(lead.Email) });
+    const email = str(lead.Email);
+    const conflict = await runConflictCheck(userKey, { lastName, email });
+
+    // Email is unique on Contacts in Zoho — if a Contact already has this email,
+    // reuse it instead of trying to create a duplicate (which would fail with
+    // DUPLICATE_DATA). Last-name-only matches stay advisory and create a new Contact.
+    const emailMatch = email
+      ? conflict.matches.find((m) => (m.Email ?? "").toLowerCase() === email.toLowerCase())
+      : undefined;
 
     const result = await createIntake(userKey, {
+      clientId: emailMatch?.id,
       client: {
         firstName, lastName,
-        email: str(lead.Email), mobile: str(lead.Mobile), homePhone: str(lead.Phone),
+        email, mobile: str(lead.Mobile), homePhone: str(lead.Phone),
         leadSource: str(lead.Lead_Source),
         mailingStreet: str(lead.Street), mailingCity: str(lead.City),
         mailingState: str(lead.State), mailingZip: str(lead.Zip_Code),
