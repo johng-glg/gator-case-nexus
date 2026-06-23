@@ -360,29 +360,34 @@ export const convertLead = createServerFn({ method: "POST" })
       });
     }
 
-    // Auto-invite the new client to the portal. Don't fail conversion if the invite
-    // can't be sent (logged, surfaced separately in UI via portalInvite field).
+    // Run the onConversion playbook (portal invite + welcome + questionnaire +
+    // intake doc request). Don't fail conversion if a step errors — the playbook
+    // logs each step to case_activity_log.
     let portalInvite: { sent: boolean; email: string | null; error?: string } = {
       sent: false,
       email: result.clientEmail,
     };
-    if (result.clientEmail) {
-      try {
-        const { autoInvitePortal } = await import("@/integrations/portal/autoInvite.server");
-        await autoInvitePortal({
-          email: result.clientEmail,
-          engagementId: result.engagementId,
-          invitedByUserId: context.userId,
-        });
-        portalInvite = { sent: true, email: result.clientEmail };
-      } catch (err) {
-        console.error("[convertLead] auto portal invite failed", err);
-        portalInvite = {
-          sent: false,
-          email: result.clientEmail,
-          error: err instanceof Error ? err.message : "Unknown error",
-        };
-      }
+    try {
+      const { onConversion } = await import("@/integrations/zoho/conversionPlaybook");
+      const steps = await onConversion({
+        zoho: makeZohoClient(),
+        engagementId: result.engagementId,
+        contactId: result.clientId,
+        invitedByUserId: context.userId,
+      });
+      const inviteStep = steps.find((s) => s.step === "Portal invite");
+      portalInvite = {
+        sent: inviteStep?.status === "ok",
+        email: result.clientEmail,
+        error: inviteStep?.status === "error" ? inviteStep.detail : undefined,
+      };
+    } catch (err) {
+      console.error("[convertLead] onConversion failed", err);
+      portalInvite = {
+        sent: false,
+        email: result.clientEmail,
+        error: err instanceof Error ? err.message : "Unknown error",
+      };
     }
 
     return toJson<{

@@ -165,130 +165,16 @@ export async function onCaseOpened(opts: RunOpts): Promise<PlaybookStepResult[]>
     }
   }
 
-  // ---- Step 4: Auto-invite to portal (and fill case id) ----
-  if (cfg.portalInvite) {
-    try {
-      if (!clientEmail) {
-        await log("Portal invite", "skipped", "client has no email");
-      } else {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-        const { data: existingLink } = await supabaseAdmin
-          .from("client_portal_links")
-          .select("user_id, zoho_case_id")
-          .eq("zoho_engagement_id", engagementId)
-          .maybeSingle();
-        if (existingLink) {
-          if (!existingLink.zoho_case_id) {
-            const { fillCaseIdOnLink } = await import("@/integrations/portal/autoInvite.server");
-            await fillCaseIdOnLink({ engagementId, caseId: opts.caseId });
-            await log("Portal invite", "ok", "linked existing portal to this case");
-          } else {
-            await log("Portal invite", "skipped", "portal already linked");
-          }
-        } else {
-          const { autoInvitePortal, fillCaseIdOnLink } = await import("@/integrations/portal/autoInvite.server");
-          // invitedByUserId is required by the helper; pass a zero-UUID for service runs.
-          await autoInvitePortal({
-            email: clientEmail,
-            engagementId,
-            invitedByUserId: "00000000-0000-0000-0000-000000000000",
-          });
-          await fillCaseIdOnLink({ engagementId, caseId: opts.caseId });
-          await log("Portal invite", "ok", `invite sent to ${clientEmail}`);
-        }
-      }
-    } catch (e) {
-      await log("Portal invite", "error", e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  // ---- Step 5: Welcome-packet email ----
-  if (cfg.welcomeEmail) {
-    await sendTransactionalSafe({
-      step: "Welcome email",
-      log,
-      recipientEmail: clientEmail,
-      templateName: "ssdi-welcome-packet",
-      idempotencyKey: `ssdi-welcome-${opts.caseId}`,
-      templateData: {
-        firstName: clientFirstName ?? null,
-        attorneyName: null,
-        attorneyEmail: null,
-        portalUrl: `${siteUrl()}/portal`,
-      },
-    });
-  }
-
-  // ---- Step 6: Intake questionnaire email ----
-  if (cfg.questionnaireEmail) {
-    await sendTransactionalSafe({
-      step: "Intake questionnaire email",
-      log,
-      recipientEmail: clientEmail,
-      templateName: "ssdi-intake-questionnaire",
-      idempotencyKey: `ssdi-intake-questionnaire-${opts.caseId}`,
-      templateData: {
-        firstName: clientFirstName ?? null,
-        questionnaireUrl: `${siteUrl()}/portal/intake?case=${opts.caseId}`,
-      },
-    });
-  }
-
-  // ---- Step 7: Document request ----
-  if (cfg.docRequest) {
-    try {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const label = "Standard SSDI intake documents";
-      const { data: existingReq } = await supabaseAdmin
-        .from("document_requests")
-        .select("id")
-        .eq("case_id", opts.caseId)
-        .eq("label", label)
-        .maybeSingle();
-      if (existingReq) {
-        await log("Document request", "skipped", "intake request already exists");
-      } else {
-        const { error } = await supabaseAdmin.from("document_requests").insert({
-          case_id: opts.caseId,
-          engagement_id: engagementId,
-          label,
-          instructions: [
-            "Photo ID (driver's license, passport, or state ID).",
-            "Recent medical records or visit summaries from your treating providers.",
-            "Any letters or notices you've received from the Social Security Administration.",
-            "Recent pay stubs or W-2s, if you've worked in the past 5 years.",
-          ].join("\n\n"),
-          status: "open",
-        });
-        if (error) throw new Error(error.message);
-        await log("Document request", "ok", "created intake request");
-      }
-    } catch (e) {
-      await log("Document request", "error", e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  // ---- Step 8: SSA-1693 (only when firm uses the 1693 fee vehicle) ----
-  if (cfg.ssa1693) {
-    try {
-      if ((caseRec.SSA1693_Status as string) && caseRec.SSA1693_Status !== "Not sent") {
-        await log("SSA-1693 e-sign", "skipped", `already ${caseRec.SSA1693_Status}`);
-      } else {
-        const { makeFormsService } = await import("./signClient.server");
-        const forms = makeFormsService();
-        await forms.sendForm(SERVICE_ACTOR, opts.caseId, "SSA-1693");
-        await log("SSA-1693 e-sign", "ok", "sent for signature");
-      }
-    } catch (e) {
-      await log("SSA-1693 e-sign", "error", e instanceof Error ? e.message : String(e));
-    }
-  }
-
-  // ---- Step 9: Carry forward lead screener data ----
-  // Lead → Contact link is one-way; reading it requires a lookup we don't have
-  // wired here yet. Skipped (intentionally) — the lead screener already lives
-  // on the Lead's Description and can be pulled later. Logged for visibility.
-  await log("Carry-forward lead data", "skipped", "lead lookup not wired yet");
+  // ---- Steps moved to onConversion (run earlier, when lead → engagement created) ----
+  // Portal invite, welcome email, intake questionnaire, intake document request,
+  // and carry-forward of lead data all happen at conversion time so the client
+  // can start onboarding immediately. They're logged here as 'skipped' so the
+  // activity feed shows where to find them.
+  await log("Portal invite", "skipped", "handled at conversion");
+  await log("Welcome email", "skipped", "handled at conversion");
+  await log("Intake questionnaire email", "skipped", "handled at conversion");
+  await log("Document request", "skipped", "handled at conversion");
+  await log("Carry-forward lead data", "skipped", "handled at conversion");
 
   // ---- Step 10: Internal notification (activity log entry) ----
   if (cfg.internalNotification) {
