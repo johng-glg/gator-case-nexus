@@ -9,7 +9,7 @@
  *   - Seed test data (admin only)
  */
 import { Link } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { MoreHorizontal, RefreshCw, Mail, PlayCircle, FlaskConical, ScrollText } from "lucide-react";
@@ -22,27 +22,60 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   caseRecomputeDeadline,
   runCaseIntakePlaybook,
   seedTestCaseData,
 } from "@/lib/zoho.functions";
+import { inviteClientToPortal, getPortalLinkForCase } from "@/lib/portal.functions";
 import type { Stage } from "@/integrations/zoho/lifecycle";
 
 interface Props {
   caseId: string;
+  engagementId?: string;
   stage: Stage;
   isAdmin: boolean;
-  onInvitePortal?: () => void;
 }
 
-export function CaseActionsMenu({ caseId, stage, isAdmin, onInvitePortal }: Props) {
+export function CaseActionsMenu({ caseId, engagementId, stage, isAdmin }: Props) {
   const qc = useQueryClient();
   const recompute = useServerFn(caseRecomputeDeadline);
   const seedTestCase = useServerFn(seedTestCaseData);
   const runPlaybook = useServerFn(runCaseIntakePlaybook);
+  const invite = useServerFn(inviteClientToPortal);
+  const getLink = useServerFn(getPortalLinkForCase);
   const [busy, setBusy] = useState<string | null>(null);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+
+  const linkQ = useQuery({
+    queryKey: ["portal-link", caseId],
+    queryFn: () => getLink({ data: { caseId } }),
+    enabled: inviteOpen,
+  });
+  const linkedEmail = linkQ.data?.link?.email as string | undefined;
+
+  const inviteMut = useMutation({
+    mutationFn: () => invite({ data: { email: inviteEmail.trim(), caseId, engagementId } }),
+    onSuccess: () => {
+      toast.success(`Portal invite sent to ${inviteEmail.trim()}.`);
+      qc.invalidateQueries({ queryKey: ["portal-link", caseId] });
+      setInviteOpen(false);
+    },
+    onError: (e: unknown) => {
+      toast.error(e instanceof Error ? e.message : "Couldn't send invite.");
+    },
+  });
 
   const refresh = async () => {
     await Promise.all([
