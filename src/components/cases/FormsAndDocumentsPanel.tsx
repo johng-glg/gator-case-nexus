@@ -243,27 +243,40 @@ export function FormsAndDocumentsPanel({
                     </div>
                   </td>
                   <td className="px-3 py-2.5 text-right">
-                    {showSendBtn ? (
-                      <Button
-                        size="sm"
-                        variant={r.eSignStatus === "Not sent" ? "default" : "outline"}
-                        disabled={sendMut.isPending}
-                        onClick={() => {
-                          if (r.requiresAttestation) {
-                            setAttested(false);
-                            setAttestOpen(true);
-                          } else if (r.code !== "retainer") {
-                            sendMut.mutate({ code: r.code });
-                          }
-                        }}
-                      >
-                        {r.eSignStatus === "Not sent" ? "Send" : "Resend"}
-                      </Button>
-                    ) : r.code === "retainer" ? (
-                      <span className="text-[11px] text-muted-foreground">on engagement</span>
-                    ) : (
-                      <span className="text-[11px] text-muted-foreground">—</span>
-                    )}
+                    <div className="flex flex-col items-end gap-1">
+                      {showSendBtn ? (
+                        <Button
+                          size="sm"
+                          variant={r.eSignStatus === "Not sent" ? "default" : "outline"}
+                          disabled={sendMut.isPending}
+                          onClick={() => {
+                            if (r.requiresAttestation) {
+                              setAttested(false);
+                              setAttestOpen(true);
+                            } else if (r.code !== "retainer") {
+                              sendMut.mutate({ code: r.code });
+                            }
+                          }}
+                        >
+                          {r.eSignStatus === "Not sent" ? "Send" : "Resend"}
+                        </Button>
+                      ) : r.code === "retainer" ? (
+                        <span className="text-[11px] text-muted-foreground">on engagement</span>
+                      ) : (
+                        <span className="text-[11px] text-muted-foreground">—</span>
+                      )}
+                      {r.code !== "retainer" && r.eSignStatus === "Sent" && (
+                        <button
+                          type="button"
+                          disabled={markSignedMut.isPending}
+                          onClick={() => markSignedMut.mutate({ code: r.code as "SSA-1696" | "SSA-827" | "SSA-1693" })}
+                          className="text-[10px] text-muted-foreground underline hover:text-foreground disabled:opacity-50"
+                          title="If the client signed but the webhook didn't update, mark it signed manually."
+                        >
+                          Mark signed
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );
