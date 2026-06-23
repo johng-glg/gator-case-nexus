@@ -133,7 +133,7 @@ export async function autoInvitePortal(args: {
   let resent = false;
   let messageId: string | undefined;
 
-  if (existing) {
+  if (existing && existing.email.toLowerCase() === email) {
     // Refresh the link so the client can come back in. generateLink only creates
     // the link; it does not send the email, so we enqueue it ourselves.
     const link = await supabaseAdmin.auth.admin.generateLink({
@@ -154,8 +154,9 @@ export async function autoInvitePortal(args: {
       token: linkData?.properties?.email_otp,
     });
   } else {
-    // First-time invite. generateLink creates the auth invite + link but, unlike
-    // inviteUserByEmail, does not depend on the auth-email hook firing.
+    // First-time invite, or replacing a previous portal address for this contact.
+    // generateLink creates the auth invite + link but, unlike inviteUserByEmail,
+    // does not depend on the auth-email hook firing.
     const invite = await supabaseAdmin.auth.admin.generateLink({
       type: "invite",
       email,
@@ -210,7 +211,7 @@ export async function autoInvitePortal(args: {
             : args.invitedByUserId,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: "user_id" },
+        { onConflict: existing ? "zoho_contact_id" : "user_id" },
       );
     if (upsertError) throw new Error(upsertError.message);
   }
