@@ -219,9 +219,11 @@ export const getMyPortalView = createServerFn({ method: "GET" })
     // 2) List the client's engagements via COQL (contact-scoped).
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const zoho = makeZohoClient().service();
+    // Zoho COQL: filter on a lookup field by its bare API name (`Client = id`),
+    // not `Client.id = ...` — that form returns zero rows on Engagements/SSDI_Cases.
     const engagements = await zoho
       .coql<EngagementRow>(
-        `select id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Assigned_Attorney, Modified_Time from Engagements where Client.id = '${zohoContactId}' order by Modified_Time desc limit 50`,
+        `select id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Assigned_Attorney, Modified_Time from Engagements where Client = ${zohoContactId} order by Modified_Time desc limit 50`,
       )
       .catch((err) => {
         console.error("[getMyPortalView] engagements COQL failed", err);
@@ -239,7 +241,7 @@ export const getMyPortalView = createServerFn({ method: "GET" })
         let caseRow: SsdiCaseRow | null = null;
         const cases = await zoho
           .coql<SsdiCaseRow>(
-            `select id, Current_Stage, ALJ_Hearing_Scheduled_Date, Assigned_Attorney from SSDI_Cases where Engagement.id = '${eng.id}' limit 1`,
+            `select id, Current_Stage, ALJ_Hearing_Scheduled_Date, Assigned_Attorney from SSDI_Cases where Engagement = ${eng.id} limit 1`,
           )
           .catch(() => [] as SsdiCaseRow[]);
         caseRow = cases[0] ?? null;
