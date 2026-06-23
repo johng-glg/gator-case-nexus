@@ -256,7 +256,7 @@ export const getMyPortalView = createServerFn({ method: "GET" })
         let caseRow: SsdiCaseRow | null = null;
         const cases = await zoho
           .coql<SsdiCaseRow>(
-            `select id, Current_Stage, ALJ_Hearing_Scheduled_Date, Assigned_Attorney from SSDI_Cases where Engagement = ${eng.id} limit 1`,
+            `select id, Current_Stage, ALJ_Hearing_Scheduled_Date, Assigned_Attorney from SSDI_Cases where Engagement = '${eng.id}' limit 1`,
           )
           .catch(() => [] as SsdiCaseRow[]);
         caseRow = cases[0] ?? null;
