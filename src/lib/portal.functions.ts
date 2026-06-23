@@ -238,7 +238,7 @@ export const getMyPortalView = createServerFn({ method: "GET" })
     // not `Client.id = ...` — that form returns zero rows on Engagements/SSDI_Cases.
     const engagements = await zoho
       .coql<EngagementRow>(
-        `select id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Assigned_Attorney, Modified_Time from Engagements where Client = ${zohoContactId} order by Modified_Time desc limit 50`,
+        `select id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Assigned_Attorney, Modified_Time from Engagements where Client = '${zohoContactId}' order by Modified_Time desc limit 50`,
       )
       .catch((err) => {
         console.error("[getMyPortalView] engagements COQL failed", err);
