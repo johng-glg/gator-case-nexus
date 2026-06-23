@@ -236,9 +236,8 @@ function CaseDetail() {
             <ChevronLeft className="h-4 w-4" /> Back to SSDI cases
           </Link>
           <div className="flex gap-2 flex-wrap justify-end items-center">
-            <InviteClientButton caseId={caseId} engagementId={engagementId} />
             {!isClosed && <Button onClick={() => openAdvance()}>Advance stage</Button>}
-            <CaseActionsMenu caseId={caseId} stage={stage} isAdmin={isAdmin} />
+            <CaseActionsMenu caseId={caseId} engagementId={engagementId} stage={stage} isAdmin={isAdmin} />
           </div>
         </div>
       </header>
