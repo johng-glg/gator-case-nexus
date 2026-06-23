@@ -408,6 +408,7 @@ export const getMyPortalView = createServerFn({ method: "GET" })
         matters.push(
           ssdiToPortalMatter({
             engagementId: eng.id,
+            caseId: caseRow?.id,
             stage: caseRow?.Current_Stage ?? "Retained",
             retainerSigned,
             hearingDate: caseRow?.ALJ_Hearing_Scheduled_Date ?? undefined,
