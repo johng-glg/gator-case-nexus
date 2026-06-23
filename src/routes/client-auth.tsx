@@ -11,8 +11,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import gatorLogo from "@/assets/gator-logo.png.asset.json";
 
 const FIRM_DOMAIN = "gatorlawpc.com";
+const GOLD = "#F1D391";
 
 export const Route = createFileRoute("/client-auth")({
   head: () => ({ meta: [{ title: "Client portal sign-in — Gator Law" }] }),
@@ -73,99 +75,133 @@ function ClientAuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
+    <div
+      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-4"
+      style={{
+        background:
+          "radial-gradient(circle at 50% 40%, oklch(0.97 0.006 95) 0%, oklch(0.94 0.008 95) 70%, oklch(0.90 0.01 95) 100%)",
+      }}
+    >
+      <div
+        className="w-full max-w-sm rounded-xl border bg-primary p-10 shadow-[0_25px_60px_-20px_rgba(0,0,0,0.35),inset_0_1px_1px_rgba(241,211,145,0.1)]"
+        style={{ borderColor: `${GOLD}4D` }}
+      >
         <div className="text-center mb-8">
-          <h1 className="font-display text-4xl text-primary">Client portal</h1>
-          <p className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-            Gator Law clients
+          <img src={gatorLogo.url} alt="Gator" className="mx-auto h-28 w-auto" />
+          <h1
+            className="mt-5 text-3xl font-bold tracking-tight"
+            style={{ fontFamily: '"Playfair Display", Georgia, serif', color: GOLD }}
+          >
+            GATOR
+          </h1>
+          <p
+            className="mt-1.5 text-[11px] font-medium uppercase tracking-[0.22em]"
+            style={{ color: `${GOLD}B3` }}
+          >
+            Client Portal
           </p>
         </div>
-        <div className="rounded-lg border border-border bg-card p-6">
-          {sent ? (
-            <div className="space-y-4">
-              <div className="text-sm">
-                <p className="font-medium">Check your email.</p>
-                <p className="mt-2 text-muted-foreground">
-                  We sent a sign-in link and a 6-digit code to{" "}
-                  <span className="font-medium text-foreground">{email}</span>. Tap
-                  the link in the email, or enter the code below.
-                </p>
-              </div>
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (code.trim().length >= 6) verifyCode();
-                }}
-                className="space-y-3"
-              >
-                <label className="block text-sm">
-                  <span className="text-muted-foreground">6-digit code</span>
-                  <Input
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    pattern="[0-9]*"
-                    maxLength={6}
-                    required
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                    placeholder="123456"
-                    className="mt-1 text-center text-2xl tracking-[0.4em] font-mono"
-                  />
-                </label>
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={verifying || code.trim().length < 6}
-                >
-                  {verifying ? "Signing in…" : "Sign in"}
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSent(false);
-                    setCode("");
-                  }}
-                  className="block w-full text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Use a different email
-                </button>
-              </form>
+
+        {sent ? (
+          <div className="space-y-4">
+            <div className="text-sm" style={{ color: GOLD }}>
+              <p className="font-medium">Check your email.</p>
+              <p className="mt-2" style={{ color: `${GOLD}B3` }}>
+                We sent a sign-in link and a 6-digit code to{" "}
+                <span className="font-medium" style={{ color: GOLD }}>{email}</span>.
+                Tap the link in the email, or enter the code below.
+              </p>
             </div>
-          ) : (
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                if (email.trim()) requestLink();
+                if (code.trim().length >= 6) verifyCode();
               }}
               className="space-y-3"
             >
               <label className="block text-sm">
-                <span className="text-muted-foreground">Email</span>
+                <span style={{ color: `${GOLD}B3` }}>6-digit code</span>
                 <Input
-                  type="email"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]*"
+                  maxLength={6}
                   required
-                  autoComplete="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  className="mt-1"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="123456"
+                  className="mt-1 text-center text-2xl tracking-[0.4em] font-mono bg-transparent border-[color:var(--gold)]/40 text-[color:var(--gold)] placeholder:text-[color:var(--gold)]/40"
+                  style={{ ['--gold' as never]: GOLD, borderColor: `${GOLD}66`, color: GOLD }}
                 />
               </label>
-              <Button type="submit" className="w-full" disabled={sending}>
-                {sending ? "Sending…" : "Email me a sign-in link"}
+              <Button
+                type="submit"
+                className="w-full font-medium shadow-md rounded-lg hover:opacity-90"
+                style={{ backgroundColor: GOLD, color: "#1a3c2a" }}
+                disabled={verifying || code.trim().length < 6}
+              >
+                {verifying ? "Signing in…" : "Sign in"}
               </Button>
-              <p className="text-xs text-muted-foreground">
-                Only clients enrolled by Gator Law can sign in here. If you're staff,{" "}
-                <a href="/auth" className="text-primary underline-offset-2 hover:underline">
-                  go to staff sign-in
-                </a>
-                .
-              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setSent(false);
+                  setCode("");
+                }}
+                className="block w-full text-xs hover:underline"
+                style={{ color: `${GOLD}B3` }}
+              >
+                Use a different email
+              </button>
             </form>
-          )}
-        </div>
+          </div>
+        ) : (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (email.trim()) requestLink();
+            }}
+            className="space-y-3"
+          >
+            <label className="block text-sm">
+              <span style={{ color: `${GOLD}B3` }}>Email</span>
+              <Input
+                type="email"
+                required
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="mt-1 bg-transparent"
+                style={{ borderColor: `${GOLD}66`, color: GOLD }}
+              />
+            </label>
+            <Button
+              type="submit"
+              className="w-full font-medium shadow-md rounded-lg hover:opacity-90"
+              style={{ backgroundColor: GOLD, color: "#1a3c2a" }}
+              disabled={sending}
+            >
+              {sending ? "Sending…" : "Email me a sign-in link"}
+            </Button>
+            <p className="text-xs" style={{ color: `${GOLD}99` }}>
+              Only clients enrolled by Gator Law can sign in here. If you're staff,{" "}
+              <a
+                href="/auth"
+                className="underline-offset-2 hover:underline"
+                style={{ color: GOLD }}
+              >
+                go to staff sign-in
+              </a>
+              .
+            </p>
+          </form>
+        )}
       </div>
+
+      <p className="absolute bottom-6 text-[11px] text-muted-foreground/60">
+        &copy; Gator Law, PC &middot; Confidential
+      </p>
     </div>
   );
 }
