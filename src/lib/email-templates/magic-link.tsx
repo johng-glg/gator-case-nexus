@@ -8,33 +8,45 @@ import {
   Heading,
   Html,
   Preview,
+  Section,
   Text,
 } from '@react-email/components'
 
 interface MagicLinkEmailProps {
   siteName: string
   confirmationUrl: string
+  /** 6-digit OTP — paired with the link so accessibility/link-mangling never blocks sign-in. */
+  token?: string
 }
 
-export const MagicLinkEmail = ({
-  siteName,
-  confirmationUrl,
-}: MagicLinkEmailProps) => (
+// Gator Law — returning client sign-in. Sends BOTH a one-tap link AND a 6-digit
+// code in the same email; clients can use whichever works for them.
+export const MagicLinkEmail = ({ confirmationUrl, token }: MagicLinkEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Your login link for {siteName}</Preview>
+    <Preview>Your one-tap sign-in link (or 6-digit code) for your Gator Law portal</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Your login link</Heading>
+        <Text style={brand}>GATOR LAW</Text>
+        <Heading style={h1}>Sign in to your portal</Heading>
         <Text style={text}>
-          Click the button below to log in to {siteName}. This link will expire
-          shortly.
+          Either tap the button below or type the 6-digit code into the sign-in page.
+          For your security, both expire shortly and work only once.
         </Text>
-        <Button style={button} href={confirmationUrl}>
-          Log In
-        </Button>
+        <Section style={{ textAlign: 'center', margin: '24px 0 16px' }}>
+          <Button style={button} href={confirmationUrl}>
+            Sign in to my portal
+          </Button>
+        </Section>
+        {token ? (
+          <Section style={{ textAlign: 'center', margin: '8px 0 24px' }}>
+            <Text style={codeLabel}>Or enter this code:</Text>
+            <Text style={codeBox}>{token}</Text>
+          </Section>
+        ) : null}
         <Text style={footer}>
-          If you didn't request this link, you can safely ignore this email.
+          Didn't request this? You can safely ignore this email — no one can access
+          your portal without the link or code above.
         </Text>
       </Container>
     </Body>
@@ -43,26 +55,58 @@ export const MagicLinkEmail = ({
 
 export default MagicLinkEmail
 
+const FOREST = '#1f4d36'
+
 const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
+const container = { padding: '24px 28px', maxWidth: '560px' }
+const brand = {
+  fontSize: '11px',
+  letterSpacing: '0.22em',
+  color: FOREST,
   fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
+  margin: '0 0 14px',
+}
+const h1 = {
+  fontSize: '24px',
+  fontWeight: 'bold' as const,
+  color: FOREST,
+  margin: '0 0 18px',
+  lineHeight: '1.2',
 }
 const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
+  fontSize: '15px',
+  color: '#3a3a3a',
+  lineHeight: '1.55',
+  margin: '0 0 16px',
 }
 const button = {
-  backgroundColor: '#000000',
+  backgroundColor: FOREST,
   color: '#ffffff',
-  fontSize: '14px',
+  fontSize: '15px',
+  fontWeight: 'bold' as const,
   borderRadius: '8px',
-  padding: '12px 20px',
+  padding: '14px 28px',
   textDecoration: 'none',
+  display: 'inline-block',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const codeLabel = {
+  fontSize: '13px',
+  color: '#6a6a6a',
+  margin: '0 0 6px',
+  letterSpacing: '0.04em',
+  textTransform: 'uppercase' as const,
+}
+const codeBox = {
+  fontSize: '32px',
+  fontWeight: 'bold' as const,
+  color: FOREST,
+  letterSpacing: '0.4em',
+  fontFamily: 'monospace',
+  margin: '0',
+}
+const footer = {
+  fontSize: '12px',
+  color: '#888888',
+  lineHeight: '1.5',
+  margin: '28px 0 0',
+}
