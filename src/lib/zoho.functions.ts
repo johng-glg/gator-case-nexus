@@ -883,6 +883,40 @@ export const sendIntakeForm = createServerFn({ method: "POST" })
     });
   });
 
+/**
+ * Manual override: mark an SSA intake form as Signed in Zoho when the Sign
+ * webhook never reached us (network blip, misconfigured webhook URL, etc.).
+ * Re-runs the same handler the webhook calls, using the case's stored
+ * per-form Request_ID as the join key.
+ */
+const markSignedInput = z.object({
+  caseId: z.string().regex(/^[A-Za-z0-9_]+$/),
+  code: z.enum(["SSA-1696", "SSA-827", "SSA-1693"]),
+});
+
+export const markIntakeFormSigned = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d) => markSignedInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const { makeFormsService } = await import("@/integrations/zoho/signClient.server");
+    const requestIdField =
+      data.code === "SSA-1696" ? "SSA1696_Request_ID" :
+      data.code === "SSA-827" ? "SSA827_Request_ID" : "SSA1693_Request_ID";
+    const api = makeZohoClient().as(context.userId);
+    const rec = await api.getRecord<Record<string, unknown>>("SSDI_Cases", data.caseId, [requestIdField]);
+    const requestId = rec?.[requestIdField] as string | undefined;
+    if (!requestId) {
+      throw new Error(`No ${data.code} Request_ID on this case — send the form for signature first.`);
+    }
+    const result = await makeFormsService().handleFormSigned({
+      requests: { request_id: requestId },
+      notifications: { operation_type: "RequestCompleted" },
+    });
+    if (!result) throw new Error("Could not match the request — it may already be marked signed.");
+    return { ok: true, result };
+  });
+
 
 
 
