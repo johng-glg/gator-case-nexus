@@ -70,8 +70,7 @@ async function runSuite(rel: string): Promise<{ passed: number; failed: number; 
   }) as never;
 
   try {
-    // Cache-bust so a re-run in watch mode re-executes module body.
-    await import(/* @vite-ignore */ `${rel}?t=${Date.now()}_${Math.random()}`);
+    await import(/* @vite-ignore */ rel);
   } catch (e) {
     if (!(e instanceof ExitError)) {
       console.log = origLog;
