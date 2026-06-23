@@ -38,7 +38,8 @@ const ID_RE = /^[A-Za-z0-9_]+$/;
 
 const inviteInput = z
   .object({
-    email: z.string().trim().toLowerCase().email().max(255),
+    // Optional — when omitted we look up the Contact's email on file in Zoho.
+    email: z.string().trim().toLowerCase().email().max(255).optional(),
     caseId: z.string().regex(ID_RE).optional(),
     engagementId: z.string().regex(ID_RE).optional(),
   })
@@ -50,6 +51,8 @@ const inviteInput = z
  * Staff-only. Sends a passwordless invite to a client and binds their auth
  * user to the Zoho Contact (so they can later be added to another matter
  * without a second invite). Safe to re-invoke — resends the magic link.
+ *
+ * If `email` is omitted, the Contact's email on file in Zoho is used.
  */
 export const inviteClientToPortal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -57,9 +60,6 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const staffEmail = (context.claims as { email?: string }).email;
     ensureStaff(staffEmail);
-    if (data.email.toLowerCase().endsWith(`@${FIRM_DOMAIN}`)) {
-      throw new Error("Refuse to enroll a firm-domain email as a client.");
-    }
 
     // Resolve the Zoho contact id from the engagement/case the caller gave us.
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
@@ -86,13 +86,28 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
     const contactId = typeof cl === "string" ? cl : cl?.id;
     if (!contactId) throw new Error("Engagement has no Client (Contact) to invite.");
 
+    // Pull email from the Contact when the caller didn't pass one.
+    let inviteEmail = data.email;
+    if (!inviteEmail) {
+      const contact = await api.getRecord<{ Email?: string }>("Contacts", contactId, ["Email"]);
+      const e = (contact?.Email ?? "").trim().toLowerCase();
+      if (!e) {
+        throw new Error("This client has no email on file in Zoho. Add one to the Contact, then try again.");
+      }
+      inviteEmail = e;
+    }
+    if (inviteEmail.endsWith(`@${FIRM_DOMAIN}`)) {
+      throw new Error("Refuse to enroll a firm-domain email as a client.");
+    }
+
     const { autoInvitePortal } = await import("@/integrations/portal/autoInvite.server");
     const { userId, resent } = await autoInvitePortal({
-      email: data.email,
+      email: inviteEmail,
       contactId,
       engagementId,
       invitedByUserId: context.userId,
     });
+
 
     const { logCaseActivity } = await import("@/integrations/audit/log.server");
     await logCaseActivity({
@@ -102,12 +117,12 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
       actorEmail: staffEmail,
       action: "portal.invite",
       summary: resent
-        ? `Re-sent portal sign-in link to ${data.email}.`
-        : `Sent portal invite to ${data.email}.`,
-      metadata: { email: data.email, contactId, engagementId },
+        ? `Re-sent portal sign-in link to ${inviteEmail}.`
+        : `Sent portal invite to ${inviteEmail}.`,
+      metadata: { email: inviteEmail, contactId, engagementId },
     });
 
-    return { ok: true, userId, emailSent: true, resent };
+    return { ok: true, userId, emailSent: true, resent, email: inviteEmail };
   });
 
 /** Staff-only. Shows which client is enrolled on a case (for the case page). */
@@ -219,9 +234,11 @@ export const getMyPortalView = createServerFn({ method: "GET" })
     // 2) List the client's engagements via COQL (contact-scoped).
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const zoho = makeZohoClient().service();
+    // Zoho COQL: filter on a lookup field by its bare API name (`Client = id`),
+    // not `Client.id = ...` — that form returns zero rows on Engagements/SSDI_Cases.
     const engagements = await zoho
       .coql<EngagementRow>(
-        `select id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Assigned_Attorney, Modified_Time from Engagements where Client.id = '${zohoContactId}' order by Modified_Time desc limit 50`,
+        `select id, Name, Engagement_Type, Engagement_Status, Retainer_Status, Assigned_Attorney, Modified_Time from Engagements where Client = '${zohoContactId}' order by Modified_Time desc limit 50`,
       )
       .catch((err) => {
         console.error("[getMyPortalView] engagements COQL failed", err);
@@ -239,7 +256,7 @@ export const getMyPortalView = createServerFn({ method: "GET" })
         let caseRow: SsdiCaseRow | null = null;
         const cases = await zoho
           .coql<SsdiCaseRow>(
-            `select id, Current_Stage, ALJ_Hearing_Scheduled_Date, Assigned_Attorney from SSDI_Cases where Engagement.id = '${eng.id}' limit 1`,
+            `select id, Current_Stage, ALJ_Hearing_Scheduled_Date, Assigned_Attorney from SSDI_Cases where Engagement = '${eng.id}' limit 1`,
           )
           .catch(() => [] as SsdiCaseRow[]);
         caseRow = cases[0] ?? null;
