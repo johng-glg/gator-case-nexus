@@ -93,11 +93,10 @@ export function CaseStatusStrip(props: Props) {
     }
   }
 
+  // Stage chip removed — stage is already shown in the Lifecycle bar below.
+  void stage;
   return (
     <section className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-xs">
-      <span className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 font-medium text-primary">
-        {stage}
-      </span>
       <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 font-medium ${toneClass[deadlineTone]}`}>
         <Clock className="h-3 w-3" /> {deadlineLabel}
       </span>
