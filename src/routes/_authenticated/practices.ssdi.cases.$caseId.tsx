@@ -35,7 +35,7 @@ import { NextStepCard } from "@/components/cases/NextStepCard";
 import { ActionCenter } from "@/components/cases/ActionCenter";
 import { FormsAndDocumentsPanel } from "@/components/cases/FormsAndDocumentsPanel";
 import { CollapsibleSection } from "@/components/cases/CollapsibleSection";
-import { InviteClientButton } from "@/components/cases/InviteClientButton";
+
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
 import { useStageRequirements } from "@/hooks/use-stage-requirements";
 import { ChevronLeft, Download } from "lucide-react";
