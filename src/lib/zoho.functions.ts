@@ -930,3 +930,13 @@ export const runDeadlineSweepNow = createServerFn({ method: "POST" })
       calendar: cal,
     };
   });
+
+/** Diagnostic: list field API names for a Zoho module. */
+export const debugListModuleFields = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data) => z.object({ module: z.string().min(1).max(50) }).parse(data))
+  .handler(async ({ data, context }) => {
+    const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+    const fields = await makeZohoClient().as(context.userId).listModuleFields(data.module);
+    return { fields: toJson<Json>(fields) };
+  });
