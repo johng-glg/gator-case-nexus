@@ -22,6 +22,10 @@ export async function autoInvitePortal(args: {
   email: string;
   /** Zoho Contact id — the durable key for the portal account. */
   contactId: string;
+  /** Optional Zoho Engagement id — written to the legacy `client_portal_links`
+   *  table so existing case-keyed callers (documents, messaging) keep working
+   *  during the contact-keyed migration. */
+  engagementId?: string;
   invitedByUserId: string;
 }): Promise<{ userId: string; resent: boolean }> {
   const email = args.email.trim().toLowerCase();
