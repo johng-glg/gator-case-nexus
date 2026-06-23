@@ -127,7 +127,7 @@ function MatterDetailPage() {
         </section>
       ) : null}
 
-      <ClientDocumentsSection engagementId={matter.id} />
+      <ClientDocumentsSection caseId={matter.caseId} engagementId={matter.id} />
 
       <section className="rounded-lg border border-border bg-card p-5">
         <div className="text-xs uppercase tracking-wider text-muted-foreground">
