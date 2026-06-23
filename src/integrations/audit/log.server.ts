@@ -28,7 +28,9 @@ export type ActivityAction =
   | "consent.update"
   | "records.followup"
   | "records.status"
-  | "lead.convert.override";
+  | "lead.convert.override"
+  | "case.opened"
+  | "case.intake.step";
 
 
 export interface LogActivityInput {
