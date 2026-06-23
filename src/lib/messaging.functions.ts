@@ -63,9 +63,35 @@ export const listCaseMessages = createServerFn({ method: "POST" })
       clientEmail = u.data.user?.email ?? null;
     }
 
+    // Decorate sent-history entries with the latest email_send_log status
+    // so the panel can surface delivery failures instead of pretending they sent.
+    const history = log.data ?? [];
+    const messageIds = history
+      .map((h: any) => (h.metadata as any)?.messageId)
+      .filter((id: unknown): id is string => typeof id === "string" && id.length > 0);
+    const sendStatusByMessageId = new Map<string, string>();
+    if (messageIds.length > 0) {
+      const { data: logs } = await supabaseAdmin
+        .from("email_send_log")
+        .select("message_id, status, created_at, error_message")
+        .in("message_id", messageIds)
+        .order("created_at", { ascending: false });
+      for (const row of logs ?? []) {
+        const mid = row.message_id as string;
+        if (!sendStatusByMessageId.has(mid)) {
+          sendStatusByMessageId.set(mid, String(row.status ?? ""));
+        }
+      }
+    }
+    const decoratedHistory = history.map((h: any) => {
+      const mid = (h.metadata as any)?.messageId;
+      const status = typeof mid === "string" ? sendStatusByMessageId.get(mid) ?? null : null;
+      return { ...h, deliveryStatus: status };
+    });
+
     return {
       held: held.data ?? [],
-      history: log.data ?? [],
+      history: decoratedHistory,
       hasPortalLink: !!link.data?.user_id,
       consent,
       clientEmail,
