@@ -126,6 +126,12 @@ export function createCaseService(deps: CaseServiceDeps) {
       update.Deadline_Date = iso(deadline);
       update.Days_To_Deadline = daysUntil(deadline, today());
       update.Deadline_At_Risk = isAtRisk(deadline, 14, today());
+    } else if (effects?.clearDeadline) {
+      // Appeal filed (deadline met) or case won — retire the pending clock.
+      update.Active_Deadline_Type = "None";
+      update.Deadline_Date = null;
+      update.Days_To_Deadline = null;
+      update.Deadline_At_Risk = false;
     }
 
     await api.updateRecords(MODULE, [update]);

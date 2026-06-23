@@ -1,125 +1,78 @@
-# Client Portal v2 — firm-wide, multi-practice, client-scoped
+# Case page polish — lifecycle, deadline clearing, fixes
 
-Supersedes the portal-invite/automation pieces of the earlier reorg. Keeps the SSDI case page work intact.
+## A. Lifecycle rail
+Rewrite `src/components/cases/StageRail.tsx`:
+- Remove the "Show / Hide full timeline" section and `ALL_STAGES` entirely.
+- Phase chips become buttons with a chevron icon. Click expands/collapses that phase's sub-stage list. Active phase starts **collapsed** (the status strip already shows the exact stage). Only one phase open at a time.
+- Sub-stage list reads from `PHASES[i].stages` after the lifecycle.ts cleanup in §C, so removed `*-pending` stages disappear automatically.
+- Sub-stages stay read-only (Check / CircleDot / Circle); advancement remains the header's "Advance stage" button.
 
-## 1. The contract (`src/integrations/portal/portal.ts`)
+Move "Re-send portal invite" into the ⋯ menu:
+- Drop `<InviteClientButton>` from the case header (`practices.ssdi.cases.$caseId.tsx`).
+- Add a "Re-send portal invite" item in `CaseActionsMenu` that opens the same dialog (lift the dialog out of `InviteClientButton` into a small `InviteClientDialog` component the menu opens, or keep `InviteClientButton` and render it inside the menu item as a trigger). Reuses existing server fn, no backend change.
 
-Drop in the file you supplied verbatim: `PortalMatter`, `PortalAction`, `PortalKeyDate`, `PortalView`, `buildPortalView`, `SsdiPortalInput`, `ssdiToPortalMatter`, `ssdiPortalAdapter`. This is the only place client-facing data is shaped — fees / notes / strategy can't reach the portal because the adapter only accepts the allowlisted input shape.
+## B. Retire deadlines when appeal is filed / case is won
+Engine changes (pure):
+- `src/integrations/zoho/lifecycle.ts`:
+  - Add `clearDeadline?: boolean` to `StageEffects`.
+  - Set `clearDeadline: true` in HOOKS for: `Reconsideration filed`, `ALJ hearing requested`, `Appeals Council requested`, `Initial decision approved`, `Recon decision approved`, `ALJ decision approved`, `AC decision approved`, `Award / NOA received`. (Add minimal HOOKS entries for the "approved" / "filed" stages that don't have one today.)
+- `src/integrations/zoho/caseService.ts` `advanceStage`: after computing `effects`, if `effects?.clearDeadline` and no `setDeadline`, set
+  `Active_Deadline_Type = "None"`, `Deadline_Date = null`, `Days_To_Deadline = null`, `Deadline_At_Risk = false` on the update payload.
+- Tests: extend `caseService.test.ts` to cover (a) advancing into `Reconsideration filed` clears a denial deadline, (b) `Award / NOA received` clears, (c) `Initial decision denied → Reconsideration filed → Recon decision denied` re-sets the new tier.
 
-Add stub adapters (return `statusLabel: "Dispute in progress"`, no key dates, no actions) so the shell is provably practice-agnostic:
-- `src/integrations/portal/adapters/fcra.ts` → `"Credit report dispute"`
-- `src/integrations/portal/adapters/fdcpa.ts` → `"Debt-collection dispute"`
-- `src/integrations/portal/adapters/tcpa.ts` → `"TCPA matter"`
-- `src/integrations/portal/adapters/classAction.ts` → `"Class action"` (no client-specific data ever)
+UI:
+- `CaseStatusStrip` and `DeadlinePanel` already render "No appeal deadline active" when `deadlineISO` is null — verify and tighten copy. No new branches needed once the engine writes null.
+- Nightly sweep already skips tier `"None"` (no change).
 
-## 2. Schema — re-key portal to Contact, not Case
+## C. Finish removing the 5 retired stages
+Decision needed before coding: which stages to actually remove. Prompt says 5 — the pending ones plus "Hearing prep". Proposed cut list (matches prompt's example): `Initial decision pending`, `Recon decision pending`, `ALJ decision pending`, `AC decision pending`, `Hearing prep`.
 
-New migration. The current `client_portal_links` is case-keyed and breaks the "one login, all matters" model.
+Changes:
+- `Stage` union: drop those 5.
+- `TRANSITIONS`: collapse — `Application filed → Initial decision denied | approved | Closed`, `Reconsideration filed → Recon decision denied | approved | Closed`, `Hearing held → ALJ decision denied | approved | Closed`, `Appeals Council requested → AC decision denied | approved | Closed`, `Hearing scheduled → Hearing held | Closed`.
+- `PHASES`: remove the 5 from each phase's `stages` array (sub-stage list now matches).
+- `normalizeStage`: extend the `legacy` map so historical/Zoho values resolve:
+  - `Initial decision pending → Application filed`
+  - `Recon decision pending → Reconsideration filed`
+  - `ALJ decision pending → Hearing held`
+  - `AC decision pending → Appeals Council requested`
+  - `Hearing prep → Hearing scheduled`
+- `HOOKS`, `REQUIRED_FIELDS`, `DENIAL_NEXT_STEP`: drop dead entries.
+- Zoho `Current_Stage` picklist: cannot edit from code — surface a follow-up note for the user to remove those picklist values in Zoho. App keeps working because `normalizeStage` maps them.
+- Tests: update `phasetest.ts`, `caseService.test.ts`, `invariants.test.ts` references to removed stages.
 
-- New table `public.client_portal_contacts`: `user_id` (unique), `email`, `zoho_contact_id` (unique, required), `invited_by`, timestamps. RLS: a user reads only their own row.
-- Backfill: copy each existing `client_portal_links.zoho_engagement_id` → look up its `Client` (Contact) in Zoho → insert into `client_portal_contacts`. Done by a one-shot server fn the user kicks off (logged to activity). Old table kept for one release as a fallback, then dropped.
-- Grants: `authenticated` SELECT-only on own row; `service_role` ALL.
+## D. Email sending — fix the 401
+Diagnosis: `case_activity_log` shows `email send 401 {error: Unauthorized}` from `sendCaseStatusEmail` calling `/lovable/email/transactional/send`. The route validates `Authorization: Bearer <jwt>` via Supabase; the adapter sends `SUPABASE_SERVICE_ROLE_KEY`, but the route calls `supabase.auth.getUser(serviceKey)` which returns no user → 401. The service-role key is not a user JWT, so this never worked.
 
-## 3. Auth — passwordless, OTP code OR magic link, 30-day session
+Fix path:
+1. **Bypass the HTTP round-trip.** Refactor `src/integrations/messaging/emailAdapter.server.ts` to call the same render + enqueue pipeline directly with `supabaseAdmin`:
+   - Look up template from `src/lib/email-templates/registry.ts`.
+   - Render with `@react-email/components` `render` (html + plainText).
+   - Check `suppressed_emails`; insert `email_send_log` row (`pending`); upsert `email_unsubscribe_tokens`; `supabaseAdmin.rpc('enqueue_email', { queue_name: 'transactional_emails', payload: {...} })` — same payload shape (`message_id`, `to`, `from`, `sender_domain`, `subject`, `html`, `text`, `purpose`, `label`, `idempotency_key`, `unsubscribe_token`, `queued_at`).
+   - Keep `sendCaseStatusEmail` signature; no change at call sites (`notifyService.server.ts`, `caseIntakeService.ts`, `conversionPlaybook.ts`).
+2. The scaffolded `/lovable/email/transactional/send` route stays untouched for dashboard previews and any authenticated UI use.
+3. Surface failures: in `MessagingPanel`, add a "delivery failed" badge per sent-history row whose latest `email_send_log` status is `failed` / `dlq`. Extend `listCaseMessages` to join the most recent log status per `msgKey` and return `deliveryStatus`.
 
-Stays passwordless (no passwords). Both delivery modes from one screen.
+Verification: after the change, run intake playbook on a real case → confirm `email_send_log` row goes `pending → sent`, message arrives in the inbox. Existing failed rows in `case_activity_log` stay as historical noise — no migration.
 
-`/client-auth` (rewrite the existing route):
-- Two-step form: email → "we sent a link AND a 6-digit code. Click the link OR type the code here."
-- Server uses `supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: false } })`. Supabase's email OTP delivers both a link and a 6-digit code in the same template.
-- Code entry calls `supabase.auth.verifyOtp({ email, token, type: "email" })`.
-- "Remember this device" checkbox (default on) → set Supabase session `expires_in` to 30 days via project auth config (`session_lifetime`); current default is fine, just document it.
-- Update the branded `magic-link.tsx` email template to show both the button and the 6-digit code (`{{ .Token }}`) clearly.
-- Invite email (`invite.tsx`) already passwordless after the prior turn — leave content, just point CTA to `/portal`.
+## E. Maximization (scoped)
+Confirm scope before coding — these are independent and each is a real piece of work. Default if you say "all": ship E1-E4, defer E5-E8.
 
-## 4. Loader — assemble PortalView for a Contact
+- **E1 Stage-aware Action Center.** `ActionCenter` takes `stage` and renders a per-stage "current focus" line + 1-2 stage-specific suggested tasks (lookup table next to lifecycle.ts).
+- **E2 Evidence-readiness banner.** New `EvidenceReadinessBanner` reads provider count + open records requests + SSA-827 status; shows a warning when advancing to `Hearing scheduled`+, and forces a typed-reason confirm in `AdvanceStageDialog` for `Hearing scheduled → Hearing held` when 0 received records.
+- **E3 One-click next action.** Where `DENIAL_NEXT_STEP[stage]` exists, the Action Center's primary button opens `AdvanceStageDialog` preselected to that stage.
+- **E4 Auto-recompute on Notice-date edit.** When `Notice_Date` is edited (case-facts inline edit or advance dialog), call `recomputeDeadline` server fn automatically; drop the manual "Recompute" item from ⋯ (engine fn stays, just unwired from UI).
+- **E5 Sub-status reconciliation.** Stop writing `Sub_Status = "Awaiting decision"` in `zoho.functions.ts`; remove the column from list views, keep the case-facts row only if it has a non-derivable value.
+- **E6 Drag-and-drop upload + activity log type filter.** Bigger surface — split into its own task.
+- **E7 Print/export case summary.** Separate task.
+- **E8 "Client's other matters" chip.** Reads from `client_portal_contacts` (already firm-wide); render as a header chip. Small.
 
-New server fn `getMyPortalView` in `src/lib/portal.functions.ts` (replaces `getMyClientPortal`):
+## Acceptance checks (run after implementation)
+- StageRail: no "full timeline" button anywhere; phase chips toggle sub-stages with a visible chevron; removed stages absent from sub-lists and from the Advance dialog options.
+- Case at `Recon decision approved` shows "No appeal deadline active" in status strip and Deadline panel; advancing a denied case to the next "filed" stage clears the prior deadline immediately.
+- Sending a milestone email lands in a real inbox; an induced 401/failure shows a "delivery failed" badge on the Messaging panel for that message.
+- Re-send portal invite is reachable only from the ⋯ menu.
 
-1. Look up `client_portal_contacts` row for `context.userId` → `zoho_contact_id`. If none → `{ linked: false }`.
-2. Service-role Zoho client: list **Engagements** where `Client.id = zoho_contact_id`, fields `id, Name, Practice, Stage, Current_Stage, Retainer_Signed, Assigned_Attorney, Modified_Time, Linked_SSDI_Case`.
-3. For each engagement, dispatch to the practice adapter:
-   - `SSDI`: load the linked `SSDI_Cases` record (allowlisted fields only — `Current_Stage`, `ALJ_Hearing_Scheduled_Date`, `Assigned_Attorney`), look up `document_requests` (open only, project to `{id, label}`), check if intake questionnaire is outstanding (a new boolean on `client_portal_contacts.questionnaire_completed_at` keyed per matter — stored as `jsonb` map `{engagementId: ISO}` to keep migrations small). Pass into `ssdiToPortalMatter`.
-   - Other practices: call the stub adapter with `engagementId`, `title`, `statusLabel` only.
-4. `buildPortalView(matters)` → return to client.
-
-All raw Zoho records stay server-side; only `PortalMatter[]` crosses the wire.
-
-## 5. Shell UI
-
-New route layout: keep `_client/portal.tsx` as the landing, add `_client/portal.$matterId.tsx` as the matter detail. `_client/route.tsx` stays the auth gate.
-
-**Landing (`/portal`):**
-- 1 matter → `<Navigate to="/portal/$matterId" replace />`.
-- Multiple matters →
-  - Top card **"What we need from you"** rendering `actionsSummary` (matter title + action label, deep-link to that matter's detail with an anchor for the action).
-  - Matters list, one card each: practice chip, `title`, `statusLabel`, "Action needed" badge when `actionsNeeded.length > 0`.
-
-**Matter detail (`/portal/$matterId`):**
-- Header: practice chip, title, attorney.
-- Status block: `statusLabel` + a 5-step progress indicator for SSDI matters (Retained → Application → Decision → Hearing → Award), greyed-out for other practices.
-- **"What we need from you"** with action chips (sign / upload / questionnaire / info); each routes to its handler (retainer e-sign URL, doc upload modal scoped to the matter, `/portal/intake?engagement=...`).
-- **Documents**: re-scope `ClientDocumentsSection` to take an `engagementId`-first key (falls back to `caseId` for SSDI). Show only this matter's uploads + open requests.
-- **Messages**: thread-per-engagement; reuse the existing messaging service with `engagementId` as the thread key (already what it does).
-- **Key dates**: render `keyDates` only.
-- **Your team**: attorney name from the adapter; no other staff.
-
-**Account (`/portal/account`):**
-- Notification settings (existing `ClientPortalSettings`) + "SMS — coming soon" disabled toggle. Contact info read-only.
-
-Visual rules: forest-green primary, large body text (`text-base` default, `text-lg` for status), generous spacing — same brand tokens as `/portal` today.
-
-## 6. Automation split — `onConversion` vs `onCaseOpened`
-
-Move the early-onboarding steps out of `onCaseOpened` into a new playbook so the portal is ready the moment a Lead converts.
-
-New `src/integrations/zoho/conversionPlaybook.ts` — `onConversion({ engagementId, contactId, actor })`:
-1. Auto-invite to portal (uses new `client_portal_contacts` keyed by `zoho_contact_id`).
-2. Welcome email (`ssdi-welcome-packet` repurposed as practice-agnostic `client-welcome-packet`, or branched by `engagement.Practice`).
-3. Intake questionnaire email + open `document_requests` row scoped by `engagement_id`.
-4. Carry-forward screener data (where already wired).
-5. All idempotent + `firm_intake_settings`-gated (reuses the same toggle config).
-
-`convertLead` in `src/lib/zoho.functions.ts` calls `onConversion` instead of the inline `autoInvitePortal` block. `onCaseOpened` keeps SSDI-only items: SSA-1696 e-sign, SSA-827 prepare, task bundle, internal notification. It no longer sends welcome/questionnaire/docrequest/portal invite (logs them as `skipped — handled at conversion`).
-
-The retainer-signed hook (`signClient.server.ts`) still calls `onCaseOpened`; nothing changes there.
-
-## 7. Allowlist enforcement
-
-- Type signature: every adapter accepts a narrow input interface, not the raw Zoho record. Loader explicitly projects fields before calling the adapter — reviewers can grep for the projection list per practice.
-- Test: add `src/integrations/portal/__tests__/portal.test.ts` checking that the SSDI adapter ignores `fee_amount`, `internal_notes`, `strategy_notes` if accidentally passed (TypeScript already rejects them; runtime test asserts no leak even if cast `as any`).
-
-## Acceptance
-
-- Two-matter client (SSDI + stub FCRA): logs in, lands on multi-matter view, "what we need" combines both.
-- Single-matter client: lands directly in matter detail.
-- Just-converted (no case yet) client: matter shows status `"Action needed — sign your representation agreement"`, action chip routes to e-sign, questionnaire + document-request actions visible.
-- SSDI denial stage maps to `"…we're handling your appeal"`, never `"DENIED"`.
-- Grep the loader output: no fee / note / strategy field reaches `PortalMatter`.
-- OTP code path verified end-to-end (paste code into form, lands in `/portal`).
-
-## Files
-
-**New**
-- `src/integrations/portal/portal.ts` (the contract you supplied)
-- `src/integrations/portal/adapters/{ssdi,fcra,fdcpa,tcpa,classAction}.ts`
-- `src/integrations/portal/__tests__/portal.test.ts`
-- `src/integrations/zoho/conversionPlaybook.ts`
-- `src/routes/_client/portal.$matterId.tsx`
-- `src/routes/_client/portal.account.tsx`
-- Migration: `client_portal_contacts` + backfill helper.
-
-**Edited**
-- `src/routes/client-auth.tsx` — add OTP code input.
-- `src/lib/email-templates/magic-link.tsx` — include 6-digit code.
-- `src/routes/_client/portal.tsx` — landing (multi-matter or redirect).
-- `src/lib/portal.functions.ts` — replace `getMyClientPortal` with `getMyPortalView`; rewrite `inviteClientToPortal` and `autoInvitePortal` against `client_portal_contacts`.
-- `src/integrations/portal/autoInvite.server.ts` — operate on contact id.
-- `src/integrations/zoho/caseIntakeService.ts` — strip steps 4–7, 9; keep SSA-1696, SSA-827, tasks, internal notification.
-- `src/lib/zoho.functions.ts` — `convertLead` calls `onConversion`.
-- `src/components/portal/ClientDocumentsSection.tsx` — engagement-first scoping.
-
-## Open questions
-
-- **OTP vs magic link only** — confirm both delivery (link + 6-digit code in same email) is what you want, vs link-only with the code as a fallback in a separate "trouble?" flow. Plan currently assumes both in one email.
-- **Backfill cutover** — keep `client_portal_links` for one release as fallback, or drop in the same migration?
+## Decisions needed
+1. **Cut list for §C** — confirm the 5 stages to remove (proposal above). If "Hearing prep" should stay, name the 5th to drop.
+2. **§E scope** — ship E1-E4 now and defer E5-E8, or pick a different subset?

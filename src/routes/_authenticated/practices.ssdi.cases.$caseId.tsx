@@ -35,7 +35,7 @@ import { NextStepCard } from "@/components/cases/NextStepCard";
 import { ActionCenter } from "@/components/cases/ActionCenter";
 import { FormsAndDocumentsPanel } from "@/components/cases/FormsAndDocumentsPanel";
 import { CollapsibleSection } from "@/components/cases/CollapsibleSection";
-import { InviteClientButton } from "@/components/cases/InviteClientButton";
+
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
 import { useStageRequirements } from "@/hooks/use-stage-requirements";
 import { ChevronLeft, Download } from "lucide-react";
@@ -60,6 +60,7 @@ function CaseDetail() {
   const [dialogInitialStage, setDialogInitialStage] = useState<Stage | undefined>(undefined);
   const [dialogInitialFields, setDialogInitialFields] = useState<Record<string, string> | undefined>(undefined);
   const tasksSectionRef = useRef<HTMLDivElement | null>(null);
+  const [docsRequestNonce, setDocsRequestNonce] = useState(0);
 
   // Admin check (gates the overflow menu admin tools).
   const [isAdmin, setIsAdmin] = useState(false);
@@ -198,7 +199,6 @@ function CaseDetail() {
   const costsEmpty = costsRows.length === 0;
 
   // Document request dialog trigger (passed down to ActionCenter).
-  const [docsRequestNonce, setDocsRequestNonce] = useState(0);
   const triggerDocsRequest = () => {
     setDocsRequestNonce((n) => n + 1);
     document.getElementById("doc-requests-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -236,9 +236,8 @@ function CaseDetail() {
             <ChevronLeft className="h-4 w-4" /> Back to SSDI cases
           </Link>
           <div className="flex gap-2 flex-wrap justify-end items-center">
-            <InviteClientButton caseId={caseId} engagementId={engagementId} />
             {!isClosed && <Button onClick={() => openAdvance()}>Advance stage</Button>}
-            <CaseActionsMenu caseId={caseId} stage={stage} isAdmin={isAdmin} />
+            <CaseActionsMenu caseId={caseId} engagementId={engagementId} stage={stage} isAdmin={isAdmin} />
           </div>
         </div>
       </header>

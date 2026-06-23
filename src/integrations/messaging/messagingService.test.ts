@@ -9,7 +9,7 @@ const caseLabel = "SSDI-001";
 
 // 1. Known stage with no copy → skip("no-template")
 ok("unknown/internal stage → skip no-template", planDelivery({
-  trigger: { kind: "stage", stage: "Initial decision pending" },
+  trigger: { kind: "stage", stage: "Fee petition filed" },
   consent: consentOk, settings: baseSettings, alreadyHandled: false, caseLabel,
 }).op === "skip");
 
