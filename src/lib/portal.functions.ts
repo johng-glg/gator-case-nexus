@@ -115,18 +115,20 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
     });
 
 
-    const { logCaseActivity } = await import("@/integrations/audit/log.server");
-    await logCaseActivity({
-      caseId: data.caseId ?? engagementId,
-      engagementId,
-      actorUserId: context.userId,
-      actorEmail: staffEmail,
-      action: "portal.invite",
-      summary: resent
-        ? `Re-sent portal sign-in link to ${inviteEmail}.`
-        : `Sent portal invite to ${inviteEmail}.`,
-      metadata: { email: inviteEmail, contactId, engagementId },
-    });
+    if (data.caseId || engagementId) {
+      const { logCaseActivity } = await import("@/integrations/audit/log.server");
+      await logCaseActivity({
+        caseId: data.caseId ?? engagementId!,
+        engagementId: engagementId ?? "",
+        actorUserId: context.userId,
+        actorEmail: staffEmail,
+        action: "portal.invite",
+        summary: resent
+          ? `Re-sent portal sign-in link to ${inviteEmail}.`
+          : `Sent portal invite to ${inviteEmail}.`,
+        metadata: { email: inviteEmail, contactId, engagementId },
+      });
+    }
 
     return { ok: true, userId, emailSent: true, resent, email: inviteEmail };
   });
