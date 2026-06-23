@@ -676,6 +676,7 @@ export const seedTestCaseData = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => seedTestCaseInput.parse(data))
   .handler(async ({ data, context }) => {
+    await assertAdmin(context as any, "seedTestCaseData");
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const { createCaseService } = await import("@/integrations/zoho/caseService");
 
@@ -732,9 +733,7 @@ export const runCaseIntakePlaybook = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => runIntakeInput.parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase
-      .rpc("has_role", { _user_id: context.userId, _role: "admin" });
-    if (!isAdmin) throw new Error("Forbidden — admin only.");
+    await assertAdmin(context as any, "runCaseIntakePlaybook");
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const { onCaseOpened } = await import("@/integrations/zoho/caseIntakeService");
     const results = await onCaseOpened({ zoho: makeZohoClient(), caseId: data.caseId });
@@ -847,9 +846,7 @@ export const retainerMarkSigned = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data) => engagementIdInput.parse(data))
   .handler(async ({ data, context }) => {
-    const { data: isAdmin } = await context.supabase
-      .rpc("has_role", { _user_id: context.userId, _role: "admin" });
-    if (!isAdmin) throw new Error("Forbidden");
+    await assertAdmin(context as any, "retainerMarkSigned");
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const { makeRetainerService } = await import("@/integrations/zoho/signClient.server");
     const eng = await makeZohoClient().as(context.userId)
@@ -1010,9 +1007,8 @@ export const deleteCost = createServerFn({ method: "POST" })
 export const runDeadlineSweepNow = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { data: isAdmin } = await context.supabase
-      .rpc("has_role", { _user_id: context.userId, _role: "admin" });
-    if (!isAdmin) throw new Error("Forbidden");
+    await assertAdmin(context as any, "runDeadlineSweepNow");
+
 
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const { createCaseService } = await import("@/integrations/zoho/caseService");
