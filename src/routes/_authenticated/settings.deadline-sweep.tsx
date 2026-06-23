@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { myRoles } from "@/lib/users.functions";
 import { runDeadlineSweepNow } from "@/lib/zoho.functions";
 import { Button } from "@/components/ui/button";
-import { Loader2, AlertTriangle, Clock, FileWarning } from "lucide-react";
+import { Loader2, AlertTriangle, Clock, FileWarning, TimerOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
