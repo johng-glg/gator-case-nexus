@@ -198,10 +198,12 @@ export function makeRetainerService() {
       console.error("[signClient] fillCaseIdOnLink failed", err);
     }
     try {
-      const forms = makeFormsService();
-      await forms.sendIntakeForms("SERVICE", caseId);
+      // Run the full intake playbook (SSA-1696, task bundle, portal invite,
+      // welcome email, intake questionnaire, doc request, etc.). Idempotent.
+      const { onCaseOpened } = await import("./caseIntakeService");
+      await onCaseOpened({ zoho, caseId });
     } catch (err) {
-      console.error("[signClient] sendIntakeForms failed", err);
+      console.error("[signClient] onCaseOpened failed", err);
     }
   };
 

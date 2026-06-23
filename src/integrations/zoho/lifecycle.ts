@@ -83,7 +83,12 @@ export type DateRule = DueRule;
 export const HOOKS: Partial<Record<Stage, StageEffects>> = {
   "Retained": {
     sign: ["SSA-1696", "SSA-827"],
-    tasks: [{ label: "File SSA application", due: { type: "fieldPlus", field: "Date_Opened", days: 14 } }],
+    tasks: [
+      { label: "Verify insured status / DLI", due: { type: "fieldPlus", field: "Date_Opened", days: 3 } },
+      { label: "Confirm work / SGA status", due: { type: "fieldPlus", field: "Date_Opened", days: 3 } },
+      { label: "Collect medical provider list", due: { type: "fieldPlus", field: "Date_Opened", days: 7 } },
+      { label: "File SSA application", due: { type: "fieldPlus", field: "Date_Opened", days: 14 } },
+    ],
   },
   "Initial decision denied": {
     setDeadline: { tier: "Reconsideration", from: "noticeDate" },

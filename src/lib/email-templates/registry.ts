@@ -1,5 +1,7 @@
 import type { ComponentType } from 'react'
 import { template as caseStatusUpdate } from './case-status-update'
+import { template as ssdiWelcomePacket } from './ssdi-welcome-packet'
+import { template as ssdiIntakeQuestionnaire } from './ssdi-intake-questionnaire'
 
 export interface TemplateEntry {
   component: ComponentType<any>
@@ -16,4 +18,6 @@ export interface TemplateEntry {
  */
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'case-status-update': caseStatusUpdate,
+  'ssdi-welcome-packet': ssdiWelcomePacket,
+  'ssdi-intake-questionnaire': ssdiIntakeQuestionnaire,
 }

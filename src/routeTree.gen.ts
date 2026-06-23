@@ -29,6 +29,7 @@ import { Route as AuthenticatedClientsIndexRouteImport } from './routes/_authent
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as ApiPublicMedicalRecordsSweepRouteImport } from './routes/api/public/medical-records-sweep'
 import { Route as ApiPublicDeadlineSweepRouteImport } from './routes/api/public/deadline-sweep'
+import { Route as ClientPortalIntakeRouteImport } from './routes/_client/portal.intake'
 import { Route as AuthenticatedSettingsUsersRouteImport } from './routes/_authenticated/settings.users'
 import { Route as AuthenticatedSettingsTrustExportRouteImport } from './routes/_authenticated/settings.trust-export'
 import { Route as AuthenticatedSettingsStageRequirementsRouteImport } from './routes/_authenticated/settings.stage-requirements'
@@ -160,6 +161,11 @@ const ApiPublicDeadlineSweepRoute = ApiPublicDeadlineSweepRouteImport.update({
   id: '/api/public/deadline-sweep',
   path: '/api/public/deadline-sweep',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ClientPortalIntakeRoute = ClientPortalIntakeRouteImport.update({
+  id: '/intake',
+  path: '/intake',
+  getParentRoute: () => ClientPortalRoute,
 } as any)
 const AuthenticatedSettingsUsersRoute =
   AuthenticatedSettingsUsersRouteImport.update({
@@ -337,7 +343,7 @@ export interface FileRoutesByFullPath {
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/today': typeof AuthenticatedTodayRoute
-  '/portal': typeof ClientPortalRoute
+  '/portal': typeof ClientPortalRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
@@ -352,6 +358,7 @@ export interface FileRoutesByFullPath {
   '/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
   '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
+  '/portal/intake': typeof ClientPortalIntakeRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/public/medical-records-sweep': typeof ApiPublicMedicalRecordsSweepRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
@@ -384,7 +391,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/deadlines': typeof AuthenticatedDeadlinesRoute
   '/today': typeof AuthenticatedTodayRoute
-  '/portal': typeof ClientPortalRoute
+  '/portal': typeof ClientPortalRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
@@ -398,6 +405,7 @@ export interface FileRoutesByTo {
   '/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
   '/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/settings/users': typeof AuthenticatedSettingsUsersRoute
+  '/portal/intake': typeof ClientPortalIntakeRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/public/medical-records-sweep': typeof ApiPublicMedicalRecordsSweepRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
@@ -434,7 +442,7 @@ export interface FileRoutesById {
   '/_authenticated/deadlines': typeof AuthenticatedDeadlinesRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRouteWithChildren
   '/_authenticated/today': typeof AuthenticatedTodayRoute
-  '/_client/portal': typeof ClientPortalRoute
+  '/_client/portal': typeof ClientPortalRouteWithChildren
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/_authenticated/clients/$clientId': typeof AuthenticatedClientsClientIdRoute
   '/_authenticated/engagements/$engagementId': typeof AuthenticatedEngagementsEngagementIdRoute
@@ -449,6 +457,7 @@ export interface FileRoutesById {
   '/_authenticated/settings/stage-requirements': typeof AuthenticatedSettingsStageRequirementsRoute
   '/_authenticated/settings/trust-export': typeof AuthenticatedSettingsTrustExportRoute
   '/_authenticated/settings/users': typeof AuthenticatedSettingsUsersRoute
+  '/_client/portal/intake': typeof ClientPortalIntakeRoute
   '/api/public/deadline-sweep': typeof ApiPublicDeadlineSweepRoute
   '/api/public/medical-records-sweep': typeof ApiPublicMedicalRecordsSweepRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
@@ -499,6 +508,7 @@ export interface FileRouteTypes {
     | '/settings/stage-requirements'
     | '/settings/trust-export'
     | '/settings/users'
+    | '/portal/intake'
     | '/api/public/deadline-sweep'
     | '/api/public/medical-records-sweep'
     | '/lovable/email/suppression'
@@ -545,6 +555,7 @@ export interface FileRouteTypes {
     | '/settings/stage-requirements'
     | '/settings/trust-export'
     | '/settings/users'
+    | '/portal/intake'
     | '/api/public/deadline-sweep'
     | '/api/public/medical-records-sweep'
     | '/lovable/email/suppression'
@@ -595,6 +606,7 @@ export interface FileRouteTypes {
     | '/_authenticated/settings/stage-requirements'
     | '/_authenticated/settings/trust-export'
     | '/_authenticated/settings/users'
+    | '/_client/portal/intake'
     | '/api/public/deadline-sweep'
     | '/api/public/medical-records-sweep'
     | '/lovable/email/suppression'
@@ -780,6 +792,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/public/deadline-sweep'
       preLoaderRoute: typeof ApiPublicDeadlineSweepRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_client/portal/intake': {
+      id: '/_client/portal/intake'
+      path: '/intake'
+      fullPath: '/portal/intake'
+      preLoaderRoute: typeof ClientPortalIntakeRouteImport
+      parentRoute: typeof ClientPortalRoute
     }
     '/_authenticated/settings/users': {
       id: '/_authenticated/settings/users'
@@ -1094,12 +1113,24 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
+interface ClientPortalRouteChildren {
+  ClientPortalIntakeRoute: typeof ClientPortalIntakeRoute
+}
+
+const ClientPortalRouteChildren: ClientPortalRouteChildren = {
+  ClientPortalIntakeRoute: ClientPortalIntakeRoute,
+}
+
+const ClientPortalRouteWithChildren = ClientPortalRoute._addFileChildren(
+  ClientPortalRouteChildren,
+)
+
 interface ClientRouteRouteChildren {
-  ClientPortalRoute: typeof ClientPortalRoute
+  ClientPortalRoute: typeof ClientPortalRouteWithChildren
 }
 
 const ClientRouteRouteChildren: ClientRouteRouteChildren = {
-  ClientPortalRoute: ClientPortalRoute,
+  ClientPortalRoute: ClientPortalRouteWithChildren,
 }
 
 const ClientRouteRouteWithChildren = ClientRouteRoute._addFileChildren(
