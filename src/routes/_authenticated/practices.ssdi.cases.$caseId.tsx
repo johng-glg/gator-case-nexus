@@ -287,27 +287,29 @@ function CaseDetail() {
 
       {/* Above-the-fold action row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {hasActiveAppealClock ? (
-          <DeadlinePanel caseId={caseId} record={record} />
-        ) : (
-          <NextStepCard
-            title={stage === "Retained" ? "File SSA application" : `Advance from "${stage}"`}
-            description={
-              stage === "Retained"
-                ? "Once the application is on file with SSA, advance the case to track the initial decision clock."
-                : "No appeal clock is active right now. Use the Advance Stage button when ready."
-            }
-            requiredFields={stage === "Retained" ? ["SSA claim number"] : undefined}
-            cta={
-              stage === "Retained"
-                ? {
-                    label: "Advance to Application filed",
-                    onClick: () => openAdvance("Application filed"),
-                  }
-                : undefined
-            }
-          />
-        )}
+        <div ref={deadlineSectionRef}>
+          {hasActiveAppealClock ? (
+            <DeadlinePanel caseId={caseId} record={record} />
+          ) : (
+            <NextStepCard
+              title={stage === "Retained" ? "File SSA application" : `Advance from "${stage}"`}
+              description={
+                stage === "Retained"
+                  ? "Once the application is on file with SSA, advance the case to track the initial decision clock."
+                  : "No appeal clock is active right now. Use the Advance Stage button when ready."
+              }
+              requiredFields={stage === "Retained" ? ["SSA claim number"] : undefined}
+              cta={
+                stage === "Retained"
+                  ? {
+                      label: "Advance to Application filed",
+                      onClick: () => openAdvance("Application filed"),
+                    }
+                  : undefined
+              }
+            />
+          )}
+        </div>
         <ActionCenter
           caseId={caseId}
           engagementId={engagementId}
@@ -330,13 +332,15 @@ function CaseDetail() {
       </div>
 
       {/* Forms & documents — unified panel */}
-      <FormsAndDocumentsPanel
-        caseId={caseId}
-        stage={stage}
-        record={record as Record<string, unknown>}
-        retainerStatus={retainerStatus}
-        retainerSignedDate={retainerSignedDate}
-      />
+      <div ref={formsSectionRef}>
+        <FormsAndDocumentsPanel
+          caseId={caseId}
+          stage={stage}
+          record={record as Record<string, unknown>}
+          retainerStatus={retainerStatus}
+          retainerSignedDate={retainerSignedDate}
+        />
+      </div>
 
       {/* Document checklist for non-form items */}
       <DocumentChecklist
