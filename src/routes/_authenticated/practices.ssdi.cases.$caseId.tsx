@@ -318,8 +318,21 @@ function CaseDetail() {
           ssa827Status={ssa827Status}
           openTaskCount={openTaskCount}
           hasPortalLink={false}
-          onInvitePortal={() => {
-            toast.info("Use 'Invite to portal' in the header to send a portal invite.");
+          onInvitePortal={async () => {
+            const { inviteClientToPortal } = await import("@/lib/portal.functions");
+            const t = toast.loading("Sending portal invite to the client's email on file…");
+            try {
+              const res = await inviteClientToPortal({ data: { caseId, engagementId } });
+              toast.dismiss(t);
+              toast.success(
+                res.resent
+                  ? `Re-sent portal sign-in link to ${res.email}.`
+                  : `Portal invite sent to ${res.email}.`,
+              );
+            } catch (err) {
+              toast.dismiss(t);
+              toast.error(err instanceof Error ? err.message : "Couldn't send invite.");
+            }
           }}
           onRequestDocuments={triggerDocsRequest}
           onScrollToTasks={() => tasksSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
