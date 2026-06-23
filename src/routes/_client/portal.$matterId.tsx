@@ -6,9 +6,10 @@
  * already enforced the client-safe allowlist — nothing here exposes raw data.
  */
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { getMyPortalView } from "@/lib/portal.functions";
+import { getUploadUrl, recordUpload } from "@/lib/documents.functions";
 import { ClientDocumentsSection } from "@/components/portal/ClientDocumentsSection";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   ArrowLeft, LogOut, Calendar, FileSignature, Upload, ClipboardList, Info,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { PortalAction } from "@/integrations/portal/portal";
 
 export const Route = createFileRoute("/_client/portal/$matterId")({
@@ -106,7 +108,7 @@ function MatterDetailPage() {
           </div>
           <ul className="mt-3 space-y-3">
             {matter.actionsNeeded.map((a, i) => (
-              <ActionRow key={i} action={a} matterId={matter.id} />
+              <ActionRow key={i} action={a} matterId={matter.id} caseId={matter.caseId} />
             ))}
           </ul>
         </section>
@@ -139,7 +141,50 @@ function MatterDetailPage() {
   );
 }
 
-function ActionRow({ action, matterId }: { action: PortalAction; matterId: string }) {
+function ActionRow({
+  action,
+  matterId,
+  caseId,
+}: {
+  action: PortalAction;
+  matterId: string;
+  caseId?: string;
+}) {
+  const queryClient = useQueryClient();
+  const getUrl = useServerFn(getUploadUrl);
+  const recordUp = useServerFn(recordUpload);
+  const upload = useMutation({
+    mutationFn: async (file: File) => {
+      if (!caseId) throw new Error("Uploads aren't available for this matter yet.");
+      const requestId = action.ref ?? null;
+      const { storagePath, signedUrl } = await getUrl({
+        data: { caseId, requestId, fileName: file.name, size: file.size },
+      });
+      const put = await fetch(signedUrl, {
+        method: "PUT",
+        body: file,
+        headers: { "Content-Type": file.type || "application/octet-stream" },
+      });
+      if (!put.ok) throw new Error(`Upload failed (${put.status}).`);
+      await recordUp({
+        data: {
+          caseId,
+          requestId,
+          storagePath,
+          originalName: file.name,
+          size: file.size,
+          mime: file.type || undefined,
+        },
+      });
+    },
+    onSuccess: (_d, file) => {
+      toast.success(`Uploaded ${file.name}.`);
+      queryClient.invalidateQueries({ queryKey: ["portal-view"] });
+      queryClient.invalidateQueries({ queryKey: ["client-document-requests"] });
+    },
+    onError: (e) => toast.error(e instanceof Error ? e.message : "Upload failed."),
+  });
+
   const Icon =
     action.type === "sign"
       ? FileSignature
@@ -154,14 +199,27 @@ function ActionRow({ action, matterId }: { action: PortalAction; matterId: strin
         <Icon className="h-4 w-4 mt-0.5 text-amber-700 dark:text-amber-300 shrink-0" />
         <span className="text-base">{action.label}</span>
       </div>
-      {action.type === "questionnaire" ? (
-        <Link
-          to="/portal/intake"
-          search={{ engagement: matterId }}
-          className="text-sm text-primary underline-offset-2 hover:underline shrink-0"
-        >
-          Open
-        </Link>
+      {action.type === "upload" ? (
+        <label className="shrink-0">
+          <input
+            type="file"
+            className="hidden"
+            disabled={!caseId || upload.isPending}
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) upload.mutate(f);
+              e.target.value = "";
+            }}
+          />
+          <Button asChild size="sm" disabled={!caseId || upload.isPending}>
+            <span>
+              <Upload className="h-3 w-3 mr-1" />
+              {upload.isPending ? "Uploading…" : caseId ? "Upload" : "Available after case opens"}
+            </span>
+          </Button>
+        </label>
+      ) : action.type === "questionnaire" ? (
+        <span className="text-xs text-muted-foreground shrink-0">We'll send this when ready</span>
       ) : null}
     </li>
   );
