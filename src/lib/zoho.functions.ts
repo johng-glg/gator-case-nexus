@@ -7,6 +7,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { assertAdmin } from "@/lib/rbac";
 import { buildQuery, type QueryName } from "./zoho-queries";
 
 /** Recursive JSON-safe type. Server fns require the return value to be serializable. */
