@@ -212,7 +212,7 @@ export type Database = {
       document_requests: {
         Row: {
           canceled_at: string | null
-          case_id: string
+          case_id: string | null
           created_at: string
           created_by: string | null
           created_by_email: string | null
@@ -225,7 +225,7 @@ export type Database = {
         }
         Insert: {
           canceled_at?: string | null
-          case_id: string
+          case_id?: string | null
           created_at?: string
           created_by?: string | null
           created_by_email?: string | null
@@ -238,7 +238,7 @@ export type Database = {
         }
         Update: {
           canceled_at?: string | null
-          case_id?: string
+          case_id?: string | null
           created_at?: string
           created_by?: string | null
           created_by_email?: string | null
