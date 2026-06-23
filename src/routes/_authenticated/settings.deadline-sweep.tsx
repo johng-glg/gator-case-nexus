@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
@@ -11,6 +11,12 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings/deadline-sweep")({
+  beforeLoad: ({ context }) => {
+    const roles = (context as { roles?: string[] }).roles ?? [];
+    if (!roles.includes("admin")) {
+      throw redirect({ to: "/today" });
+    }
+  },
   component: DeadlineSweepPage,
 });
 

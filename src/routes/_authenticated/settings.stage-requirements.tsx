@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
@@ -14,6 +14,12 @@ import { ClipboardList, Plus, Trash2, RotateCcw, Save } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings/stage-requirements")({
+  beforeLoad: ({ context }) => {
+    const roles = (context as { roles?: string[] }).roles ?? [];
+    if (!roles.includes("admin")) {
+      throw redirect({ to: "/today" });
+    }
+  },
   head: () => ({ meta: [{ title: "Stage requirements — Gator" }] }),
   component: StageRequirementsPage,
 });
