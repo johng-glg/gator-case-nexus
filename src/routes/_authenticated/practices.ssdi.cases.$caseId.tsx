@@ -199,7 +199,6 @@ function CaseDetail() {
   const costsEmpty = costsRows.length === 0;
 
   // Document request dialog trigger (passed down to ActionCenter).
-  const [docsRequestNonce, setDocsRequestNonce] = useState(0);
   const triggerDocsRequest = () => {
     setDocsRequestNonce((n) => n + 1);
     document.getElementById("doc-requests-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
