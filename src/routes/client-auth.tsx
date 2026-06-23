@@ -130,11 +130,11 @@ function ClientAuthPage() {
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   pattern="[0-9]*"
-                  maxLength={6}
+                  maxLength={10}
                   required
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  placeholder="123456"
+                  placeholder="000000"
                   className="mt-1 text-center text-2xl tracking-[0.4em] font-mono bg-transparent border-[color:var(--gold)]/40 text-[color:var(--gold)] placeholder:text-[color:var(--gold)]/40"
                   style={{ ['--gold' as never]: GOLD, borderColor: `${GOLD}66`, color: GOLD }}
                 />
