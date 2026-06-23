@@ -295,7 +295,7 @@ export const getMyDocumentRequests = createServerFn({ method: "GET" })
     } else if (link.case_id) {
       reqQuery = reqQuery.eq("case_id", link.case_id);
     } else {
-      reqQuery = reqQuery.eq("engagement_id", link.engagement_id);
+      reqQuery = reqQuery.eq("engagement_id", link.engagement_id!);
     }
 
     const uploadQuery = link.case_id
