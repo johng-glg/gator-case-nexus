@@ -11,13 +11,15 @@ import { ClipboardList } from "lucide-react";
 export const Route = createFileRoute("/_client/portal/intake")({
   head: () => ({ meta: [{ title: "Intake questionnaire — Gator Law" }] }),
   validateSearch: (s: Record<string, unknown>) => ({
+    engagement: typeof s.engagement === "string" ? s.engagement : undefined,
     case: typeof s.case === "string" ? s.case : undefined,
   }),
   component: PortalIntakePage,
 });
 
 function PortalIntakePage() {
-  const { case: caseId } = Route.useSearch();
+  const { engagement, case: caseId } = Route.useSearch();
+  const matterRef = engagement ?? caseId;
   return (
     <div className="max-w-xl mx-auto px-6 py-12">
       <div className="rounded-lg border border-border bg-card p-8 text-center space-y-4">
