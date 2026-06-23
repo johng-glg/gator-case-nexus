@@ -188,6 +188,9 @@ export const getLead = createServerFn({ method: "POST" })
         Lead_Score: stored.result.score,
         Screener_Knockouts: stored.result.knockouts.join("\n") || null,
         Is_Urgent: stored.result.urgent,
+        SMS_Consent_At: stored.smsConsent?.at,
+        SMS_Consent_Text: stored.smsConsent?.text,
+        SMS_Consent_Source: stored.smsConsent?.source,
       });
     }
     return { record: toJson<ZohoRow>(record) };
@@ -284,6 +287,14 @@ export const saveLeadScreener = createServerFn({ method: "POST" })
       appealDeadlineDate: i.appealDeadlineDate || undefined,
       primaryImpairment: i.primaryImpairment || undefined,
     }, result);
+    if (data.smsConsent?.granted) {
+      stored.smsConsent = {
+        granted: true,
+        at: new Date().toISOString(),
+        text: data.smsConsent.text ?? null,
+        source: data.smsConsent.source ?? "app:screener",
+      };
+    }
     const payload: Record<string, unknown> = {
       id: data.leadId,
       Description: upsertScreenerBlock((lead as Record<string, unknown> | null)?.Description, stored),
