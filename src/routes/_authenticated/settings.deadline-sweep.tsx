@@ -131,6 +131,7 @@ function DeadlineSweepAdmin() {
           <Section title="Overdue" icon={<AlertTriangle className="w-4 h-4 text-destructive" />} rows={latest.overdue ?? []} />
           <Section title="Due within 7 days" icon={<Clock className="w-4 h-4 text-amber-500" />} rows={latest.due_soon ?? []} />
           <Section title="Medical release expiring ≤ 30 days" icon={<FileWarning className="w-4 h-4 text-amber-500" />} rows={latest.release_expiring ?? []} />
+          <StalledSection rows={latest.stalled ?? []} />
         </div>
       )}
 
