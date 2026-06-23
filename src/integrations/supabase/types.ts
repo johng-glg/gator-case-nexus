@@ -496,28 +496,34 @@ export type Database = {
       saved_views: {
         Row: {
           created_at: string
+          created_by_email: string | null
           id: string
           name: string
           page: string
           params: Json
+          shared_with_firm: boolean
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          created_by_email?: string | null
           id?: string
           name: string
           page: string
           params?: Json
+          shared_with_firm?: boolean
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          created_by_email?: string | null
           id?: string
           name?: string
           page?: string
           params?: Json
+          shared_with_firm?: boolean
           updated_at?: string
           user_id?: string
         }
