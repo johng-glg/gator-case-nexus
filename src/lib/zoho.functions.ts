@@ -1033,8 +1033,10 @@ export const runDeadlineSweepNow = createServerFn({ method: "POST" })
     const { createCaseService } = await import("@/integrations/zoho/caseService");
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { syncAllOpenCases } = await import("@/integrations/zoho/caseCalendarSync");
+    const { buildStageEntryLookup } = await import("@/integrations/zoho/stageEntryLookup.server");
 
-    const result = await createCaseService({ zoho: makeZohoClient() }).runDailyDeadlineSweep();
+    const service = createCaseService({ zoho: makeZohoClient() });
+    const result = await service.runDailyDeadlineSweep();
     // After recomputing deadlines, reconcile the calendar so date changes flow through.
     // Calendar errors must not fail the sweep — capture and log.
     let cal = { created: 0, updated: 0, deleted: 0, errors: 0 };
@@ -1044,12 +1046,21 @@ export const runDeadlineSweepNow = createServerFn({ method: "POST" })
       console.error("[deadline-sweep] calendar sync failed:", e);
       cal.errors++;
     }
+    // Stalled-claim SLA scan. Non-fatal.
+    let stalled: Awaited<ReturnType<typeof service.findStalledCases>> = [];
+    try {
+      const lookup = await buildStageEntryLookup();
+      stalled = await service.findStalledCases(lookup);
+    } catch (e) {
+      console.error("[deadline-sweep] stalled scan failed:", e);
+    }
     await supabaseAdmin.from("ssdi_deadline_digests").insert({
       scanned: result.scanned,
       updated: result.updated,
       overdue: result.overdue as never,
       due_soon: result.dueSoon as never,
       release_expiring: result.releaseExpiring as never,
+      stalled: stalled as never,
       calendar_created: cal.created,
       calendar_updated: cal.updated,
       calendar_deleted: cal.deleted,
@@ -1061,6 +1072,7 @@ export const runDeadlineSweepNow = createServerFn({ method: "POST" })
       overdueCount: result.overdue.length,
       dueSoonCount: result.dueSoon.length,
       releaseExpiringCount: result.releaseExpiring.length,
+      stalledCount: stalled.length,
       calendar: cal,
     };
   });
