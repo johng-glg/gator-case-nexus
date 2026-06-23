@@ -15,6 +15,12 @@ import {
 } from "@/lib/users.functions";
 
 export const Route = createFileRoute("/_authenticated/settings/users")({
+  beforeLoad: ({ context }) => {
+    const roles = (context as { roles?: string[] }).roles ?? [];
+    if (!roles.includes("admin")) {
+      throw redirect({ to: "/today" });
+    }
+  },
   component: UsersPage,
 });
 

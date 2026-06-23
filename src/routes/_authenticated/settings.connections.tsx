@@ -19,6 +19,12 @@ import { getConnectionStatus, getAuthorizeUrl } from "@/lib/zoho.functions";
 import { CheckCircle2, AlertCircle, RefreshCw, ExternalLink } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/settings/connections")({
+  beforeLoad: ({ context }) => {
+    const roles = (context as { roles?: string[] }).roles ?? [];
+    if (!roles.includes("admin")) {
+      throw redirect({ to: "/today" });
+    }
+  },
   component: ConnectionsPage,
 });
 
