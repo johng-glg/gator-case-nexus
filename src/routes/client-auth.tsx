@@ -7,11 +7,13 @@
  */
 import { useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import gatorLogo from "@/assets/gator-logo.png.asset.json";
+import { requestClientPortalSignInLink } from "@/lib/portal.functions";
 
 const FIRM_DOMAIN = "gatorlawpc.com";
 const GOLD = "#F1D391";
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/client-auth")({
 
 function ClientAuthPage() {
   const navigate = useNavigate();
+  const requestPortalLink = useServerFn(requestClientPortalSignInLink);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [sending, setSending] = useState(false);
@@ -43,20 +46,16 @@ function ClientAuthPage() {
 
   async function requestLink() {
     setSending(true);
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: {
-        emailRedirectTo: `${window.location.origin}/portal`,
-        shouldCreateUser: false,
-      },
-    });
-    setSending(false);
-    if (error) {
-      toast.error(error.message || "Couldn't send sign-in link.");
+    try {
+      await requestPortalLink({ data: { email: email.trim().toLowerCase() } });
+      setSent(true);
+      toast.success("Check your email for the link or 6-digit code.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't send sign-in link.");
+    } finally {
+      setSending(false);
       return;
     }
-    setSent(true);
-    toast.success("Check your email for the link or 6-digit code.");
   }
 
   async function verifyCode() {
