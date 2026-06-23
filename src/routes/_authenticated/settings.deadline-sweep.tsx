@@ -153,6 +153,7 @@ function DeadlineSweepAdmin() {
                   <th className="text-right px-3 py-2">Overdue</th>
                   <th className="text-right px-3 py-2">Due ≤7d</th>
                   <th className="text-right px-3 py-2">Release ≤30d</th>
+                  <th className="text-right px-3 py-2">Stalled</th>
                   <th className="text-left px-3 py-2">Status</th>
                 </tr>
               </thead>
@@ -165,6 +166,7 @@ function DeadlineSweepAdmin() {
                     <td className="px-3 py-2 text-right tabular-nums">{r.overdue?.length ?? 0}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{r.due_soon?.length ?? 0}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{r.release_expiring?.length ?? 0}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{r.stalled?.length ?? 0}</td>
                     <td className="px-3 py-2 text-xs">
                       {r.error ? <span className="text-destructive">Error: {r.error}</span> : <span className="text-muted-foreground">OK</span>}
                     </td>
