@@ -49,6 +49,122 @@ const inviteInput = z
     message: "Provide a caseId, engagementId, or contactId.",
   });
 
+const clientSignInInput = z.object({
+  email: z.string().trim().toLowerCase().email().max(255),
+});
+
+const ZERO_USER_ID = "00000000-0000-0000-0000-000000000000";
+
+/**
+ * Public client-portal sign-in request.
+ *
+ * The normal auth OTP endpoint is disabled for this project because staff auth is
+ * Google-only. Clients still need passwordless access, so this uses the same
+ * portal invite mailer as staff-triggered invites, but only for emails already
+ * enrolled in the client portal. The response is intentionally generic so the
+ * page does not disclose whether an email is a client.
+ */
+export const requestClientPortalSignInLink = createServerFn({ method: "POST" })
+  .inputValidator((data) => clientSignInInput.parse(data))
+  .handler(async ({ data }) => {
+    const email = data.email.trim().toLowerCase();
+
+    if (email.endsWith(`@${FIRM_DOMAIN}`)) {
+      return { ok: true };
+    }
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: contactRows, error: contactError } = await supabaseAdmin
+      .from("client_portal_contacts")
+      .select("zoho_contact_id, email")
+      .eq("email", email)
+      .limit(1);
+
+    if (contactError) {
+      console.error("[requestClientPortalSignInLink] contact lookup failed", contactError);
+      return { ok: true };
+    }
+
+    let contactId: string | null = contactRows?.[0]?.zoho_contact_id ?? null;
+    let deliveryEmail = contactRows?.[0]?.email ?? email;
+    let engagementId: string | undefined;
+
+    if (!contactId) {
+      // Legacy fallback for older portal rows created before contact-keyed links.
+      const { data: legacyRows, error: legacyError } = await supabaseAdmin
+        .from("client_portal_links")
+        .select("email, zoho_case_id, zoho_engagement_id")
+        .eq("email", email)
+        .limit(1);
+
+      if (legacyError) {
+        console.error("[requestClientPortalSignInLink] legacy lookup failed", legacyError);
+        return { ok: true };
+      }
+
+      const legacy = legacyRows?.[0];
+      if (!legacy) return { ok: true };
+      deliveryEmail = legacy.email ?? email;
+      engagementId = legacy.zoho_engagement_id ?? undefined;
+
+      try {
+        const { makeZohoClient } = await import("@/integrations/zoho/client.server");
+        const zoho = makeZohoClient().service();
+        if (!engagementId && legacy.zoho_case_id) {
+          const caseRecord = await zoho.getRecord<{ Engagement?: { id?: string } | string }>(
+            "SSDI_Cases",
+            legacy.zoho_case_id,
+            ["Engagement"],
+          );
+          const engagement = caseRecord?.Engagement;
+          engagementId = typeof engagement === "string" ? engagement : engagement?.id;
+        }
+
+        if (engagementId) {
+          const engagementRecord = await zoho.getRecord<{ Client?: { id?: string } | string }>(
+            "Engagements",
+            engagementId,
+            ["Client"],
+          );
+          const client = engagementRecord?.Client;
+          contactId = (typeof client === "string" ? client : client?.id) ?? null;
+        }
+      } catch (err) {
+        console.error("[requestClientPortalSignInLink] legacy contact resolution failed", err);
+        return { ok: true };
+      }
+    }
+
+    if (!contactId) return { ok: true };
+
+    // Avoid accidental resend loops from impatient clicks or page refreshes.
+    const recentCutoff = new Date(Date.now() - 60_000).toISOString();
+    const { data: recentRows } = await supabaseAdmin
+      .from("email_send_log")
+      .select("id")
+      .eq("recipient_email", deliveryEmail.toLowerCase())
+      .eq("template_name", "magiclink")
+      .in("status", ["pending", "sent"])
+      .gte("created_at", recentCutoff)
+      .limit(1);
+
+    if (recentRows?.length) return { ok: true };
+
+    try {
+      const { autoInvitePortal } = await import("@/integrations/portal/autoInvite.server");
+      await autoInvitePortal({
+        email: deliveryEmail,
+        contactId,
+        engagementId,
+        invitedByUserId: ZERO_USER_ID,
+      });
+    } catch (err) {
+      console.error("[requestClientPortalSignInLink] send failed", err);
+    }
+
+    return { ok: true };
+  });
+
 /**
  * Staff-only. Sends a passwordless invite to a client and binds their auth
  * user to the Zoho Contact (so they can later be added to another matter
