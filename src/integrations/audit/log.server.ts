@@ -30,7 +30,8 @@ export type ActivityAction =
   | "records.status"
   | "lead.convert.override"
   | "case.opened"
-  | "case.intake.step";
+  | "case.intake.step"
+  | "conversion.step";
 
 
 export interface LogActivityInput {
