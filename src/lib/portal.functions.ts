@@ -23,11 +23,16 @@ function ensureStaff(email: string | undefined): asserts email is string {
 
 const ID_RE = /^[A-Za-z0-9_]+$/;
 
-const inviteInput = z.object({
-  email: z.string().trim().toLowerCase().email().max(255),
-  caseId: z.string().regex(ID_RE),
-  engagementId: z.string().regex(ID_RE).optional(),
-});
+const inviteInput = z
+  .object({
+    email: z.string().trim().toLowerCase().email().max(255),
+    caseId: z.string().regex(ID_RE).optional(),
+    engagementId: z.string().regex(ID_RE).optional(),
+  })
+  .refine((v) => !!v.caseId || !!v.engagementId, {
+    message: "Either caseId or engagementId is required.",
+  });
+
 
 /**
  * Staff-only. Sends a magic-link invite to the client and links their
@@ -83,7 +88,7 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
         {
           user_id: userId,
           email: data.email,
-          zoho_case_id: data.caseId,
+          zoho_case_id: data.caseId ?? null,
           zoho_engagement_id: data.engagementId ?? null,
           invited_by: context.userId,
           updated_at: new Date().toISOString(),
@@ -94,17 +99,18 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
 
     const { logCaseActivity } = await import("@/integrations/audit/log.server");
     await logCaseActivity({
-      caseId: data.caseId,
+      caseId: data.caseId ?? data.engagementId ?? "unknown",
       engagementId: data.engagementId ?? null,
       actorUserId: context.userId,
       actorEmail: staffEmail,
       action: "portal.invite",
       summary: `Sent portal invite to ${data.email}.`,
-      metadata: { email: data.email },
+      metadata: { email: data.email, caseId: data.caseId ?? null },
     });
 
     return { ok: true, userId, emailSent: true };
   });
+
 
 /**
  * Staff-only. Lists the portal link for a given case (so the case page can
@@ -143,6 +149,17 @@ export const getMyClientPortal = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     if (!link) return { linked: false as const };
 
+    // Invited but the SSDI case hasn't been opened yet (retainer not signed).
+    if (!link.zoho_case_id) {
+      return {
+        linked: true as const,
+        pending: true as const,
+        email: link.email,
+        caseId: null,
+        case: null,
+      };
+    }
+
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const zoho = makeZohoClient().service();
     const record = (await zoho.getRecord("SSDI_Cases", link.zoho_case_id, [
@@ -160,7 +177,14 @@ export const getMyClientPortal = createServerFn({ method: "GET" })
       "Assigned_Attorney",
     ])) as Record<string, unknown> | null;
 
-    if (!record) return { linked: true as const, case: null };
+    if (!record)
+      return {
+        linked: true as const,
+        pending: false as const,
+        email: link.email,
+        caseId: link.zoho_case_id,
+        case: null,
+      };
 
     type Lookup = { name?: string };
     const attorney = record.Assigned_Attorney as Lookup | string | null | undefined;
@@ -173,6 +197,7 @@ export const getMyClientPortal = createServerFn({ method: "GET" })
 
     return {
       linked: true as const,
+      pending: false as const,
       email: link.email,
       caseId: link.zoho_case_id,
       case: {
@@ -192,3 +217,4 @@ export const getMyClientPortal = createServerFn({ method: "GET" })
       },
     };
   });
+
