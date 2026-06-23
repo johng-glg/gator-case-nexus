@@ -537,6 +537,7 @@ export type Database = {
           ran_at: string
           release_expiring: Json
           scanned: number
+          stalled: Json
           updated: number
         }
         Insert: {
@@ -552,6 +553,7 @@ export type Database = {
           ran_at?: string
           release_expiring?: Json
           scanned?: number
+          stalled?: Json
           updated?: number
         }
         Update: {
@@ -567,6 +569,7 @@ export type Database = {
           ran_at?: string
           release_expiring?: Json
           scanned?: number
+          stalled?: Json
           updated?: number
         }
         Relationships: []
