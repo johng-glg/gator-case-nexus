@@ -243,10 +243,12 @@ export const PHASES: { key: string; label: string; stages: Stage[] }[] = [
 ];
 
 export function phaseForStage(stage: Stage | string): string {
-  return PHASES.find((p) => p.stages.includes(stage as Stage))?.key ?? "intake";
+  const s = normalizeStage(stage as string);
+  return PHASES.find((p) => p.stages.includes(s))?.key ?? "intake";
 }
 
 /** Index of the phase containing the stage (for "done / current / upcoming" styling). */
 export function phaseIndex(stage: Stage | string): number {
-  return Math.max(0, PHASES.findIndex((p) => p.stages.includes(stage as Stage)));
+  const s = normalizeStage(stage as string);
+  return Math.max(0, PHASES.findIndex((p) => p.stages.includes(s)));
 }
