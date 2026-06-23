@@ -1,12 +1,16 @@
 /**
  * ActionCenter — prioritized list of next actions for a case.
  *
- * Rendered above-the-fold on the right side of the case page when no appeal
- * clock is active (or paired with the Deadline panel when one is). Each row
- * = label + inline button so staff can act without scrolling.
+ * Layered:
+ *  (E2) Evidence-readiness banner — first, when we're at a hearing stage
+ *       and no records are received yet.
+ *  (E1) Stage-aware suggestions — what an experienced CM would do at this
+ *       exact stage (from stageSuggestions engine).
+ *  (E3) "One-click" → suggestions with an advanceTo prefill the AdvanceStageDialog.
+ *  Forms / tasks / docs / portal — the universal rows already shipped.
  */
 import { useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -22,12 +26,26 @@ import {
   ShieldAlert,
   Send,
   ListTodo,
+  ArrowRight,
+  Info,
+  Scale,
+  CircleDollarSign,
+  AlertTriangle,
 } from "lucide-react";
 import { sendIntakeForm } from "@/lib/zoho.functions";
+import { listCaseRequests } from "@/lib/medicalRecords.functions";
+import type { Stage } from "@/integrations/zoho/lifecycle";
+import {
+  getStageSuggestions,
+  needsEvidenceGate,
+  type StageSuggestion,
+  type SuggestionIcon,
+} from "@/integrations/zoho/stageSuggestions";
 
 interface Props {
   caseId: string;
   engagementId?: string;
+  currentStage: Stage;
   ssa1696Status: string;
   ssa827Status: string;
   openTaskCount: number;
@@ -35,13 +53,41 @@ interface Props {
   onInvitePortal: () => void;
   onRequestDocuments: () => void;
   onScrollToTasks?: () => void;
+  onScrollToRecords?: () => void;
+  onScrollToDeadline?: () => void;
+  onScrollToMessaging?: () => void;
+  onScrollToForms?: () => void;
+  onAdvance?: (nextStage?: Stage) => void;
+}
+
+function suggestionIcon(kind: SuggestionIcon) {
+  const cls = "h-4 w-4";
+  switch (kind) {
+    case "next":  return <ArrowRight className={`${cls} text-primary`} />;
+    case "warn":  return <AlertTriangle className={`${cls} text-amber-600`} />;
+    case "doc":   return <FileText className={`${cls} text-primary`} />;
+    case "info":  return <Info className={`${cls} text-muted-foreground`} />;
+    case "scale": return <Scale className={`${cls} text-primary`} />;
+    case "money": return <CircleDollarSign className={`${cls} text-primary`} />;
+  }
 }
 
 export function ActionCenter(props: Props) {
   const send = useServerFn(sendIntakeForm);
+  const listRequests = useServerFn(listCaseRequests);
   const qc = useQueryClient();
   const [attestOpen, setAttestOpen] = useState(false);
   const [attested, setAttested] = useState(false);
+
+  // E2: only need this when we're at a hearing stage; cheap query, ~1 row.
+  const recordsQuery = useQuery({
+    queryKey: ["case", props.caseId, "records-counts"],
+    queryFn: () => listRequests({ data: { caseId: props.caseId } }),
+    enabled: ["ALJ hearing requested", "Hearing scheduled", "Hearing held"].includes(props.currentStage),
+    staleTime: 30_000,
+  });
+  const receivedCount = recordsQuery.data?.counts.received ?? 0;
+  const evidenceGate = needsEvidenceGate(props.currentStage, receivedCount);
 
   const sendMut = useMutation({
     mutationFn: (args: { code: "SSA-1696" | "SSA-827"; attested?: boolean }) =>
@@ -53,7 +99,26 @@ export function ActionCenter(props: Props) {
     onError: (e) => toast.error(e instanceof Error ? e.message : "Send failed"),
   });
 
-  const rows: Array<{
+  // E1: stage-aware suggestions.
+  const stageRows = getStageSuggestions(props.currentStage);
+
+  function handleSuggestion(s: StageSuggestion) {
+    if (s.advanceTo) {
+      // E3: one-click → preselect the stage in the Advance dialog
+      props.onAdvance?.(s.advanceTo);
+      return;
+    }
+    switch (s.scrollTo) {
+      case "tasks": return props.onScrollToTasks?.();
+      case "records": return props.onScrollToRecords?.();
+      case "deadline": return props.onScrollToDeadline?.();
+      case "messaging": return props.onScrollToMessaging?.();
+      case "forms": return props.onScrollToForms?.();
+    }
+  }
+
+  // Universal rows below the stage-aware ones.
+  const universalRows: Array<{
     key: string;
     label: string;
     hint?: string;
@@ -63,7 +128,7 @@ export function ActionCenter(props: Props) {
   }> = [];
 
   if (props.ssa1696Status !== "Signed") {
-    rows.push({
+    universalRows.push({
       key: "1696",
       label: "Send SSA-1696",
       hint: props.ssa1696Status === "Sent" ? "Already sent — resend if needed" : "Appointment of Representative",
@@ -77,7 +142,7 @@ export function ActionCenter(props: Props) {
   }
 
   if (props.ssa827Status !== "Signed") {
-    rows.push({
+    universalRows.push({
       key: "827",
       label: "SSA-827 — needs attestation",
       hint: "Attorney attestation required before sending (POMS DI 11005.017 §C.6)",
@@ -94,7 +159,7 @@ export function ActionCenter(props: Props) {
     });
   }
 
-  rows.push({
+  universalRows.push({
     key: "tasks",
     label: `Open tasks (${props.openTaskCount})`,
     hint: props.openTaskCount === 0 ? "No open tasks — nice." : "Jump to task list",
@@ -106,7 +171,7 @@ export function ActionCenter(props: Props) {
     },
   });
 
-  rows.push({
+  universalRows.push({
     key: "docs",
     label: "Request documents from client",
     hint: "Send the client an upload checklist",
@@ -119,7 +184,7 @@ export function ActionCenter(props: Props) {
   });
 
   if (!props.hasPortalLink) {
-    rows.push({
+    universalRows.push({
       key: "portal",
       label: "Invite client to portal",
       hint: "Sends a secure magic-link email",
@@ -141,8 +206,56 @@ export function ActionCenter(props: Props) {
         </div>
         <CheckSquare className="h-4 w-4 text-muted-foreground" />
       </header>
+
+      {/* E2 — evidence-readiness banner */}
+      {evidenceGate && (
+        <div className="rounded-md border border-amber-300 bg-amber-50 dark:border-amber-700/50 dark:bg-amber-950/30 p-3 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+              Evidence not ready for hearing
+            </div>
+            <p className="text-xs text-amber-800 dark:text-amber-300 mt-0.5">
+              No medical records are marked received on this case. Don&rsquo;t let
+              this reach a hearing without evidence — request and follow up now,
+              and honor the 5-day rule (HALLEX I-2-6-58).
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => props.onScrollToRecords?.()}>
+            Records
+          </Button>
+        </div>
+      )}
+
+      {/* E1 — stage-aware rows */}
+      {stageRows.length > 0 && (
+        <ul className="divide-y divide-border">
+          {stageRows.map((s) => (
+            <li key={s.key} className="flex items-start gap-3 py-2.5">
+              <div className="mt-0.5">{suggestionIcon(s.icon)}</div>
+              <div className="min-w-0 flex-1">
+                <div className={`text-sm font-medium ${s.tone === "warn" ? "text-amber-700 dark:text-amber-300" : "text-foreground"}`}>
+                  {s.label}
+                </div>
+                {s.hint && <div className="text-xs text-muted-foreground mt-0.5">{s.hint}</div>}
+              </div>
+              {(s.advanceTo || s.scrollTo) && (
+                <Button
+                  size="sm"
+                  variant={s.advanceTo ? "default" : "outline"}
+                  onClick={() => handleSuggestion(s)}
+                >
+                  {s.advanceTo ? "Advance" : "Open"}
+                </Button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Universal rows */}
       <ul className="divide-y divide-border">
-        {rows.map((r) => (
+        {universalRows.map((r) => (
           <li key={r.key} className="flex items-start gap-3 py-2.5">
             <div className="mt-0.5">{r.icon}</div>
             <div className="min-w-0 flex-1">
