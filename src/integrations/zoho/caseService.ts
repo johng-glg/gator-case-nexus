@@ -224,7 +224,71 @@ export function createCaseService(deps: CaseServiceDeps) {
     return { scanned: rows.length, updated: updates.length, overdue, dueSoon, releaseExpiring };
   }
 
-  return { advanceStage, recomputeDeadline, runDailyDeadlineSweep };
+  /**
+   * SERVICE cron: identify open cases that have been sitting in their current stage
+   * longer than the stage's SLA. `stageEntryByCaseId` maps case id → ISO date the case
+   * entered its current stage (typically derived from case_activity_log's most-recent
+   * `stage.advance` row). Cases without an entry in the lookup fall back to Date_Opened.
+   */
+  async function findStalledCases(stageEntryByCaseId: Map<string, string>): Promise<StalledRow[]> {
+    const api = deps.zoho.as(SERVICE_ACTOR);
+    const rows = await api.coql<ZohoRecord>(
+      `select id, Case_Number, Current_Stage, Date_Opened, Engagement, Assigned_Attorney
+       from ${MODULE}
+       where (Is_Closed = false)`,
+    );
+    const t = today();
+    const stalled: StalledRow[] = [];
+    for (const r of rows) {
+      const stage = normalizeStage(r.Current_Stage as string | undefined);
+      const sla = STAGE_SLA_DAYS[stage];
+      if (!sla) continue;
+      const id = r.id as string;
+      const entryISO = stageEntryByCaseId.get(id) ?? (r.Date_Opened as string | undefined);
+      if (!entryISO) continue;
+      const entryDate = asUTCDate(entryISO);
+      if (!entryDate) continue;
+      const days = Math.floor((t.getTime() - entryDate.getTime()) / 86_400_000);
+      if (days > sla) {
+        stalled.push(toStalledRow(r, { stage, daysInStage: days, slaDays: sla, since: entryISO.slice(0, 10) }));
+      }
+    }
+    stalled.sort((a, b) => b.daysInStage - a.daysInStage);
+    return stalled;
+  }
+
+  return { advanceStage, recomputeDeadline, runDailyDeadlineSweep, findStalledCases };
+}
+
+export interface StalledRow {
+  id: string;
+  caseNumber: string | null;
+  engagementId: string | null;
+  attorneyId: string | null;
+  attorneyName: string | null;
+  stage: string;
+  daysInStage: number;
+  slaDays: number;
+  since: string;
+}
+
+function toStalledRow(
+  r: ZohoRecord,
+  x: { stage: string; daysInStage: number; slaDays: number; since: string },
+): StalledRow {
+  const aa = r.Assigned_Attorney as { id?: string; name?: string } | string | undefined;
+  const eng = r.Engagement as { id?: string } | string | undefined;
+  return {
+    id: r.id as string,
+    caseNumber: (r.Case_Number as string) ?? null,
+    engagementId: typeof eng === "string" ? eng : eng?.id ?? null,
+    attorneyId: typeof aa === "string" ? aa : aa?.id ?? null,
+    attorneyName: typeof aa === "object" ? aa?.name ?? null : null,
+    stage: x.stage,
+    daysInStage: x.daysInStage,
+    slaDays: x.slaDays,
+    since: x.since,
+  };
 }
 
 export interface DigestRow {
