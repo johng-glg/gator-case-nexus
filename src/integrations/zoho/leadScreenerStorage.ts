@@ -54,7 +54,10 @@ export function stripScreenerBlock(description: unknown): string {
   return `${description.slice(0, start)}${description.slice(end + END.length)}`.trim();
 }
 
-export function buildStoredScreener(input: StoredLeadScreener["input"], result: ScreenResult): StoredLeadScreener {
+export function buildStoredScreener(
+  input: StoredLeadScreener["input"],
+  result: ScreenResult,
+): StoredLeadScreener {
   return {
     savedAt: new Date().toISOString(),
     input,
@@ -67,7 +70,11 @@ export function buildStoredScreener(input: StoredLeadScreener["input"], result: 
   };
 }
 
-export function upsertScreenerBlock(description: unknown, stored: StoredLeadScreener, maxLength = 30000): string {
+export function upsertScreenerBlock(
+  description: unknown,
+  stored: StoredLeadScreener,
+  maxLength = 30000,
+): string {
   const base = stripScreenerBlock(description);
   const lines = [
     START,
