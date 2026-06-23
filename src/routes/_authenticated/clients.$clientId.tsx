@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getContact, zohoQuery } from "@/lib/zoho.functions";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { InvitePortalButton } from "@/components/portal/InvitePortalButton";
 
 export const Route = createFileRoute("/_authenticated/clients/$clientId")({
   head: () => ({ meta: [{ title: "Client — Gator" }] }),
