@@ -309,7 +309,15 @@ function Badge({ children }: { children: React.ReactNode }) {
 function fmtWhen(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso.slice(0, 10);
-  return d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const month = d.getMonth() + 1;
+  const day = d.getDate();
+  const year = d.getFullYear() % 100;
+  let hour = d.getHours();
+  const minute = pad(d.getMinutes());
+  const period = hour >= 12 ? 'PM' : 'AM';
+  hour = hour % 12 || 12;
+  return `${month}/${day}/${year} ${hour}:${minute}${period}`;
 }
 
 
