@@ -7,6 +7,7 @@ import { ChevronLeft, AlertTriangle, Loader2, Check, CircleDot, Circle } from "l
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { normalizeStage } from "@/integrations/zoho/lifecycle";
+import { InvitePortalButton } from "@/components/portal/InvitePortalButton";
 
 
 export const Route = createFileRoute("/_authenticated/engagements/$engagementId")({
@@ -136,12 +137,19 @@ function EngagementDetail() {
             </span>
           </div>
         </div>
-        <Link
-          to="/engagements"
-          className="inline-flex shrink-0 items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="h-4 w-4" /> Back to engagements
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <InvitePortalButton
+            engagementId={engagementId}
+            contactId={clientId}
+            knownEmail={typeof contact?.Email === "string" ? contact.Email : undefined}
+          />
+          <Link
+            to="/engagements"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" /> Back to engagements
+          </Link>
+        </div>
       </header>
 
 

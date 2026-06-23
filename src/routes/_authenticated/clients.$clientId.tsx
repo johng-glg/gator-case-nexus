@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getContact, zohoQuery } from "@/lib/zoho.functions";
 import { ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { InvitePortalButton } from "@/components/portal/InvitePortalButton";
 
 export const Route = createFileRoute("/_authenticated/clients/$clientId")({
   head: () => ({ meta: [{ title: "Client — Gator" }] }),
@@ -54,12 +55,18 @@ function ClientDetail() {
             {rec.Owner?.name && <span>· Owner: {String(rec.Owner.name)}</span>}
           </div>
         </div>
-        <Link
-          to="/clients"
-          className="inline-flex shrink-0 items-center text-sm text-muted-foreground hover:text-foreground"
-        >
-          <ChevronLeft className="h-4 w-4" /> Back to clients
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <InvitePortalButton
+            contactId={clientId}
+            knownEmail={typeof rec.Email === "string" ? rec.Email : undefined}
+          />
+          <Link
+            to="/clients"
+            className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+          >
+            <ChevronLeft className="h-4 w-4" /> Back to clients
+          </Link>
+        </div>
       </header>
 
       <section className="rounded-lg border border-border bg-card p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">

@@ -42,9 +42,11 @@ const inviteInput = z
     email: z.string().trim().toLowerCase().email().max(255).optional(),
     caseId: z.string().regex(ID_RE).optional(),
     engagementId: z.string().regex(ID_RE).optional(),
+    // Contact-only invites (from the client page): no specific matter context.
+    contactId: z.string().regex(ID_RE).optional(),
   })
-  .refine((v) => !!v.caseId || !!v.engagementId, {
-    message: "Either caseId or engagementId is required.",
+  .refine((v) => !!v.caseId || !!v.engagementId || !!v.contactId, {
+    message: "Provide a caseId, engagementId, or contactId.",
   });
 
 /**
@@ -61,7 +63,7 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
     const staffEmail = (context.claims as { email?: string }).email;
     ensureStaff(staffEmail);
 
-    // Resolve the Zoho contact id from the engagement/case the caller gave us.
+    // Resolve the Zoho contact id from the engagement/case/contact the caller gave us.
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
     const api = makeZohoClient().as(context.userId);
 
@@ -75,16 +77,20 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
       const e = c?.Engagement;
       engagementId = typeof e === "string" ? e : e?.id;
     }
-    if (!engagementId) throw new Error("Could not resolve engagement for invite.");
 
-    const engagement = await api.getRecord<{ Client?: { id?: string } | string }>(
-      "Engagements",
-      engagementId,
-      ["Client"],
-    );
-    const cl = engagement?.Client;
-    const contactId = typeof cl === "string" ? cl : cl?.id;
+    let contactId = data.contactId;
+    if (!contactId) {
+      if (!engagementId) throw new Error("Could not resolve engagement or contact for invite.");
+      const engagement = await api.getRecord<{ Client?: { id?: string } | string }>(
+        "Engagements",
+        engagementId,
+        ["Client"],
+      );
+      const cl = engagement?.Client;
+      contactId = typeof cl === "string" ? cl : cl?.id;
+    }
     if (!contactId) throw new Error("Engagement has no Client (Contact) to invite.");
+
 
     // Pull email from the Contact when the caller didn't pass one.
     let inviteEmail = data.email;
@@ -109,18 +115,20 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
     });
 
 
-    const { logCaseActivity } = await import("@/integrations/audit/log.server");
-    await logCaseActivity({
-      caseId: data.caseId ?? engagementId,
-      engagementId,
-      actorUserId: context.userId,
-      actorEmail: staffEmail,
-      action: "portal.invite",
-      summary: resent
-        ? `Re-sent portal sign-in link to ${inviteEmail}.`
-        : `Sent portal invite to ${inviteEmail}.`,
-      metadata: { email: inviteEmail, contactId, engagementId },
-    });
+    if (data.caseId || engagementId) {
+      const { logCaseActivity } = await import("@/integrations/audit/log.server");
+      await logCaseActivity({
+        caseId: data.caseId ?? engagementId!,
+        engagementId: engagementId ?? "",
+        actorUserId: context.userId,
+        actorEmail: staffEmail,
+        action: "portal.invite",
+        summary: resent
+          ? `Re-sent portal sign-in link to ${inviteEmail}.`
+          : `Sent portal invite to ${inviteEmail}.`,
+        metadata: { email: inviteEmail, contactId, engagementId },
+      });
+    }
 
     return { ok: true, userId, emailSent: true, resent, email: inviteEmail };
   });
