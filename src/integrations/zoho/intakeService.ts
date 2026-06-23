@@ -16,6 +16,7 @@
  */
 
 import { localToday } from "./deadlines";
+import { parseScreenerBlock } from "./leadScreenerStorage";
 import type { ZohoClient, ZohoRecord } from "./zohoClient";
 import { SERVICE_ACTOR } from "./zohoClient";
 
@@ -102,7 +103,7 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
 
   const LEAD_FIELDS = [
     "First_Name", "Last_Name", "Email", "Mobile", "Phone", "Lead_Source", "Practice_Area",
-    "Street", "City", "State", "Zip_Code", "Lead_Status", "Converted_Contact", "Lead_Tier",
+    "Street", "City", "State", "Zip_Code", "Lead_Status", "Converted_Contact", "Description",
   ];
 
   /**
@@ -119,7 +120,7 @@ export function createIntakeService(deps: { zoho: ZohoClient; now?: () => Date }
     if (!lead) throw new Error(`Lead ${leadId} not found`);
     if (lead.Converted_Contact) throw new Error(`Lead ${leadId} is already converted.`);
 
-    const tier = str(lead.Lead_Tier);
+    const tier = parseScreenerBlock(lead.Description)?.result.tier;
     if (tier === "Decline" && !opts?.override?.reason) {
       throw new Error("Lead screened as Decline. Provide an attorney override reason to convert.");
     }
