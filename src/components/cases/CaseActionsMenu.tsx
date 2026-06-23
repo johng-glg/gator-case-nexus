@@ -101,12 +101,18 @@ export function CaseActionsMenu({ caseId, engagementId, stage, isAdmin }: Props)
         <DropdownMenuContent align="end" className="w-60">
           <DropdownMenuLabel>Case actions</DropdownMenuLabel>
           <DropdownMenuItem
+            disabled={inviteMut.isPending}
             onSelect={(e) => {
               e.preventDefault();
-              setInviteOpen(true);
+              inviteMut.mutate();
             }}
           >
-            <Mail className="mr-2 h-4 w-4" /> Re-send portal invite
+            <Mail className="mr-2 h-4 w-4" />
+            {inviteMut.isPending
+              ? "Sending invite…"
+              : linkedEmail
+                ? `Re-send portal invite to ${linkedEmail}`
+                : "Send portal invite"}
           </DropdownMenuItem>
           <DropdownMenuItem
             disabled={busy !== null}
