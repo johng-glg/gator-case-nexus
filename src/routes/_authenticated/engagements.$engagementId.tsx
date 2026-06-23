@@ -411,7 +411,7 @@ function RetainerPanel({
                   ? fmtWhen(signedDate)
                   : undefined;
           const box = (
-            <li key={step} className="flex flex-col items-center shrink-0">
+            <li key={step} className="flex flex-col items-center shrink-0 min-w-fit">
               <div
                 className={cn(
                   "flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] whitespace-nowrap",
