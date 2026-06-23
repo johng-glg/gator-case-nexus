@@ -38,7 +38,8 @@ const ID_RE = /^[A-Za-z0-9_]+$/;
 
 const inviteInput = z
   .object({
-    email: z.string().trim().toLowerCase().email().max(255),
+    // Optional — when omitted we look up the Contact's email on file in Zoho.
+    email: z.string().trim().toLowerCase().email().max(255).optional(),
     caseId: z.string().regex(ID_RE).optional(),
     engagementId: z.string().regex(ID_RE).optional(),
   })
@@ -50,6 +51,8 @@ const inviteInput = z
  * Staff-only. Sends a passwordless invite to a client and binds their auth
  * user to the Zoho Contact (so they can later be added to another matter
  * without a second invite). Safe to re-invoke — resends the magic link.
+ *
+ * If `email` is omitted, the Contact's email on file in Zoho is used.
  */
 export const inviteClientToPortal = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -57,9 +60,6 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const staffEmail = (context.claims as { email?: string }).email;
     ensureStaff(staffEmail);
-    if (data.email.toLowerCase().endsWith(`@${FIRM_DOMAIN}`)) {
-      throw new Error("Refuse to enroll a firm-domain email as a client.");
-    }
 
     // Resolve the Zoho contact id from the engagement/case the caller gave us.
     const { makeZohoClient } = await import("@/integrations/zoho/client.server");
@@ -86,13 +86,28 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
     const contactId = typeof cl === "string" ? cl : cl?.id;
     if (!contactId) throw new Error("Engagement has no Client (Contact) to invite.");
 
+    // Pull email from the Contact when the caller didn't pass one.
+    let inviteEmail = data.email;
+    if (!inviteEmail) {
+      const contact = await api.getRecord<{ Email?: string }>("Contacts", contactId, ["Email"]);
+      const e = (contact?.Email ?? "").trim().toLowerCase();
+      if (!e) {
+        throw new Error("This client has no email on file in Zoho. Add one to the Contact, then try again.");
+      }
+      inviteEmail = e;
+    }
+    if (inviteEmail.endsWith(`@${FIRM_DOMAIN}`)) {
+      throw new Error("Refuse to enroll a firm-domain email as a client.");
+    }
+
     const { autoInvitePortal } = await import("@/integrations/portal/autoInvite.server");
     const { userId, resent } = await autoInvitePortal({
-      email: data.email,
+      email: inviteEmail,
       contactId,
       engagementId,
       invitedByUserId: context.userId,
     });
+
 
     const { logCaseActivity } = await import("@/integrations/audit/log.server");
     await logCaseActivity({
