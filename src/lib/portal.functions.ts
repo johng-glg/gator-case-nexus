@@ -117,12 +117,12 @@ export const inviteClientToPortal = createServerFn({ method: "POST" })
       actorEmail: staffEmail,
       action: "portal.invite",
       summary: resent
-        ? `Re-sent portal sign-in link to ${data.email}.`
-        : `Sent portal invite to ${data.email}.`,
-      metadata: { email: data.email, contactId, engagementId },
+        ? `Re-sent portal sign-in link to ${inviteEmail}.`
+        : `Sent portal invite to ${inviteEmail}.`,
+      metadata: { email: inviteEmail, contactId, engagementId },
     });
 
-    return { ok: true, userId, emailSent: true, resent };
+    return { ok: true, userId, emailSent: true, resent, email: inviteEmail };
   });
 
 /** Staff-only. Shows which client is enrolled on a case (for the case page). */
