@@ -189,6 +189,15 @@ function CaseDetail() {
   });
   const receivedRecordCount = recordsCountsQ.data?.counts.received ?? 0;
 
+  // Notes count → drives the History tab badge.
+  const notesQ = useQuery({
+    queryKey: ["case-notes", caseId],
+    enabled: validCaseId,
+    queryFn: () => fetchNotes({ data: { caseId } }),
+    staleTime: 30_000,
+  });
+  const notesCount = notesQ.data?.rows.length ?? 0;
+
   async function onAdvance(
     toStage: string,
     fields: Record<string, unknown>,
