@@ -5,7 +5,7 @@
  * every open SSDI case, then writes a digest row (overdue / due-soon / release-expiring) to
  * public.ssdi_deadline_digests for the in-app Admin view.
  *
- * Authorized via Authorization: Bearer <DEADLINE_SWEEP_SECRET> or Supabase apikey header.
+ * Authorized via Authorization: Bearer <DEADLINE_SWEEP_SECRET> only (no apikey fallback).
  * Runs as the SERVICE actor (refresh token in ZOHO_SERVICE_REFRESH_TOKEN env).
  */
 import { createFileRoute } from "@tanstack/react-router";
