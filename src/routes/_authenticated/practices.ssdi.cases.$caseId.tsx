@@ -334,80 +334,6 @@ function CaseDetail() {
       </section>
 
 
-      <div className={hasActiveAppealClock ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : ""}>
-        {hasActiveAppealClock && (
-          <div ref={deadlineSectionRef}>
-            <DeadlinePanel caseId={caseId} record={record} />
-          </div>
-        )}
-        <ActionCenter
-          caseId={caseId}
-          engagementId={engagementId}
-          currentStage={stage}
-          ssa1696Status={ssa1696Status}
-          ssa827Status={ssa827Status}
-          openTaskCount={openTaskCount}
-          hasPortalLink={false}
-          nextStep={
-            hasActiveAppealClock
-              ? undefined
-              : {
-                  title:
-                    stage === "Retained"
-                      ? "File SSA application"
-                      : `Advance from "${stage}"`,
-                  description:
-                    stage === "Retained"
-                      ? "Once the application is on file with SSA, advance the case to track the initial decision clock."
-                      : "No appeal clock is active right now. Use the Advance Stage button when ready.",
-                  cta:
-                    stage === "Retained"
-                      ? {
-                          label: "Advance to Application filed",
-                          onClick: () => openAdvance("Application filed"),
-                        }
-                      : undefined,
-                }
-          }
-          onInvitePortal={async () => {
-            const { inviteClientToPortal } = await import("@/lib/portal.functions");
-            const t = toast.loading("Sending portal invite to the client's email on file…");
-            try {
-              const res = await inviteClientToPortal({ data: { caseId, engagementId } });
-              toast.dismiss(t);
-              toast.success(
-                res.resent
-                  ? `Re-sent portal sign-in link to ${res.email}.`
-                  : `Portal invite sent to ${res.email}.`,
-              );
-            } catch (err) {
-              toast.dismiss(t);
-              toast.error(err instanceof Error ? err.message : "Couldn't send invite.");
-            }
-          }}
-          onRequestDocuments={triggerDocsRequest}
-          onScrollToTasks={() => {
-            setTab("overview");
-            setTimeout(() => tasksSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-          }}
-          onScrollToRecords={() => {
-            setTab("medical");
-            setTimeout(() => recordsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-          }}
-          onScrollToDeadline={() => deadlineSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-          onScrollToMessaging={() => {
-            setTab("overview");
-            setTimeout(() => messagingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-          }}
-          onScrollToForms={() => {
-            setTab("documents");
-            setTimeout(() => formsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
-          }}
-          onAdvance={(nextStage) => openAdvance(nextStage)}
-        />
-      </div>
-
-
       {/* ─── Tabbed content zone ─────────────────────────────────────────── */}
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)} className="space-y-4">
@@ -448,6 +374,79 @@ function CaseDetail() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          <div className={hasActiveAppealClock ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : ""}>
+            {hasActiveAppealClock && (
+              <div ref={deadlineSectionRef}>
+                <DeadlinePanel caseId={caseId} record={record} />
+              </div>
+            )}
+            <ActionCenter
+              caseId={caseId}
+              engagementId={engagementId}
+              currentStage={stage}
+              ssa1696Status={ssa1696Status}
+              ssa827Status={ssa827Status}
+              openTaskCount={openTaskCount}
+              hasPortalLink={false}
+              nextStep={
+                hasActiveAppealClock
+                  ? undefined
+                  : {
+                      title:
+                        stage === "Retained"
+                          ? "File SSA application"
+                          : `Advance from "${stage}"`,
+                      description:
+                        stage === "Retained"
+                          ? "Once the application is on file with SSA, advance the case to track the initial decision clock."
+                          : "No appeal clock is active right now. Use the Advance Stage button when ready.",
+                      cta:
+                        stage === "Retained"
+                          ? {
+                              label: "Advance to Application filed",
+                              onClick: () => openAdvance("Application filed"),
+                            }
+                          : undefined,
+                    }
+              }
+              onInvitePortal={async () => {
+                const { inviteClientToPortal } = await import("@/lib/portal.functions");
+                const t = toast.loading("Sending portal invite to the client's email on file…");
+                try {
+                  const res = await inviteClientToPortal({ data: { caseId, engagementId } });
+                  toast.dismiss(t);
+                  toast.success(
+                    res.resent
+                      ? `Re-sent portal sign-in link to ${res.email}.`
+                      : `Portal invite sent to ${res.email}.`,
+                  );
+                } catch (err) {
+                  toast.dismiss(t);
+                  toast.error(err instanceof Error ? err.message : "Couldn't send invite.");
+                }
+              }}
+              onRequestDocuments={triggerDocsRequest}
+              onScrollToTasks={() => {
+                setTab("overview");
+                setTimeout(() => tasksSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+              }}
+              onScrollToRecords={() => {
+                setTab("medical");
+                setTimeout(() => recordsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+              }}
+              onScrollToDeadline={() => deadlineSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              onScrollToMessaging={() => {
+                setTab("overview");
+                setTimeout(() => messagingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+              }}
+              onScrollToForms={() => {
+                setTab("documents");
+                setTimeout(() => formsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+              }}
+              onAdvance={(nextStage) => openAdvance(nextStage)}
+            />
+          </div>
+
           <CollapsibleSection title="Case facts" isEmpty={false} defaultOpen={false}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Panel title="SSA case data">
@@ -487,6 +486,7 @@ function CaseDetail() {
             <MessagingPanel caseId={caseId} />
           </div>
         </TabsContent>
+
 
         <TabsContent value="documents" className="space-y-4">
           <AppealFormsPanel stage={stage} record={record as Record<string, unknown>} clientName={clientName} />
