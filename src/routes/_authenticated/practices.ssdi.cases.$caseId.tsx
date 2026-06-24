@@ -34,7 +34,7 @@ import { ActivityPanel } from "@/components/cases/ActivityPanel";
 import { DocumentRequestsPanel } from "@/components/cases/DocumentRequestsPanel";
 import { MedicalRecordsPanel } from "@/components/cases/MedicalRecordsPanel";
 import { MessagingPanel } from "@/components/cases/MessagingPanel";
-import { CaseStatusStrip } from "@/components/cases/CaseStatusStrip";
+
 import { CaseActionsMenu } from "@/components/cases/CaseActionsMenu";
 
 import { ActionCenter } from "@/components/cases/ActionCenter";
