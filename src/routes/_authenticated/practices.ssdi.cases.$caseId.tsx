@@ -68,10 +68,23 @@ export const Route = createFileRoute("/_authenticated/practices/ssdi/cases/$case
 
 function CaseDetail() {
   const { caseId } = Route.useParams();
+  const search = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+  const tab: TabValue = search.tab ?? "overview";
+  const historySub: HistorySub = search.sub ?? "notes";
+  const setTab = (next: TabValue, sub?: HistorySub) =>
+    navigate({
+      search: (prev) => ({ ...prev, tab: next, sub: next === "history" ? (sub ?? prev.sub ?? "notes") : undefined }),
+      replace: false,
+    });
+  const setHistorySub = (sub: HistorySub) =>
+    navigate({ search: (prev) => ({ ...prev, tab: "history", sub }), replace: true });
+
   const fetchCase = useServerFn(getCase);
   const runQuery = useServerFn(zohoQuery);
   const advance = useServerFn(caseAdvance);
   const fetchTasks = useServerFn(getCaseTasks);
+  const fetchNotes = useServerFn(listCaseNotes);
 
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
