@@ -115,7 +115,7 @@ export const updateCaseNote = createServerFn({ method: "POST" })
       .parse(data),
   )
   .handler(async ({ data, context }) => {
-    const patch: Record<string, unknown> = {};
+    const patch: { body?: string; note_type?: NoteType } = {};
     if (data.body !== undefined) patch.body = data.body;
     if (data.noteType !== undefined) patch.note_type = data.noteType;
     if (Object.keys(patch).length === 0) return { ok: true };
