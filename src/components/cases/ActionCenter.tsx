@@ -42,6 +42,12 @@ import {
   type SuggestionIcon,
 } from "@/integrations/zoho/stageSuggestions";
 
+interface NextStepInline {
+  title: string;
+  description: string;
+  cta?: { label: string; onClick: () => void };
+}
+
 interface Props {
   caseId: string;
   engagementId?: string;
@@ -58,6 +64,7 @@ interface Props {
   onScrollToMessaging?: () => void;
   onScrollToForms?: () => void;
   onAdvance?: (nextStage?: Stage) => void;
+  nextStep?: NextStepInline;
 }
 
 function suggestionIcon(kind: SuggestionIcon) {
@@ -199,13 +206,26 @@ export function ActionCenter(props: Props) {
 
   return (
     <section className="rounded-lg border border-border bg-card p-4 space-y-3">
-      <header className="flex items-center justify-between">
-        <div>
+      <header className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Action center</div>
-          <h2 className="mt-0.5 text-base font-semibold">Next on this case</h2>
+          <h2 className="mt-0.5 text-base font-semibold">
+            {props.nextStep ? props.nextStep.title : "Next on this case"}
+          </h2>
+          {props.nextStep && (
+            <p className="mt-1 text-sm text-muted-foreground">{props.nextStep.description}</p>
+          )}
         </div>
-        <CheckSquare className="h-4 w-4 text-muted-foreground" />
+        <div className="flex items-center gap-2 shrink-0">
+          {props.nextStep?.cta && (
+            <Button size="sm" onClick={props.nextStep.cta.onClick}>
+              {props.nextStep.cta.label}
+            </Button>
+          )}
+          <CheckSquare className="h-4 w-4 text-muted-foreground" />
+        </div>
       </header>
+
 
       {/* E2 — evidence-readiness banner */}
       {evidenceGate && (
