@@ -1,14 +1,16 @@
 /**
  * /practices/ssdi/cases/$caseId — SSDI case detail page.
  *
- * Layout principle: above the fold = orient + act (stage chip, deadline
- * countdown, action center); below the fold = reference + detail (case facts,
- * fees, forms & documents, costs, activity).
+ * Layout: pinned command zone (status + lifecycle + next-step + action center)
+ * above a 5-tab content area (Overview / Documents / Medical / Money / History).
+ * Active tab is persisted in `?tab=` so shared links reopen the right tab and
+ * Action Center deep-links can swap tabs.
  */
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState, useRef } from "react";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import {
   caseAdvance,
@@ -17,7 +19,9 @@ import {
   getCaseTasks,
 } from "@/lib/zoho.functions";
 import { listCaseRequests } from "@/lib/medicalRecords.functions";
+import { listCaseNotes } from "@/lib/caseNotes.functions";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { StageRail } from "@/components/cases/StageRail";
 import { AdvanceStageDialog } from "@/components/cases/AdvanceStageDialog";
 import { DeadlinePanel } from "@/components/cases/DeadlinePanel";
@@ -38,6 +42,7 @@ import { FormsAndDocumentsPanel } from "@/components/cases/FormsAndDocumentsPane
 import { AppealFormsPanel } from "@/components/cases/AppealFormsPanel";
 import { NoaFeeCard } from "@/components/cases/NoaFeeCard";
 import { HearingPrepPanel } from "@/components/cases/HearingPrepPanel";
+import { NotesPanel } from "@/components/cases/NotesPanel";
 import { CollapsibleSection } from "@/components/cases/CollapsibleSection";
 
 import { DENIAL_NEXT_STEP, normalizeStage, type Stage } from "@/integrations/zoho/lifecycle";
@@ -46,10 +51,20 @@ import { ChevronLeft, Download } from "lucide-react";
 import { toast } from "sonner";
 import { downloadCsv, toCsv } from "@/lib/csv";
 
+const TAB_VALUES = ["overview", "documents", "medical", "money", "history"] as const;
+type TabValue = (typeof TAB_VALUES)[number];
+const HISTORY_SUB = ["notes", "activity"] as const;
+type HistorySub = (typeof HISTORY_SUB)[number];
+
 export const Route = createFileRoute("/_authenticated/practices/ssdi/cases/$caseId")({
   head: () => ({ meta: [{ title: "SSDI case — Gator" }] }),
+  validateSearch: z.object({
+    tab: z.enum(TAB_VALUES).optional(),
+    sub: z.enum(HISTORY_SUB).optional(),
+  }),
   component: CaseDetail,
 });
+
 
 function CaseDetail() {
   const { caseId } = Route.useParams();
