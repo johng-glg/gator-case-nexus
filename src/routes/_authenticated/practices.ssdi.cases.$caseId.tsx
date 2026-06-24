@@ -349,30 +349,12 @@ function CaseDetail() {
         <StageRail current={stage} />
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div ref={deadlineSectionRef}>
-          {hasActiveAppealClock ? (
+      <div className={hasActiveAppealClock ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : ""}>
+        {hasActiveAppealClock && (
+          <div ref={deadlineSectionRef}>
             <DeadlinePanel caseId={caseId} record={record} />
-          ) : (
-            <NextStepCard
-              title={stage === "Retained" ? "File SSA application" : `Advance from "${stage}"`}
-              description={
-                stage === "Retained"
-                  ? "Once the application is on file with SSA, advance the case to track the initial decision clock."
-                  : "No appeal clock is active right now. Use the Advance Stage button when ready."
-              }
-              requiredFields={stage === "Retained" ? ["SSA claim number"] : undefined}
-              cta={
-                stage === "Retained"
-                  ? {
-                      label: "Advance to Application filed",
-                      onClick: () => openAdvance("Application filed"),
-                    }
-                  : undefined
-              }
-            />
-          )}
-        </div>
+          </div>
+        )}
         <ActionCenter
           caseId={caseId}
           engagementId={engagementId}
@@ -381,6 +363,27 @@ function CaseDetail() {
           ssa827Status={ssa827Status}
           openTaskCount={openTaskCount}
           hasPortalLink={false}
+          nextStep={
+            hasActiveAppealClock
+              ? undefined
+              : {
+                  title:
+                    stage === "Retained"
+                      ? "File SSA application"
+                      : `Advance from "${stage}"`,
+                  description:
+                    stage === "Retained"
+                      ? "Once the application is on file with SSA, advance the case to track the initial decision clock."
+                      : "No appeal clock is active right now. Use the Advance Stage button when ready.",
+                  cta:
+                    stage === "Retained"
+                      ? {
+                          label: "Advance to Application filed",
+                          onClick: () => openAdvance("Application filed"),
+                        }
+                      : undefined,
+                }
+          }
           onInvitePortal={async () => {
             const { inviteClientToPortal } = await import("@/lib/portal.functions");
             const t = toast.loading("Sending portal invite to the client's email on file…");
@@ -418,6 +421,7 @@ function CaseDetail() {
           onAdvance={(nextStage) => openAdvance(nextStage)}
         />
       </div>
+
 
       {/* ─── Tabbed content zone ─────────────────────────────────────────── */}
 
