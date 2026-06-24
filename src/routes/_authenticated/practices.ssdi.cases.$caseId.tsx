@@ -72,13 +72,14 @@ function CaseDetail() {
   const navigate = useNavigate({ from: Route.fullPath });
   const tab: TabValue = search.tab ?? "overview";
   const historySub: HistorySub = search.sub ?? "notes";
+  type SearchShape = { tab?: TabValue; sub?: HistorySub };
   const setTab = (next: TabValue, sub?: HistorySub) =>
     navigate({
-      search: (prev) => ({ ...prev, tab: next, sub: next === "history" ? (sub ?? prev.sub ?? "notes") : undefined }),
+      search: (prev: SearchShape) => ({ ...prev, tab: next, sub: next === "history" ? (sub ?? prev.sub ?? "notes") : undefined }),
       replace: false,
     });
   const setHistorySub = (sub: HistorySub) =>
-    navigate({ search: (prev) => ({ ...prev, tab: "history", sub }), replace: true });
+    navigate({ search: (prev: SearchShape) => ({ ...prev, tab: "history", sub }), replace: true });
 
   const fetchCase = useServerFn(getCase);
   const runQuery = useServerFn(zohoQuery);
