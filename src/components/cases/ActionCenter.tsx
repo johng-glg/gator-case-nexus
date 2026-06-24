@@ -42,6 +42,12 @@ import {
   type SuggestionIcon,
 } from "@/integrations/zoho/stageSuggestions";
 
+interface NextStepInline {
+  title: string;
+  description: string;
+  cta?: { label: string; onClick: () => void };
+}
+
 interface Props {
   caseId: string;
   engagementId?: string;
@@ -58,6 +64,7 @@ interface Props {
   onScrollToMessaging?: () => void;
   onScrollToForms?: () => void;
   onAdvance?: (nextStage?: Stage) => void;
+  nextStep?: NextStepInline;
 }
 
 function suggestionIcon(kind: SuggestionIcon) {
