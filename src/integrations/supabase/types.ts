@@ -101,6 +101,42 @@ export type Database = {
         }
         Relationships: []
       }
+      case_notes: {
+        Row: {
+          author_email: string | null
+          author_id: string
+          body: string
+          case_id: string
+          created_at: string
+          id: string
+          note_type: string
+          pinned: boolean
+          updated_at: string
+        }
+        Insert: {
+          author_email?: string | null
+          author_id?: string
+          body: string
+          case_id: string
+          created_at?: string
+          id?: string
+          note_type?: string
+          pinned?: boolean
+          updated_at?: string
+        }
+        Update: {
+          author_email?: string | null
+          author_id?: string
+          body?: string
+          case_id?: string
+          created_at?: string
+          id?: string
+          note_type?: string
+          pinned?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_messaging_consent: {
         Row: {
           client_id: string
