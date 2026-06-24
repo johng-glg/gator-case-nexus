@@ -36,7 +36,7 @@ import { MedicalRecordsPanel } from "@/components/cases/MedicalRecordsPanel";
 import { MessagingPanel } from "@/components/cases/MessagingPanel";
 import { CaseStatusStrip } from "@/components/cases/CaseStatusStrip";
 import { CaseActionsMenu } from "@/components/cases/CaseActionsMenu";
-import { NextStepCard } from "@/components/cases/NextStepCard";
+
 import { ActionCenter } from "@/components/cases/ActionCenter";
 import { FormsAndDocumentsPanel } from "@/components/cases/FormsAndDocumentsPanel";
 import { AppealFormsPanel } from "@/components/cases/AppealFormsPanel";
