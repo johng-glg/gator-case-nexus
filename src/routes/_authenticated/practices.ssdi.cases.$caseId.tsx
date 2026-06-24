@@ -312,22 +312,6 @@ function CaseDetail() {
 
       {/* ─── Pinned command zone ─────────────────────────────────────────── */}
 
-      <CaseStatusStrip
-        stage={stage}
-        deadlineISO={deadlineISO}
-        daysToDeadline={daysToDeadline}
-        activeDeadlineType={activeDeadlineType}
-        flags={{
-          retainerSigned: retainerStatus === "Signed",
-          ssa1696Status,
-          ssa827Status,
-          releaseExpiringSoon: record.Release_Expiring_Soon === true,
-          openTaskCount,
-          welcomeEmailSent: false,
-        }}
-        tasksAnchor="tasks-section"
-      />
-
       {isClosed && (
         <ClosedCaseBanner
           closureReason={(record.Closure_Reason as string) ?? null}
@@ -348,6 +332,7 @@ function CaseDetail() {
         <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Lifecycle</div>
         <StageRail current={stage} />
       </section>
+
 
       <div className={hasActiveAppealClock ? "grid grid-cols-1 lg:grid-cols-2 gap-4" : ""}>
         {hasActiveAppealClock && (
