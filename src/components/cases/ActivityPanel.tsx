@@ -26,6 +26,7 @@ const ACTION_LABEL: Record<string, string> = {
   "message.held": "Client email held",
   "message.discarded": "Client email discarded",
   "consent.update": "Client consent updated",
+  "note.added": "Note added",
 };
 
 function actionColor(action: string): string {

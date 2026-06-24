@@ -32,7 +32,8 @@ export type ActivityAction =
   | "lead.convert.override"
   | "case.opened"
   | "case.intake.step"
-  | "conversion.step";
+  | "conversion.step"
+  | "note.added";
 
 
 export interface LogActivityInput {
