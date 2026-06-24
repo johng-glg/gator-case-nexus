@@ -258,11 +258,19 @@ function CaseDetail() {
   const costsRows = costsQ.data?.rows ?? [];
   const costsEmpty = costsRows.length === 0;
 
-  // Document request dialog trigger (passed down to ActionCenter).
+  // Document request dialog trigger (deep-link from ActionCenter → Documents tab).
   const triggerDocsRequest = () => {
     setDocsRequestNonce((n) => n + 1);
-    document.getElementById("doc-requests-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setTab("documents");
+    setTimeout(() => {
+      document.getElementById("doc-requests-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
   };
+
+  const hasNoaContext =
+    Boolean(record.Notice_of_Award_Date as string | undefined) ||
+    stage === "Award / NOA received" ||
+    stage === "Fee petition filed";
 
   return (
     <div className="max-w-6xl mx-auto px-8 py-5 space-y-4">
@@ -302,7 +310,8 @@ function CaseDetail() {
         </div>
       </header>
 
-      {/* Status strip — orient at a glance */}
+      {/* ─── Pinned command zone ─────────────────────────────────────────── */}
+
       <CaseStatusStrip
         stage={stage}
         deadlineISO={deadlineISO}
@@ -335,13 +344,11 @@ function CaseDetail() {
         />
       )}
 
-      {/* Lifecycle rail */}
       <section className="rounded-lg border border-border bg-card p-4">
         <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground mb-2">Lifecycle</div>
         <StageRail current={stage} />
       </section>
 
-      {/* Above-the-fold action row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div ref={deadlineSectionRef}>
           {hasActiveAppealClock ? (
@@ -391,165 +398,241 @@ function CaseDetail() {
             }
           }}
           onRequestDocuments={triggerDocsRequest}
-          onScrollToTasks={() => tasksSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-          onScrollToRecords={() => recordsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onScrollToTasks={() => {
+            setTab("overview");
+            setTimeout(() => tasksSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+          }}
+          onScrollToRecords={() => {
+            setTab("medical");
+            setTimeout(() => recordsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+          }}
           onScrollToDeadline={() => deadlineSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-          onScrollToMessaging={() => messagingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-          onScrollToForms={() => formsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
+          onScrollToMessaging={() => {
+            setTab("overview");
+            setTimeout(() => messagingSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+          }}
+          onScrollToForms={() => {
+            setTab("documents");
+            setTimeout(() => formsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+          }}
           onAdvance={(nextStage) => openAdvance(nextStage)}
         />
       </div>
 
-      {/* Appeal forms — surfaces when the case is on a denial stage */}
-      <AppealFormsPanel stage={stage} record={record as Record<string, unknown>} clientName={clientName} />
+      {/* ─── Tabbed content zone ─────────────────────────────────────────── */}
 
-      {/* Notice of Award fee reconciliation — surfaces once an NoA date exists */}
-      {((record.Notice_of_Award_Date as string | undefined) || stage === "Award / NOA received" || stage === "Fee petition filed") && (
-        <NoaFeeCard
-          caseId={caseId}
-          backPay={backPay}
-          noaDate={(record.Notice_of_Award_Date as string | null | undefined) ?? null}
-        />
-      )}
+      <Tabs value={tab} onValueChange={(v) => setTab(v as TabValue)} className="space-y-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview" className="gap-2">
+            Overview
+            {openTaskCount > 0 && (
+              <span className="ml-1 inline-flex items-center rounded-full bg-primary/15 text-primary text-[10px] font-medium px-1.5 py-0.5">
+                {openTaskCount}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="medical" className="gap-2">
+            Medical
+            {receivedRecordCount > 0 && (
+              <span className="ml-1 inline-flex items-center rounded-full bg-muted text-foreground/80 text-[10px] font-medium px-1.5 py-0.5">
+                {receivedRecordCount}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="money" className="gap-2">
+            Money
+            {hasNoaContext && (
+              <span className="ml-1 inline-flex items-center rounded-full bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 text-[10px] font-medium px-1.5 py-0.5">
+                NoA
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="history" className="gap-2">
+            History
+            {notesCount > 0 && (
+              <span className="ml-1 inline-flex items-center rounded-full bg-muted text-foreground/80 text-[10px] font-medium px-1.5 py-0.5">
+                {notesCount}
+              </span>
+            )}
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Hearing prep — ODAR exhibit index, on hearing-related stages */}
-      <HearingPrepPanel
-        caseId={caseId}
-        stage={stage}
-        caseNumber={record.Case_Number as string | undefined}
-        clientName={clientName}
-        hearingDate={(record.ALJ_Hearing_Scheduled_Date as string | null | undefined) ?? null}
-      />
+        <TabsContent value="overview" className="space-y-4">
+          <CollapsibleSection title="Case facts" isEmpty={false} defaultOpen={false}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Panel title="SSA case data">
+                <Row k="Sub-status" v={record.Sub_Status} />
+                <Row k="Documented receipt" v={record.Documented_Receipt_Date} />
+                <Row k="Date opened" v={record.Date_Opened} />
+                <Row k="Claim type" v={record.Claim_Type} />
+                <Row k="Onset date" v={record.Onset_Date} />
+                <Row k="DLI" v={record.DLI} />
+                <Row k="Primary impairment" v={record.Primary_Impairment} />
+              </Panel>
+              <Panel title="Lifecycle dates">
+                <Row k="Notice date" v={record.Notice_Date} />
+                <Row k="Initial decision" v={record.Initial_Decision_Date} />
+                <Row k="Recon decision" v={record.Recon_Decision_Date} />
+                <Row k="ALJ hearing scheduled" v={record.ALJ_Hearing_Scheduled_Date} />
+                <Row k="ALJ decision" v={record.ALJ_Decision_Date} />
+                <Row k="Appeals Council requested" v={record.Appeals_Council_Requested_Date} />
+                <Row k="Notice of Award" v={record.Notice_of_Award_Date} />
+              </Panel>
+              <Panel title="Fees (summary)">
+                <Row k="Back pay" v={fmtMoney(backPay)} />
+                <Row k="Projected fee" v={fmtMoney(projectedFee)} />
+                <Row k="User fee withheld" v={fmtMoney(userFee)} />
+                <p className="text-xs text-muted-foreground pt-2">
+                  Detailed fee reconciliation lives in the Money tab.
+                </p>
+              </Panel>
+            </div>
+          </CollapsibleSection>
 
-      {/* Forms & documents — unified panel */}
-      <div ref={formsSectionRef}>
-        <FormsAndDocumentsPanel
-          caseId={caseId}
-          stage={stage}
-          record={record as Record<string, unknown>}
-          retainerStatus={retainerStatus}
-          retainerSignedDate={retainerSignedDate}
-        />
-      </div>
+          <div ref={tasksSectionRef} id="tasks-section">
+            <TasksPanel caseId={caseId} />
+          </div>
 
-      {/* Document checklist for non-form items */}
-      <DocumentChecklist
-        caseId={caseId}
-        stage={stage}
-        excludeCodes={["SSA-1696", "SSA-827", "SSA-1693", "retainer"]}
-      />
+          <div ref={messagingSectionRef}>
+            <MessagingPanel caseId={caseId} />
+          </div>
+        </TabsContent>
 
-      {/* Case facts — demoted to a collapsible block below the fold */}
-      <CollapsibleSection title="Case facts" isEmpty={false} defaultOpen={false}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Panel title="SSA case data">
-            <Row k="Sub-status" v={record.Sub_Status} />
-            <Row k="Documented receipt" v={record.Documented_Receipt_Date} />
-            <Row k="Date opened" v={record.Date_Opened} />
-            <Row k="Claim type" v={record.Claim_Type} />
-            <Row k="Onset date" v={record.Onset_Date} />
-            <Row k="DLI" v={record.DLI} />
-            <Row k="Primary impairment" v={record.Primary_Impairment} />
-          </Panel>
-          <Panel title="Lifecycle dates">
-            <Row k="Notice date" v={record.Notice_Date} />
-            <Row k="Initial decision" v={record.Initial_Decision_Date} />
-            <Row k="Recon decision" v={record.Recon_Decision_Date} />
-            <Row k="ALJ hearing scheduled" v={record.ALJ_Hearing_Scheduled_Date} />
-            <Row k="ALJ decision" v={record.ALJ_Decision_Date} />
-            <Row k="Appeals Council requested" v={record.Appeals_Council_Requested_Date} />
-            <Row k="Notice of Award" v={record.Notice_of_Award_Date} />
-          </Panel>
-          <Panel title="Fees">
-            <Row k="Back pay" v={fmtMoney(backPay)} />
-            <Row k="Projected fee" v={fmtMoney(projectedFee)} />
-            <Row k="User fee withheld" v={fmtMoney(userFee)} />
-            <p className="text-xs text-muted-foreground pt-2">
-              Computed by Zoho formula fields (Projected_Fee, User_Fee_Withheld). 25% of back pay, capped at $9,200.
-            </p>
-          </Panel>
-        </div>
-      </CollapsibleSection>
+        <TabsContent value="documents" className="space-y-4">
+          <AppealFormsPanel stage={stage} record={record as Record<string, unknown>} clientName={clientName} />
 
-      {/* Tasks */}
-      <div ref={tasksSectionRef} id="tasks-section">
-        <TasksPanel caseId={caseId} />
-      </div>
+          <HearingPrepPanel
+            caseId={caseId}
+            stage={stage}
+            caseNumber={record.Case_Number as string | undefined}
+            clientName={clientName}
+            hearingDate={(record.ALJ_Hearing_Scheduled_Date as string | null | undefined) ?? null}
+          />
 
-      {/* Costs — collapsed when empty */}
-      <CollapsibleSection
-        title="Costs"
-        isEmpty={costsEmpty}
-        emptyLine="No costs recorded"
-        emptyAction={engagementId && !isClosed ? <CostEntryForm engagementId={engagementId} /> : undefined}
-      >
-        <div className="flex items-center justify-end mb-2 gap-2 flex-wrap">
-          {costsRows.length > 0 && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                const rows = costsRows.map((c) => [
-                  typeof c.Created_Time === "string" ? c.Created_Time.slice(0, 10) : "",
-                  String(c.Name ?? ""),
-                  String(c.Cost_Type ?? ""),
-                  typeof c.Amount === "number" ? c.Amount.toFixed(2) : "",
-                  String(record?.Case_Number ?? caseId),
-                ]);
-                const csv = toCsv(["Date", "Description", "Category", "Amount", "Case"], rows);
-                downloadCsv(`costs-${record?.Case_Number ?? caseId}.csv`, csv);
-              }}
-            >
-              <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
-            </Button>
+          <div ref={formsSectionRef}>
+            <FormsAndDocumentsPanel
+              caseId={caseId}
+              stage={stage}
+              record={record as Record<string, unknown>}
+              retainerStatus={retainerStatus}
+              retainerSignedDate={retainerSignedDate}
+            />
+          </div>
+
+          <DocumentChecklist
+            caseId={caseId}
+            stage={stage}
+            excludeCodes={["SSA-1696", "SSA-827", "SSA-1693", "retainer"]}
+          />
+
+          <div id="doc-requests-section" data-nonce={docsRequestNonce}>
+            <DocumentRequestsPanel caseId={caseId} engagementId={engagementId} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="medical" className="space-y-4">
+          <div ref={recordsSectionRef}>
+            <MedicalRecordsPanel caseId={caseId} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="money" className="space-y-4">
+          {hasNoaContext && (
+            <NoaFeeCard
+              caseId={caseId}
+              backPay={backPay}
+              noaDate={(record.Notice_of_Award_Date as string | null | undefined) ?? null}
+            />
           )}
-          {engagementId && !isClosed && <CostEntryForm engagementId={engagementId} />}
-        </div>
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2 text-left font-medium">Name</th>
-                <th className="px-4 py-2 text-left font-medium">Type</th>
-                <th className="px-4 py-2 text-right font-medium">Amount</th>
-                <th className="px-4 py-2 w-8" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {costsRows.map((c, i) => {
-                const id = typeof c.id === "string" ? c.id : null;
-                const name = String(c.Name ?? "—");
-                return (
-                  <tr key={id ?? i}>
-                    <td className="px-4 py-2">{name}</td>
-                    <td className="px-4 py-2 text-muted-foreground">{String(c.Cost_Type ?? "")}</td>
-                    <td className="px-4 py-2 text-right tabular-nums">{fmtMoney(typeof c.Amount === "number" ? c.Amount : null)}</td>
-                    <td className="px-4 py-2 text-right">
-                      {id && engagementId && !isClosed && (
-                        <DeleteCostButton costId={id} engagementId={engagementId} costName={name} />
-                      )}
-                    </td>
+
+          <CollapsibleSection
+            title="Costs"
+            isEmpty={costsEmpty}
+            emptyLine="No costs recorded"
+            emptyAction={engagementId && !isClosed ? <CostEntryForm engagementId={engagementId} /> : undefined}
+          >
+            <div className="flex items-center justify-end mb-2 gap-2 flex-wrap">
+              {costsRows.length > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const rows = costsRows.map((c) => [
+                      typeof c.Created_Time === "string" ? c.Created_Time.slice(0, 10) : "",
+                      String(c.Name ?? ""),
+                      String(c.Cost_Type ?? ""),
+                      typeof c.Amount === "number" ? c.Amount.toFixed(2) : "",
+                      String(record?.Case_Number ?? caseId),
+                    ]);
+                    const csv = toCsv(["Date", "Description", "Category", "Amount", "Case"], rows);
+                    downloadCsv(`costs-${record?.Case_Number ?? caseId}.csv`, csv);
+                  }}
+                >
+                  <Download className="h-3.5 w-3.5 mr-1.5" /> Export CSV
+                </Button>
+              )}
+              {engagementId && !isClosed && <CostEntryForm engagementId={engagementId} />}
+            </div>
+            <div className="rounded-lg border border-border bg-card overflow-hidden">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/30 text-xs uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="px-4 py-2 text-left font-medium">Name</th>
+                    <th className="px-4 py-2 text-left font-medium">Type</th>
+                    <th className="px-4 py-2 text-right font-medium">Amount</th>
+                    <th className="px-4 py-2 w-8" />
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </CollapsibleSection>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {costsRows.map((c, i) => {
+                    const id = typeof c.id === "string" ? c.id : null;
+                    const name = String(c.Name ?? "—");
+                    return (
+                      <tr key={id ?? i}>
+                        <td className="px-4 py-2">{name}</td>
+                        <td className="px-4 py-2 text-muted-foreground">{String(c.Cost_Type ?? "")}</td>
+                        <td className="px-4 py-2 text-right tabular-nums">{fmtMoney(typeof c.Amount === "number" ? c.Amount : null)}</td>
+                        <td className="px-4 py-2 text-right">
+                          {id && engagementId && !isClosed && (
+                            <DeleteCostButton costId={id} engagementId={engagementId} costName={name} />
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CollapsibleSection>
+        </TabsContent>
 
-      <div id="doc-requests-section" data-nonce={docsRequestNonce}>
-        <DocumentRequestsPanel caseId={caseId} engagementId={engagementId} />
-      </div>
+        <TabsContent value="history" className="space-y-4">
+          <div className="inline-flex rounded-md border border-border bg-card p-0.5 text-sm">
+            <button
+              type="button"
+              onClick={() => setHistorySub("notes")}
+              className={`px-3 py-1 rounded ${historySub === "notes" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Notes {notesCount > 0 ? `(${notesCount})` : ""}
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistorySub("activity")}
+              className={`px-3 py-1 rounded ${historySub === "activity" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Activity
+            </button>
+          </div>
 
-      <div ref={recordsSectionRef}>
-        <MedicalRecordsPanel caseId={caseId} />
-      </div>
+          {historySub === "notes" ? (
+            <NotesPanel caseId={caseId} />
+          ) : (
+            <ActivityPanel caseId={caseId} engagementId={engagementId} />
+          )}
+        </TabsContent>
+      </Tabs>
 
-      <div ref={messagingSectionRef}>
-        <MessagingPanel caseId={caseId} />
-      </div>
-
-      <ActivityPanel caseId={caseId} engagementId={engagementId} />
 
       <AdvanceStageDialog
         open={dialogOpen}
